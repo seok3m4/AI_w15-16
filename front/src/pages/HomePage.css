@@ -1,0 +1,63 @@
+.home-page {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.06), rgba(20, 184, 166, 0.08)),
+    var(--ion-background-color);
+}
+
+.home-page__panel {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: var(--ion-card-background);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+.home-page__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--ion-color-primary-contrast);
+  background: var(--ion-color-primary);
+}
+
+.home-page__icon ion-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.home-page h1 {
+  margin: 0 0 12px;
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.home-page p {
+  margin: 0;
+  color: var(--ion-color-medium);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .home-page {
+    padding: 16px;
+  }
+
+  .home-page__panel {
+    padding: 22px;
+  }
+
+  .home-page h1 {
+    font-size: 1.6rem;
+  }
+}
