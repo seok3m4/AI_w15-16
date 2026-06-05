@@ -55,6 +55,7 @@ AI 적용 기술을 활용한 게시판 서비스 과제용 저장소입니다. 
 - 커스텀 로그인 페이지(`/login`)를 추가했습니다.
 - 로그인 성공 후 홈 화면(`/`)으로 이동합니다.
 - Spring Security 기반 인증을 적용했습니다.
+- Swagger UI(`/swagger-ui.html`)와 OpenAPI JSON(`/v3/api-docs`)을 추가했습니다.
 - 테스트용 계정을 인메모리 사용자로 구성했습니다.
 - 로그인, 로그아웃, 인증 접근 흐름을 검증하는 테스트를 추가했습니다.
 
@@ -97,6 +98,12 @@ cd backend
 
 ```text
 http://localhost:8080
+```
+
+Swagger UI는 다음 주소에서 확인합니다.
+
+```text
+http://localhost:8080/swagger-ui.html
 ```
 
 ### Frontend

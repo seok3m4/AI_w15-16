@@ -35,7 +35,13 @@ public class SecurityConfig {
 	SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
 		return http
 				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/login", "/css/**", "/favicon.ico").permitAll()
+						.requestMatchers(
+								"/login",
+								"/css/**",
+								"/favicon.ico",
+								"/v3/api-docs/**",
+								"/swagger-ui.html",
+								"/swagger-ui/**").permitAll()
 						.anyRequest().authenticated())
 				.formLogin(form -> form
 						.loginPage("/login")
