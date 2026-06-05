@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Jungle Camp Backend</title>
+	<link rel="stylesheet" th:href="@{/css/auth.css}">
+</head>
+<body class="home-page">
+	<header class="topbar">
+		<div class="brand-line">
+			<span class="brand-mark small" aria-hidden="true">JC</span>
+			<span>Jungle Camp Backend</span>
+		</div>
+		<form th:action="@{/logout}" method="post">
+			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+			<button class="ghost-button" type="submit">로그아웃</button>
+		</form>
+	</header>
+
+	<main class="home-shell">
+		<section class="welcome">
+			<p class="eyebrow">Authenticated</p>
+			<h1><span th:text="${username}">user</span>님, 환영합니다.</h1>
+			<p>Spring Security가 적용된 백엔드 홈 화면입니다.</p>
+		</section>
+	</main>
+</body>
+</html>
