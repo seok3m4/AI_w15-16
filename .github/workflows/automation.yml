@@ -17,7 +17,7 @@ jobs:
     if: github.event_name == 'issues' && github.event.action == 'opened'
     runs-on: ubuntu-latest
     steps:
-     - name: Slack 알림 전송
+      - name: Slack 알림 전송
         uses: slackapi/slack-github-action@v1.27.0
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -115,7 +115,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action == 'opened'
     runs-on: ubuntu-latest
     steps:
-     - name: Slack 알림 전송
+      - name: Slack 알림 전송
         uses: slackapi/slack-github-action@v1.27.0
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -211,8 +211,7 @@ jobs:
       - name: Slack 알림 전송
         uses: slackapi/slack-github-action@v1.27.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
           payload: |
             {
               "text": "✅ PR이 머지되었습니다!",
