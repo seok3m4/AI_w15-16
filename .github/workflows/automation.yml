@@ -8,7 +8,7 @@ on:
   create:
 
 env:
-  ORGANIZATION: suck3m4
+  ORGANIZATION: seok3m4
   PROJECT_NUMBER: 2
 
 jobs:
