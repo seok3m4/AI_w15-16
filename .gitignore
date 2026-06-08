@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Environment - keep .env.example tracked
+.env
+.env.*
+!.env.example
+.envrc
+
+# Docker - keep docker-compose.yml tracked
+docker-compose.override.yml
+docker-compose.*.override.yml
+
+# Java / Spring Boot
+backend/build/
+backend/.gradle/
+backend/out/
+*.class
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+frontend/coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
