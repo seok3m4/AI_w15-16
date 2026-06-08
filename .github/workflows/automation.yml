@@ -1,0 +1,305 @@
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, assigned, closed]
+  pull_request:
+    types: [opened, closed]
+  create:
+
+env:
+  OWNER: IMGyuGo
+  PROJECT_NUMBER: 9
+
+jobs:
+  # 1. 이슈 생성 시 Slack 알림
+  notify-new-issue:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🆕 새 이슈가 생성되었습니다!",
+              "attachments": [
+                {
+                  "color": "#36a64f",
+                  "fields": [
+                    {
+                      "title": "제목",
+                      "value": "${{ github.event.issue.title }}",
+                      "short": false
+                    },
+                    {
+                      "title": "작성자",
+                      "value": "${{ github.event.issue.user.login }}",
+                      "short": true
+                    },
+                    {
+                      "title": "링크",
+                      "value": "${{ github.event.issue.html_url }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+
+  # 2. 담당자 지정 시 In Progress로 이동
+  move-to-in-progress:
+    if: github.event_name == 'issues' && github.event.action == 'assigned'
+    runs-on: ubuntu-latest
+    steps:
+      - name: In Progress로 이동
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = process.env.OWNER;
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const issueNodeId = context.payload.issue.node_id;
+
+            const project = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner, number: projectNumber });
+
+            const proj = project.user.projectV2;
+            const statusField = proj.fields.nodes.find(f => f.name === "Status");
+            const option = statusField.options.find(o => o.name === "In Progress");
+
+            const item = await github.graphql(`
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {
+                  projectId: $projectId
+                  contentId: $contentId
+                }) { item { id } }
+              }
+            `, { projectId: proj.id, contentId: issueNodeId });
+
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }
+            `, {
+              projectId: proj.id,
+              itemId: item.addProjectV2ItemById.item.id,
+              fieldId: statusField.id,
+              optionId: option.id
+            });
+
+  # 3. PR 생성 시 Slack 알림
+  notify-new-pr:
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🔀 새 PR이 생성되었습니다!",
+              "attachments": [
+                {
+                  "color": "#0075ff",
+                  "fields": [
+                    {
+                      "title": "제목",
+                      "value": "${{ github.event.pull_request.title }}",
+                      "short": false
+                    },
+                    {
+                      "title": "작성자",
+                      "value": "${{ github.event.pull_request.user.login }}",
+                      "short": true
+                    },
+                    {
+                      "title": "링크",
+                      "value": "${{ github.event.pull_request.html_url }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+
+  # 4. PR 머지 시 Done으로 이동 + Slack 알림
+  move-to-done:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done으로 이동
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = process.env.OWNER;
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const prNodeId = context.payload.pull_request.node_id;
+
+            const project = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner, number: projectNumber });
+
+            const proj = project.user.projectV2;
+            const statusField = proj.fields.nodes.find(f => f.name === "Status");
+            const option = statusField.options.find(o => o.name === "Done");
+
+            const item = await github.graphql(`
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {
+                  projectId: $projectId
+                  contentId: $contentId
+                }) { item { id } }
+              }
+            `, { projectId: proj.id, contentId: prNodeId });
+
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }
+            `, {
+              projectId: proj.id,
+              itemId: item.addProjectV2ItemById.item.id,
+              fieldId: statusField.id,
+              optionId: option.id
+            });
+
+      - name: Slack 알림 전송
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "✅ PR이 머지되었습니다!",
+              "attachments": [
+                {
+                  "color": "#9b59b6",
+                  "fields": [
+                    {
+                      "title": "제목",
+                      "value": "${{ github.event.pull_request.title }}",
+                      "short": false
+                    },
+                    {
+                      "title": "머지한 사람",
+                      "value": "${{ github.event.pull_request.merged_by.login }}",
+                      "short": true
+                    },
+                    {
+                      "title": "링크",
+                      "value": "${{ github.event.pull_request.html_url }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+
+  # 5. 이슈 Close 시 Done으로 이동
+  close-issue-done:
+    if: github.event_name == 'issues' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done으로 이동
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = process.env.OWNER;
+            const projectNumber = parseInt(process.env.PROJECT_NUMBER);
+            const issueNodeId = context.payload.issue.node_id;
+
+            const project = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options { id name }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner, number: projectNumber });
+
+            const proj = project.user.projectV2;
+            const statusField = proj.fields.nodes.find(f => f.name === "Status");
+            const option = statusField.options.find(o => o.name === "Done");
+
+            const item = await github.graphql(`
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {
+                  projectId: $projectId
+                  contentId: $contentId
+                }) { item { id } }
+              }
+            `, { projectId: proj.id, contentId: issueNodeId });
+
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { singleSelectOptionId: $optionId }
+                }) { projectV2Item { id } }
+              }
+            `, {
+              projectId: proj.id,
+              itemId: item.addProjectV2ItemById.item.id,
+              fieldId: statusField.id,
+              optionId: option.id
+            });
