@@ -5,6 +5,8 @@ on:
     types: [opened, assigned, closed]
   pull_request:
     types: [opened, closed]
+    branches:
+      - '**'
   create:
 
 env:
