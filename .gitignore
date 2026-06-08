@@ -1,0 +1,22 @@
+# macOS Finder가 자동으로 만드는 폴더 보기 설정 파일
+.DS_Store
+
+# npm이 설치한 외부 라이브러리 폴더
+node_modules/
+
+# 빌드 결과물 폴더
+dist/
+build/
+
+# 테스트 커버리지 결과
+coverage/
+
+# 환경변수 파일
+.env
+.env.*
+
+# 단, 환경변수 예시 파일은 Git에 올린다
+!.env.example
+
+# npm 로그 파일
+npm-debug.log*
