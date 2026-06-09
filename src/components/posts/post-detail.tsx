@@ -186,14 +186,22 @@ export function PostDetail({ postId }: PostDetailProps) {
           목록으로
         </Link>
         {isOwner ? (
-          <button
-            className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-semibold text-[#b91c1c] hover:bg-[#fff1f2] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isDeleting}
-            onClick={handleDelete}
-            type="button"
-          >
-            {isDeleting ? "삭제 중" : "삭제"}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-semibold text-[#0f766e] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
+              href={`/posts/${post.id}/edit`}
+            >
+              수정
+            </Link>
+            <button
+              className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-semibold text-[#b91c1c] hover:bg-[#fff1f2] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              type="button"
+            >
+              {isDeleting ? "삭제 중" : "삭제"}
+            </button>
+          </div>
         ) : null}
       </div>
 
