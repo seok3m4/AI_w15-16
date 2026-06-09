@@ -1,3 +1,4 @@
+// 📌 Prisma CLI 설정. 루트 .env를 읽어서 DATABASE_URL을 Prisma에 전달한다.
 import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
 
