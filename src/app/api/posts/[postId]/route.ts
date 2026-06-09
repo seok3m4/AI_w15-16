@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateUpdatePostInput } from "@/lib/posts/validation";
 import { prisma } from "@/lib/prisma";
+import { replacePostTags } from "@/lib/tags/mutations";
 
 export const runtime = "nodejs";
 
@@ -80,10 +81,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const post = await prisma.post.update({
-    where: { id: postId },
-    data: validation.data,
-    select: postSelect,
+  const post = await prisma.$transaction(async (tx) => {
+    await tx.post.update({
+      where: { id: postId },
+      data: {
+        title: validation.data.title,
+        content: validation.data.content,
+      },
+      select: { id: true },
+    });
+
+    if (validation.data.tags !== undefined) {
+      await replacePostTags(tx, postId, validation.data.tags);
+    }
+
+    return tx.post.findUniqueOrThrow({
+      where: { id: postId },
+      select: postSelect,
+    });
   });
 
   return NextResponse.json({ post: toPostResponse(post) });

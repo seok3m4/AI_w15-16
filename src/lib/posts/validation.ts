@@ -1,3 +1,8 @@
+import {
+  validateOptionalTagNames,
+  validateTagNames,
+} from "@/lib/tags/validation";
+
 type ValidationResult<T> =
   | {
       ok: true;
@@ -11,11 +16,13 @@ type ValidationResult<T> =
 type CreatePostInput = {
   title: string;
   content: string;
+  tags: string[];
 };
 
 type UpdatePostInput = {
   title?: string;
   content?: string;
+  tags?: string[];
 };
 
 const TITLE_MIN_LENGTH = 2;
@@ -59,7 +66,12 @@ export function validateCreatePostInput(
 
   const title = getTrimmedString(body.title);
   const content = getTrimmedString(body.content);
+  const tags = validateTagNames(body.tags);
   const titleError = validateTitle(title);
+
+  if (!tags.ok) {
+    return { ok: false, message: tags.message };
+  }
 
   if (titleError) {
     return { ok: false, message: titleError };
@@ -76,6 +88,7 @@ export function validateCreatePostInput(
     data: {
       title,
       content,
+      tags: tags.data,
     },
   };
 }
@@ -88,6 +101,11 @@ export function validateUpdatePostInput(
   }
 
   const data: UpdatePostInput = {};
+  const tags = validateOptionalTagNames(body.tags);
+
+  if (!tags.ok) {
+    return { ok: false, message: tags.message };
+  }
 
   if ("title" in body) {
     const title = getTrimmedString(body.title);
@@ -111,8 +129,12 @@ export function validateUpdatePostInput(
     data.content = content;
   }
 
-  if (!data.title && !data.content) {
-    return { ok: false, message: "Title or content is required." };
+  if (tags.data !== undefined) {
+    data.tags = tags.data;
+  }
+
+  if (!data.title && !data.content && data.tags === undefined) {
+    return { ok: false, message: "Title, content, or tags are required." };
   }
 
   return {
