@@ -98,3 +98,9 @@ Default concept note structure:
 ```
 
 Use this rule as a project-level substitute for an interactive prompt-saving hook. A command hook can enforce or remind, but it cannot replace explicit user consent inside the conversation.
+
+## Conversational Workflow Trigger Rules
+
+### Trigger 3 - `작업`
+
+When the user says `작업` as a standalone command or clearly uses it as a workflow trigger, follow `common/workflows/trigger-3-work.md`.
