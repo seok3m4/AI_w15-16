@@ -1,18 +1,20 @@
+import { SiteHeader } from "@/components/site-header";
+
 const samplePosts = [
   {
     title: "Bullpen usage after a close extra-inning game",
     tag: "Game Review",
-    meta: "KBO · Strategy · 12 comments",
+    meta: "KBO | Strategy | 12 comments",
   },
   {
     title: "What changed in the leadoff hitter's approach this week?",
     tag: "Player Analysis",
-    meta: "Hitting · Metrics · 8 comments",
+    meta: "Hitting | Metrics | 8 comments",
   },
   {
     title: "Trade deadline needs for a contending team",
     tag: "Team Issue",
-    meta: "Roster · News Brief · 15 comments",
+    meta: "Roster | News Brief | 15 comments",
   },
 ];
 
@@ -21,30 +23,7 @@ const aiActions = ["Similar posts", "News briefing", "Draft assist"];
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#f7f9fb] text-[#172033]">
-      <header className="border-b border-[#d9e2ec] bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div>
-            <p className="text-sm font-semibold uppercase text-[#0f766e]">
-              Baseball AI Board
-            </p>
-            <h1 className="text-2xl font-bold">AI Baseball Briefing Board</h1>
-          </div>
-          <nav className="flex items-center gap-2 text-sm font-medium text-[#5e6a7d]">
-            <a className="rounded-md px-3 py-2 hover:bg-[#eef4f7]" href="#">
-              Posts
-            </a>
-            <a className="rounded-md px-3 py-2 hover:bg-[#eef4f7]" href="#">
-              Tags
-            </a>
-            <a
-              className="rounded-md bg-[#0f766e] px-4 py-2 text-white hover:bg-[#115e59]"
-              href="#"
-            >
-              New Post
-            </a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
