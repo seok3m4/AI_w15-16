@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { CommentSection } from "@/components/comments/comment-section";
 
 type CurrentUser = {
   id: string;
@@ -145,6 +147,20 @@ export function PostDetail({ postId }: PostDetailProps) {
     }
   }
 
+  const handleCommentCountChange = useCallback((nextCount: number) => {
+    setPost((currentPost) =>
+      currentPost
+        ? {
+            ...currentPost,
+            counts: {
+              ...currentPost.counts,
+              comments: nextCount,
+            },
+          }
+        : currentPost,
+    );
+  }, []);
+
   if (isLoading) {
     return (
       <section className="mx-auto max-w-3xl px-6 py-8">
@@ -245,6 +261,10 @@ export function PostDetail({ postId }: PostDetailProps) {
           {post.content}
         </div>
       </article>
+      <CommentSection
+        onCommentCountChange={handleCommentCountChange}
+        postId={post.id}
+      />
     </section>
   );
 }
