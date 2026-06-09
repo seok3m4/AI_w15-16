@@ -6,6 +6,8 @@ describe('AppController', () => {
   let appController: AppController;
 
   beforeEach(async () => {
+    process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
       providers: [AppService],
@@ -14,9 +16,13 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('health', () => {
+    it('returns API health metadata', () => {
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'cine-review-api',
+        database: 'configured',
+      });
     });
   });
 });

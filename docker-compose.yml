@@ -14,9 +14,9 @@ services:
       POSTGRES_PASSWORD: cine_password
       POSTGRES_DB: cine_review_ai
 
-    # 로컬 5432 포트를 컨테이너 5432 포트와 연결
+    # 로컬 5433 포트를 컨테이너 5432 포트와 연결
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
     # DB 데이터를 컨테이너 삭제 후에도 유지하기 위한 볼륨
     volumes:
