@@ -47,6 +47,13 @@ type AuthMeResponse = {
   user?: CurrentUser;
 };
 
+type PostListProps = {
+  page: number;
+  selectedTag: string;
+  onPageChange: (page: number) => void;
+  onSelectTag: (tagName: string) => void;
+};
+
 const PAGE_SIZE = 5;
 
 function formatDate(value: string): string {
@@ -62,12 +69,16 @@ function getPreview(content: string): string {
   return content.length > 120 ? `${content.slice(0, 120)}...` : content;
 }
 
-export function PostList() {
+export function PostList({
+  page,
+  selectedTag,
+  onPageChange,
+  onSelectTag,
+}: PostListProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<PostsResponse["pagination"]>({
     page: 1,
     pageSize: PAGE_SIZE,
@@ -89,8 +100,12 @@ export function PostList() {
       params.set("q", searchQuery);
     }
 
+    if (selectedTag) {
+      params.set("tag", selectedTag);
+    }
+
     return params.toString();
-  }, [page, searchQuery]);
+  }, [page, searchQuery, selectedTag]);
 
   useEffect(() => {
     let isMounted = true;
@@ -169,8 +184,22 @@ export function PostList() {
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearchQuery(searchInput.trim());
-    setPage(1);
+    onPageChange(1);
   }
+
+  function handleResetFilters() {
+    setSearchInput("");
+    setSearchQuery("");
+    onSelectTag("");
+    onPageChange(1);
+  }
+
+  function handleSelectTag(tagName: string) {
+    onSelectTag(tagName);
+    onPageChange(1);
+  }
+
+  const hasActiveFilter = Boolean(searchQuery || selectedTag);
 
   return (
     <section className="space-y-4">
@@ -212,7 +241,33 @@ export function PostList() {
         >
           검색
         </button>
+        {hasActiveFilter ? (
+          <button
+            className="h-10 rounded-md border border-[#c8d3df] bg-white px-4 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
+            onClick={handleResetFilters}
+            type="button"
+          >
+            초기화
+          </button>
+        ) : null}
       </form>
+
+      {hasActiveFilter ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm text-[#5e6a7d]">
+          <span>필터</span>
+          {searchQuery ? (
+            <span className="rounded-md bg-[#eef4f7] px-2.5 py-1">
+              검색어: {searchQuery}
+            </span>
+          ) : null}
+          {selectedTag ? (
+            <span className="rounded-md bg-[#e6f4f1] px-2.5 py-1 text-[#0f766e]">
+              태그: #{selectedTag}
+            </span>
+          ) : null}
+          <span>{pagination.total}개 결과</span>
+        </div>
+      ) : null}
 
       {message ? (
         <p className="rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
@@ -230,7 +285,7 @@ export function PostList() {
         <div className="rounded-md border border-[#d9e2ec] bg-white p-5">
           <h3 className="text-base font-semibold">게시글이 없습니다.</h3>
           <p className="mt-2 text-sm text-[#5e6a7d]">
-            첫 경기 리뷰나 선수 분석을 작성해보세요.
+            검색 조건을 바꾸거나 첫 경기 리뷰를 작성해보세요.
           </p>
         </div>
       ) : null}
@@ -245,12 +300,14 @@ export function PostList() {
               <div className="flex flex-wrap gap-2">
                 {post.tags.length > 0 ? (
                   post.tags.map((tag) => (
-                    <span
-                      className="rounded-md bg-[#e6f4f1] px-2.5 py-1 text-xs font-semibold text-[#0f766e]"
+                    <button
+                      className="rounded-md bg-[#e6f4f1] px-2.5 py-1 text-xs font-semibold text-[#0f766e] hover:bg-[#ccfbf1]"
                       key={tag.id}
+                      onClick={() => handleSelectTag(tag.name)}
+                      type="button"
                     >
                       #{tag.name}
-                    </span>
+                    </button>
                   ))
                 ) : (
                   <span className="rounded-md bg-[#eef4f7] px-2.5 py-1 text-xs font-semibold text-[#5e6a7d]">
@@ -279,29 +336,30 @@ export function PostList() {
         ))}
       </div>
 
-      {pagination.totalPages > 1 ? (
-        <div className="flex items-center justify-between border-t border-[#d9e2ec] pt-4">
+      <div className="flex flex-col gap-3 border-t border-[#d9e2ec] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm text-[#5e6a7d]">
+          총 {pagination.total}개 · {pagination.page} /{" "}
+          {Math.max(pagination.totalPages, 1)} 페이지
+        </span>
+        <div className="flex items-center gap-2">
           <button
             className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-medium text-[#5e6a7d] hover:border-[#0f766e] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!pagination.hasPreviousPage}
-            onClick={() => setPage((value) => Math.max(value - 1, 1))}
+            onClick={() => onPageChange(Math.max(page - 1, 1))}
             type="button"
           >
             이전
           </button>
-          <span className="text-sm text-[#5e6a7d]">
-            {pagination.page} / {pagination.totalPages}
-          </span>
           <button
             className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-medium text-[#5e6a7d] hover:border-[#0f766e] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!pagination.hasNextPage}
-            onClick={() => setPage((value) => value + 1)}
+            onClick={() => onPageChange(page + 1)}
             type="button"
           >
             다음
           </button>
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }
