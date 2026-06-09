@@ -262,7 +262,11 @@ export function PostList() {
                 댓글 {post.counts.comments}개
               </span>
             </div>
-            <h3 className="text-lg font-semibold">{post.title}</h3>
+            <h3 className="text-lg font-semibold">
+              <Link className="hover:text-[#0f766e]" href={`/posts/${post.id}`}>
+                {post.title}
+              </Link>
+            </h3>
             <p className="mt-2 text-sm leading-6 text-[#5e6a7d]">
               {getPreview(post.content)}
             </p>
