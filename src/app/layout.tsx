@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Baseball AI Board",
-  description: "AI baseball briefing board powered by RAG, MCP, and agents.",
+  title: "야구 AI 게시판",
+  description: "RAG, MCP, Agent를 활용한 야구 AI 브리핑 게시판입니다.",
 };
 
 export default function RootLayout({

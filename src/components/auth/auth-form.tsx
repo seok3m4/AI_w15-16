@@ -17,10 +17,10 @@ type AuthResponse = {
 const copy = {
   login: {
     title: "로그인",
-    description: "야구 브리핑 게시판에 다시 들어갑니다.",
+    description: "야구 AI 게시판에 다시 들어갑니다.",
     submit: "로그인",
     endpoint: "/api/auth/login",
-    alternateText: "계정이 없다면",
+    alternateText: "아직 계정이 없다면",
     alternateHref: "/signup",
     alternateLabel: "회원가입",
   },
@@ -41,12 +41,19 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+
+    if (mode === "signup" && password !== passwordConfirm) {
+      setMessage("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const body =
@@ -140,6 +147,22 @@ export function AuthForm({ mode }: AuthFormProps) {
               value={password}
             />
           </label>
+
+          {mode === "signup" ? (
+            <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+              비밀번호 확인
+              <input
+                autoComplete="new-password"
+                className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+                maxLength={72}
+                minLength={8}
+                onChange={(event) => setPasswordConfirm(event.target.value)}
+                required
+                type="password"
+                value={passwordConfirm}
+              />
+            </label>
+          ) : null}
 
           {message ? (
             <p className="rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
