@@ -5,6 +5,15 @@ export type Pagination = {
   take: number;
 };
 
+export type PaginationResponse = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
@@ -32,5 +41,21 @@ export function parsePagination(searchParams: URLSearchParams): Pagination {
     pageSize,
     skip: (page - 1) * pageSize,
     take: pageSize,
+  };
+}
+
+export function toPaginationResponse(
+  pagination: Pagination,
+  total: number,
+): PaginationResponse {
+  const totalPages = Math.ceil(total / pagination.pageSize);
+
+  return {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    total,
+    totalPages,
+    hasNextPage: pagination.page < totalPages,
+    hasPreviousPage: pagination.page > 1,
   };
 }

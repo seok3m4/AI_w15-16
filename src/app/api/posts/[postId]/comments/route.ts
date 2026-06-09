@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { commentSelect, toCommentResponse } from "@/lib/comments/serializer";
 import { validateCommentInput } from "@/lib/comments/validation";
-import { parsePagination } from "@/lib/pagination";
+import { parsePagination, toPaginationResponse } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -47,12 +47,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   return NextResponse.json({
     comments: comments.map(toCommentResponse),
-    pagination: {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      total,
-      totalPages: Math.ceil(total / pagination.pageSize),
-    },
+    pagination: toPaginationResponse(pagination, total),
   });
 }
 

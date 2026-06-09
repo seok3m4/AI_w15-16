@@ -1,31 +1,27 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { parsePagination } from "@/lib/pagination";
+import { toPaginationResponse } from "@/lib/pagination";
+import { parsePostListQuery } from "@/lib/posts/query";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateCreatePostInput } from "@/lib/posts/validation";
 import { prisma } from "@/lib/prisma";
 import { replacePostTags } from "@/lib/tags/mutations";
-import { normalizeTagName } from "@/lib/tags/validation";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const pagination = parsePagination(searchParams);
-  const rawTag = searchParams.get("tag");
-  const tagName = rawTag ? normalizeTagName(rawTag) : "";
-  const where = tagName
-    ? {
-        tags: {
-          some: {
-            tag: {
-              name: tagName,
-            },
-          },
-        },
-      }
-    : {};
+  const parsedQuery = parsePostListQuery(searchParams);
+
+  if (!parsedQuery.ok) {
+    return NextResponse.json(
+      { message: parsedQuery.message },
+      { status: 400 },
+    );
+  }
+
+  const { pagination, searchQuery, tagName, where } = parsedQuery.data;
   const [posts, total] = await prisma.$transaction([
     prisma.post.findMany({
       where,
@@ -39,11 +35,10 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     posts: posts.map(toPostResponse),
-    pagination: {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      total,
-      totalPages: Math.ceil(total / pagination.pageSize),
+    pagination: toPaginationResponse(pagination, total),
+    filters: {
+      q: searchQuery,
+      tag: tagName,
     },
   });
 }
