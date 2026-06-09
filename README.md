@@ -6,6 +6,8 @@ AI 적용 기술을 활용한 게시판 서비스 과제용 저장소입니다. 
 
 ## 프로젝트 개요
 
+![img.png](img.png)
+
 - 기본 게시판 서비스에 AI 활용 기능을 결합하는 것을 목표로 합니다.
 - 백엔드는 Spring Boot 기반 로그인 화면과 인증 흐름을 먼저 구성했습니다.
 - 프론트엔드는 React, TypeScript, Vite, Ionic React, Capacitor 기반으로 모바일 확장 가능한 구조를 준비했습니다.
