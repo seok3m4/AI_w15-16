@@ -37,19 +37,20 @@ model Movie {
 
 /// 사용자가 작성한 영화 리뷰 게시글.
 model Review {
-  id        String      @id @default(cuid())
+  id        String           @id @default(cuid())
   title     String
   content   String
   rating    Int?
-  isSpoiler Boolean     @default(false)
+  isSpoiler Boolean          @default(false)
   authorId  String
   movieId   String
-  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  movie     Movie       @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  author    User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  movie     Movie            @relation(fields: [movieId], references: [id], onDelete: Cascade)
   comments  Comment[]
   tags      ReviewTag[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  embedding ReviewEmbedding?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   @@index([authorId])
   @@index([movieId])
@@ -88,4 +89,14 @@ model ReviewTag {
 
   @@id([reviewId, tagId])
   @@index([tagId])
+}
+
+/// 리뷰 본문을 embedding vector로 변환해 저장하는 RAG용 테이블.
+model ReviewEmbedding {
+  id        String                       @id @default(cuid())
+  reviewId  String                       @unique
+  review    Review                       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
 }

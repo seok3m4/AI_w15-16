@@ -26,6 +26,7 @@
     "node_modules",
     "dist",
     "generated",
+    "prisma",
     "test",
     "**/*.spec.ts",
     "prisma.config.ts"
