@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { parsePagination } from "@/lib/posts/query";
+import { parsePagination } from "@/lib/pagination";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateCreatePostInput } from "@/lib/posts/validation";
 import { prisma } from "@/lib/prisma";
