@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { SimilarPostsPanel } from "@/components/ai/similar-posts-panel";
 import { CommentSection } from "@/components/comments/comment-section";
 
 type CurrentUser = {
@@ -261,6 +262,7 @@ export function PostDetail({ postId }: PostDetailProps) {
           {post.content}
         </div>
       </article>
+      <SimilarPostsPanel postId={post.id} />
       <CommentSection
         onCommentCountChange={handleCommentCountChange}
         postId={post.id}

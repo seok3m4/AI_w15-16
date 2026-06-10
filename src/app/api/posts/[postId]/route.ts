@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { getCurrentUser } from "@/lib/auth/session";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateUpdatePostInput } from "@/lib/posts/validation";
@@ -100,6 +101,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       select: postSelect,
     });
   });
+
+  await refreshPostEmbedding(post.id);
 
   return NextResponse.json({ post: toPostResponse(post) });
 }

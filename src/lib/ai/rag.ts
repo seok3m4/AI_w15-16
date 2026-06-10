@@ -1,0 +1,378 @@
+import { createHash } from "crypto";
+
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+
+import {
+  getChatModel,
+  getEmbeddingDimensions,
+  getEmbeddingModel,
+  getOpenAIApiKey,
+} from "@/lib/ai/config";
+import { postSelect, toPostResponse } from "@/lib/posts/serializer";
+import { prisma } from "@/lib/prisma";
+
+type PostForEmbedding = {
+  id: string;
+  title: string;
+  content: string;
+  tags: {
+    tag: {
+      name: string;
+    };
+  }[];
+};
+
+type SimilarPostRow = {
+  postId: string;
+  similarity: number;
+};
+
+type StoredEmbeddingRow = {
+  contentHash: string;
+  embedding: string;
+};
+
+export type SimilarPost = ReturnType<typeof toPostResponse> & {
+  similarity: number;
+};
+
+export type SimilarPostsResult =
+  | {
+      ok: true;
+      sourcePostId: string;
+      summary: string | null;
+      similarPosts: SimilarPost[];
+    }
+  | {
+      ok: false;
+      status: "not_found" | "disabled" | "unavailable";
+      message: string;
+    };
+
+const postEmbeddingSelect = {
+  id: true,
+  title: true,
+  content: true,
+  tags: {
+    orderBy: {
+      createdAt: "asc",
+    },
+    select: {
+      tag: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  },
+} as const;
+
+function buildPostKnowledgeText(post: PostForEmbedding): string {
+  const tags = post.tags.map(({ tag }) => tag.name).join(", ") || "태그 없음";
+
+  return [
+    `제목: ${post.title}`,
+    `태그: ${tags}`,
+    "본문:",
+    post.content,
+  ].join("\n");
+}
+
+function createContentHash(text: string): string {
+  return createHash("sha256").update(text).digest("hex");
+}
+
+function toVectorLiteral(embedding: number[]): string {
+  const values = embedding.map((value) =>
+    Number.isFinite(value) ? String(value) : "0",
+  );
+
+  return `[${values.join(",")}]`;
+}
+
+function getEmbeddingsClient(apiKey: string): OpenAIEmbeddings {
+  return new OpenAIEmbeddings({
+    apiKey,
+    model: getEmbeddingModel(),
+    dimensions: getEmbeddingDimensions(),
+  });
+}
+
+async function findPostForEmbedding(
+  postId: string,
+): Promise<PostForEmbedding | null> {
+  return prisma.post.findUnique({
+    where: { id: postId },
+    select: postEmbeddingSelect,
+  });
+}
+
+async function findStoredEmbedding(
+  postId: string,
+): Promise<StoredEmbeddingRow | null> {
+  const rows = await prisma.$queryRaw<StoredEmbeddingRow[]>`
+    SELECT "contentHash", "embedding"::text AS "embedding"
+    FROM "PostEmbedding"
+    WHERE "postId" = ${postId}
+    LIMIT 1
+  `;
+
+  return rows[0] ?? null;
+}
+
+async function upsertPostEmbedding(
+  postId: string,
+  contentHash: string,
+  vectorLiteral: string,
+): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "PostEmbedding" ("postId", "contentHash", "embedding", "updatedAt")
+    VALUES (${postId}, ${contentHash}, ${vectorLiteral}::vector, NOW())
+    ON CONFLICT ("postId") DO UPDATE
+    SET "contentHash" = EXCLUDED."contentHash",
+        "embedding" = EXCLUDED."embedding",
+        "updatedAt" = NOW()
+  `;
+}
+
+async function getOrCreatePostEmbedding(postId: string): Promise<
+  | {
+      ok: true;
+      post: PostForEmbedding;
+      vectorLiteral: string;
+    }
+  | {
+      ok: false;
+      status: "not_found" | "disabled" | "unavailable";
+      message: string;
+    }
+> {
+  const post = await findPostForEmbedding(postId);
+
+  if (!post) {
+    return {
+      ok: false,
+      status: "not_found",
+      message: "게시글을 찾을 수 없습니다.",
+    };
+  }
+
+  const knowledgeText = buildPostKnowledgeText(post);
+  const contentHash = createContentHash(knowledgeText);
+  const storedEmbedding = await findStoredEmbedding(postId);
+
+  if (storedEmbedding?.contentHash === contentHash) {
+    return {
+      ok: true,
+      post,
+      vectorLiteral: storedEmbedding.embedding,
+    };
+  }
+
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: "disabled",
+      message: "OPENAI_API_KEY가 설정되어 있지 않아 RAG 추천을 사용할 수 없습니다.",
+    };
+  }
+
+  try {
+    const embeddings = getEmbeddingsClient(apiKey);
+    const embedding = await embeddings.embedQuery(knowledgeText);
+    const vectorLiteral = toVectorLiteral(embedding);
+
+    await upsertPostEmbedding(postId, contentHash, vectorLiteral);
+
+    return {
+      ok: true,
+      post,
+      vectorLiteral,
+    };
+  } catch (error) {
+    console.error("Failed to refresh post embedding.", error);
+
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "게시글 임베딩을 생성하지 못했습니다. pgvector 또는 OpenAI 설정을 확인해주세요.",
+    };
+  }
+}
+
+async function findSimilarPostRows(
+  sourcePostId: string,
+  vectorLiteral: string,
+  limit: number,
+): Promise<SimilarPostRow[]> {
+  return prisma.$queryRaw<SimilarPostRow[]>`
+    SELECT
+      "postId",
+      (1 - ("embedding" <=> ${vectorLiteral}::vector))::float AS "similarity"
+    FROM "PostEmbedding"
+    WHERE "postId" <> ${sourcePostId}
+    ORDER BY "embedding" <=> ${vectorLiteral}::vector
+    LIMIT ${limit}
+  `;
+}
+
+async function hydrateSimilarPosts(
+  rows: SimilarPostRow[],
+): Promise<SimilarPost[]> {
+  const postIds = rows.map((row) => row.postId);
+
+  if (postIds.length === 0) {
+    return [];
+  }
+
+  const posts = await prisma.post.findMany({
+    where: {
+      id: {
+        in: postIds,
+      },
+    },
+    select: postSelect,
+  });
+  const postsById = new Map(posts.map((post) => [post.id, post]));
+
+  return rows
+    .map((row) => {
+      const post = postsById.get(row.postId);
+
+      if (!post) {
+        return null;
+      }
+
+      return {
+        ...toPostResponse(post),
+        similarity: Number(row.similarity),
+      };
+    })
+    .filter((post): post is SimilarPost => post !== null);
+}
+
+function getMessageText(content: unknown): string {
+  if (typeof content === "string") {
+    return content.trim();
+  }
+
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  return content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+
+      if (
+        typeof part === "object" &&
+        part !== null &&
+        "text" in part &&
+        typeof part.text === "string"
+      ) {
+        return part.text;
+      }
+
+      return "";
+    })
+    .join("")
+    .trim();
+}
+
+async function summarizeSimilarPosts(
+  sourcePost: PostForEmbedding,
+  similarPosts: SimilarPost[],
+): Promise<string | null> {
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey || similarPosts.length === 0) {
+    return null;
+  }
+
+  const prompt = [
+    "너는 야구 게시판의 RAG 추천 요약 도우미다.",
+    "현재 게시글과 검색된 유사 게시글들의 공통 주제를 2~3문장으로 한국어 요약해라.",
+    "과장하지 말고, 검색된 게시글 내용에 근거해서만 말해라.",
+    "",
+    "[현재 게시글]",
+    `제목: ${sourcePost.title}`,
+    `본문: ${sourcePost.content.slice(0, 1200)}`,
+    "",
+    "[유사 게시글]",
+    ...similarPosts.map((post, index) =>
+      [
+        `${index + 1}. ${post.title}`,
+        `태그: ${post.tags.map((tag) => tag.name).join(", ") || "없음"}`,
+        `본문: ${post.content.slice(0, 700)}`,
+      ].join("\n"),
+    ),
+  ].join("\n");
+
+  try {
+    const chat = new ChatOpenAI({
+      apiKey,
+      model: getChatModel(),
+      temperature: 0.2,
+    });
+    const response = await chat.invoke(prompt);
+    const summary = getMessageText(response.content);
+
+    return summary || null;
+  } catch (error) {
+    console.error("Failed to summarize similar posts.", error);
+
+    return null;
+  }
+}
+
+export async function refreshPostEmbedding(postId: string): Promise<void> {
+  try {
+    const result = await getOrCreatePostEmbedding(postId);
+
+    if (!result.ok && result.status !== "disabled") {
+      console.error(result.message);
+    }
+  } catch (error) {
+    console.error("Post embedding refresh skipped.", error);
+  }
+}
+
+export async function findSimilarPostsForPost(
+  postId: string,
+  limit: number,
+): Promise<SimilarPostsResult> {
+  try {
+    const embedding = await getOrCreatePostEmbedding(postId);
+
+    if (!embedding.ok) {
+      return embedding;
+    }
+
+    const rows = await findSimilarPostRows(
+      postId,
+      embedding.vectorLiteral,
+      limit,
+    );
+    const similarPosts = await hydrateSimilarPosts(rows);
+    const summary = await summarizeSimilarPosts(embedding.post, similarPosts);
+
+    return {
+      ok: true,
+      sourcePostId: postId,
+      summary,
+      similarPosts,
+    };
+  } catch (error) {
+    console.error("Failed to find similar posts.", error);
+
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "RAG 검색을 실행하지 못했습니다. pgvector 설정과 임베딩 테이블을 확인해주세요.",
+    };
+  }
+}

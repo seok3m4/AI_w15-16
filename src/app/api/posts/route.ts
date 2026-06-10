@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { toPaginationResponse } from "@/lib/pagination";
 import { parsePostListQuery } from "@/lib/posts/query";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
@@ -90,6 +91,8 @@ export async function POST(request: Request) {
       select: postSelect,
     });
   });
+
+  await refreshPostEmbedding(post.id);
 
   return NextResponse.json({ post: toPostResponse(post) }, { status: 201 });
 }

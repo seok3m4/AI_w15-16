@@ -21,19 +21,31 @@ model User {
 }
 
 model Post {
-  id        String    @id @default(cuid())
+  id        String         @id @default(cuid())
   title     String
   content   String
   authorId  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   tags      PostTag[]
+  embedding PostEmbedding?
 
   @@index([authorId])
   @@index([createdAt])
   @@index([title])
+}
+
+model PostEmbedding {
+  postId      String                 @id
+  contentHash String
+  embedding   Unsupported("vector(1536)")
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  post        Post                   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
 }
 
 model Comment {
