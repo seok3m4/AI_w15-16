@@ -4,5 +4,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // apps/web에서 실행해도 루트 .env의 VITE_API_BASE_URL을 읽게 한다.
+  envDir: '../..',
   plugins: [react()],
 })

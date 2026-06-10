@@ -1,48 +1,37 @@
-// 📌 화면을 그리는 최상위 컴포넌트. 백엔드 /health API를 호출하고 결과를 표시한다.
-import { useEffect, useState } from 'react'
+// 📌 React 앱의 최상위 컴포넌트. 인증 상태에 따라 페이지 라우팅을 처리한다.
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { AuthProvider } from './AuthContext'
+import { LoginPage } from './LoginPage'
+import { MainPage } from './MainPage'
+import { SignupPage } from './SignupPage'
+import { useAuth } from './useAuth'
 
-type HealthResponse = {
-  status: string
-  service: string
-  database: string
+// 루트 경로는 로그인 상태면 메인 화면, 아니면 로그인 화면을 보여준다.
+function HomeRoute() {
+  const { token } = useAuth()
+
+  return token ? <MainPage /> : <LoginPage />
 }
 
-type FetchState =
-  | { kind: 'loading' }
-  | { kind: 'ok'; data: HealthResponse }
-  | { kind: 'error'; message: string }
+// 이미 로그인한 사용자가 회원가입 화면에 접근하면 메인 화면으로 돌려보낸다.
+function SignupRoute() {
+  const { token } = useAuth()
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
+  return token ? <Navigate to="/" replace /> : <SignupPage />
+}
 
 function App() {
-  const [state, setState] = useState<FetchState>({ kind: 'loading' })
-
-  useEffect(() => {
-    fetch(`${API_BASE}/health`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return (await res.json()) as HealthResponse
-      })
-      .then((data) => setState({ kind: 'ok', data }))
-      .catch((err: Error) => setState({ kind: 'error', message: err.message }))
-  }, [])
-
   return (
-    <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>CineReview AI</h1>
-      <h2>Backend health check</h2>
-      <p style={{ color: '#666' }}>GET {API_BASE}/health</p>
-      {state.kind === 'loading' && <p>Loading…</p>}
-      {state.kind === 'error' && (
-        <pre style={{ color: 'crimson' }}>Error: {state.message}</pre>
-      )}
-      {state.kind === 'ok' && (
-        <pre style={{ background: '#f4f4f4', padding: 12 }}>
-          {JSON.stringify(state.data, null, 2)}
-        </pre>
-      )}
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<HomeRoute />} />
+          <Route path="/signup" element={<SignupRoute />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
