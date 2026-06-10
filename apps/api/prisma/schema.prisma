@@ -1,8 +1,10 @@
 // 📌 DB 테이블 구조 정의. 여기 작성한 모델을 기반으로 실제 DB 테이블이 만들어진다.
+// Prisma Client를 생성해서 TypeScript 코드에서 DB를 타입 안전하게 사용할 수 있게 한다.
 generator client {
   provider = "prisma-client-js"
 }
 
+// 이 프로젝트의 실제 데이터베이스가 PostgreSQL임을 Prisma에 알려준다.
 datasource db {
   provider = "postgresql"
 }

@@ -2,7 +2,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
-// Exports PrismaService so feature modules can inject one shared DB client.
+// PrismaService를 export해야 AuthModule, ReviewModule 같은 다른 모듈에서도 DB를 주입받을 수 있다.
 @Module({
   providers: [PrismaService],
   exports: [PrismaService],

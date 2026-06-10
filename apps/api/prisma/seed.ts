@@ -16,6 +16,7 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
+// User, Movie, Review, Tag, ReviewTag 샘플 데이터를 순서대로 생성한다.
 async function main() {
   // 현재는 인증 학습 전이므로 실제 bcrypt 해시 대신 임시 문자열을 저장한다.
   const [minji, dohyun] = await Promise.all([
@@ -47,6 +48,7 @@ async function main() {
     }),
   ]);
 
+  // 리뷰가 연결될 영화 3편을 먼저 만든다.
   const [parasite, oldboy, burning] = await Promise.all([
     prisma.movie.upsert({
       where: { tmdbId: 496243 },
@@ -101,6 +103,7 @@ async function main() {
     }),
   ]);
 
+  // 검색과 분류에 사용할 기본 태그를 만든다.
   const tags = await Promise.all(
     ['드라마', '스릴러', '공포', '감동', '반전'].map((name) =>
       prisma.tag.upsert({
@@ -111,8 +114,10 @@ async function main() {
     ),
   );
 
+  // 태그 이름으로 id를 쉽게 찾기 위해 Map으로 바꾼다.
   const tagByName = new Map(tags.map((tag) => [tag.name, tag]));
 
+  // 각 영화마다 하나씩 리뷰를 생성하고 작성자와 영화를 연결한다.
   const [parasiteReview, oldboyReview, burningReview] = await Promise.all([
     prisma.review.upsert({
       where: { id: 'seed_review_parasite' },
@@ -182,6 +187,7 @@ async function main() {
     }),
   ]);
 
+  // ReviewTag 연결 테이블에 리뷰와 태그의 N:M 관계를 저장한다.
   const reviewTags = [
     { reviewId: parasiteReview.id, tagId: tagByName.get('드라마')!.id },
     { reviewId: parasiteReview.id, tagId: tagByName.get('스릴러')!.id },
@@ -208,9 +214,11 @@ async function main() {
 
 main()
   .catch((error) => {
+    // seed 실패 시 에러를 출력하고 실패 코드로 종료한다.
     console.error(error);
     process.exit(1);
   })
   .finally(async () => {
+    // seed 성공/실패와 관계없이 DB 연결은 항상 닫는다.
     await prisma.$disconnect();
   });

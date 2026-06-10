@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  // 서버와 DB가 정상 동작하는지 확인하는 health check API.
   @Get('health')
   getHealth() {
     return this.appService.getHealth();

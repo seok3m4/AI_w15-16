@@ -2,9 +2,10 @@
 import { config } from "dotenv";
 import { defineConfig } from "prisma/config";
 
-// Prisma CLI commands run inside apps/api, so load the root .env explicitly.
+// Prisma CLI 명령은 apps/api 기준으로 실행되므로 루트 .env 경로를 직접 지정한다.
 config({ path: "../../.env" });
 
+// schema 위치, migration 위치, DB 연결 문자열을 Prisma CLI에 알려준다.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {

@@ -8,6 +8,7 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
+  // DATABASE_URL을 읽어서 PostgreSQL용 Prisma Client를 초기화한다.
   constructor() {
     const connectionString = process.env.DATABASE_URL;
 
@@ -15,16 +16,18 @@ export class PrismaService
       throw new Error('DATABASE_URL is required to initialize Prisma');
     }
 
-    // Prisma 7 uses a database driver adapter for PostgreSQL connections.
+    // Prisma 7에서는 PostgreSQL 연결에 driver adapter를 넘겨야 한다.
     super({
       adapter: new PrismaPg({ connectionString }),
     });
   }
 
+  // NestJS 앱이 시작될 때 DB 연결을 미리 열어둔다.
   async onModuleInit() {
     await this.$connect();
   }
 
+  // NestJS 앱이 종료될 때 DB 연결을 정리한다.
   async onModuleDestroy() {
     await this.$disconnect();
   }
