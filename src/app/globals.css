@@ -1,13 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f9fb;
-  --foreground: #172033;
+  --background: #eef2f7;
+  --foreground: #101827;
   --surface: #ffffff;
-  --muted: #5e6a7d;
-  --line: #d9e2ec;
-  --accent: #0f766e;
-  --accent-strong: #115e59;
+  --surface-strong: #f8fafc;
+  --muted: #64748b;
+  --line: #d7dde8;
+  --navy: #071a3d;
+  --navy-soft: #102a56;
+  --red: #d71920;
+  --red-dark: #a91118;
+  --accent: #d71920;
+  --accent-strong: #a91118;
 }
 
 * {
@@ -16,9 +21,14 @@
 
 body {
   margin: 0;
-  background: var(--background);
+  background:
+    linear-gradient(180deg, #e7edf6 0, #f6f8fb 360px),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
 }
 
 a {
@@ -30,4 +40,21 @@ button,
 input,
 textarea {
   font: inherit;
+}
+
+::selection {
+  background: rgba(215, 25, 32, 0.18);
+}
+
+.kbo-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.kbo-panel-title {
+  border-bottom: 3px solid var(--red);
+  color: var(--navy);
+  font-weight: 800;
 }

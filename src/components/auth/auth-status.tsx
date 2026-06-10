@@ -64,20 +64,20 @@ export function AuthStatus() {
   }
 
   if (isLoading) {
-    return <span className="text-sm text-[#5e6a7d]">확인 중</span>;
+    return <span className="px-3 py-2 text-sm text-white/70">확인 중</span>;
   }
 
   if (!user) {
     return (
       <div className="flex items-center gap-2">
         <Link
-          className="rounded-md px-3 py-2 text-sm font-medium text-[#5e6a7d] hover:bg-[#eef4f7]"
+          className="rounded-md px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-white"
           href="/login"
         >
           로그인
         </Link>
         <Link
-          className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59]"
+          className="rounded-md bg-[#d71920] px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#a91118]"
           href="/signup"
         >
           회원가입
@@ -88,11 +88,11 @@ export function AuthStatus() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="max-w-36 truncate text-sm font-semibold text-[#172033]">
+      <span className="max-w-36 truncate text-sm font-bold text-white">
         {user.nickname}
       </span>
       <button
-        className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-medium text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
+        className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/20 hover:text-white"
         onClick={handleLogout}
         type="button"
       >

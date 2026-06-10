@@ -11,7 +11,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const { postId } = await params;
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb] text-[#172033]">
+    <main className="min-h-screen text-[#101827]">
       <SiteHeader />
       <PostDetail postId={postId} />
     </main>

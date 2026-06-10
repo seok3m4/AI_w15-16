@@ -16,7 +16,7 @@ type ValidationResult<T> =
 type PostListQuery = {
   pagination: Pagination;
   searchQuery: string;
-  tagName: string;
+  tagNames: string[];
   where: Prisma.PostWhereInput;
 };
 
@@ -26,13 +26,22 @@ function normalizeSearchQuery(value: string | null): string {
   return value?.trim().replace(/\s+/g, " ") ?? "";
 }
 
+function normalizeTagNames(searchParams: URLSearchParams): string[] {
+  const tagNames = searchParams
+    .getAll("tag")
+    .flatMap((value) => value.split(","))
+    .map(normalizeTagName)
+    .filter(Boolean);
+
+  return [...new Set(tagNames)];
+}
+
 export function parsePostListQuery(
   searchParams: URLSearchParams,
 ): ValidationResult<PostListQuery> {
   const pagination = parsePagination(searchParams);
   const searchQuery = normalizeSearchQuery(searchParams.get("q"));
-  const rawTagName = searchParams.get("tag");
-  const tagName = rawTagName ? normalizeTagName(rawTagName) : "";
+  const tagNames = normalizeTagNames(searchParams);
 
   if (searchQuery.length > SEARCH_QUERY_MAX_LENGTH) {
     return {
@@ -62,15 +71,20 @@ export function parsePostListQuery(
     });
   }
 
-  if (tagName) {
+  if (tagNames.length > 0) {
     conditions.push({
-      tags: {
-        some: {
-          tag: {
-            name: tagName,
+      OR: tagNames.map((tagName) => ({
+        tags: {
+          some: {
+            tag: {
+              name: {
+                equals: tagName,
+                mode: "insensitive",
+              },
+            },
           },
         },
-      },
+      })),
     });
   }
 
@@ -79,7 +93,7 @@ export function parsePostListQuery(
     data: {
       pagination,
       searchQuery,
-      tagName,
+      tagNames,
       where: conditions.length > 0 ? { AND: conditions } : {},
     },
   };

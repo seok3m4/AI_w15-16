@@ -11,7 +11,7 @@ export default async function PostEditPage({ params }: PostEditPageProps) {
   const { postId } = await params;
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb] text-[#172033]">
+    <main className="min-h-screen text-[#101827]">
       <SiteHeader />
       <PostEditForm postId={postId} />
     </main>

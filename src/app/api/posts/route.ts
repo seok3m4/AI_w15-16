@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const { pagination, searchQuery, tagName, where } = parsedQuery.data;
+  const { pagination, searchQuery, tagNames, where } = parsedQuery.data;
   const [posts, total] = await prisma.$transaction([
     prisma.post.findMany({
       where,
@@ -39,7 +39,8 @@ export async function GET(request: Request) {
     pagination: toPaginationResponse(pagination, total),
     filters: {
       q: searchQuery,
-      tag: tagName,
+      tag: tagNames[0] ?? "",
+      tags: tagNames,
     },
   });
 }
