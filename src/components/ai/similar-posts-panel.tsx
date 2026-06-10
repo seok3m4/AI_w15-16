@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Tag = {
   id: string;
@@ -39,63 +39,69 @@ function getPreview(content: string): string {
 
 export function SimilarPostsPanel({ postId }: SimilarPostsPanelProps) {
   const [data, setData] = useState<SimilarPostsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasRequested, setHasRequested] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  async function handleLoadSimilarPosts() {
+    setIsLoading(true);
+    setHasRequested(true);
+    setData(null);
 
-    async function loadSimilarPosts() {
-      setIsLoading(true);
+    try {
+      const response = await fetch(
+        `/api/ai/rag/similar-posts?postId=${encodeURIComponent(postId)}`,
+        {
+          credentials: "include",
+        },
+      );
+      const responseData = (await response.json()) as SimilarPostsResponse;
 
-      try {
-        const response = await fetch(
-          `/api/ai/rag/similar-posts?postId=${encodeURIComponent(postId)}`,
-          {
-            credentials: "include",
-          },
-        );
-        const responseData = (await response.json()) as SimilarPostsResponse;
-
-        if (!isMounted) {
-          return;
-        }
-
-        setData(responseData);
-      } catch {
-        if (isMounted) {
-          setData({
-            status: "unavailable",
-            message: "유사 게시글 추천을 불러오지 못했습니다.",
-            summary: null,
-            similarPosts: [],
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
+      setData(responseData);
+    } catch {
+      setData({
+        status: "unavailable",
+        message: "유사 게시글 추천을 불러오지 못했습니다.",
+        summary: null,
+        similarPosts: [],
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    void loadSimilarPosts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [postId]);
+  }
 
   return (
     <section className="mt-5 rounded-md border border-[#d9e2ec] bg-white p-5">
-      <div className="flex flex-col gap-1 border-b border-[#d9e2ec] pb-3">
-        <h3 className="text-lg font-semibold">AI 유사 게시글 추천</h3>
-        <p className="text-sm text-[#5e6a7d]">
-          현재 글과 의미가 가까운 야구 게시글을 RAG로 찾아 보여줍니다.
-        </p>
+      <div className="flex flex-col gap-3 border-b border-[#d9e2ec] pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">AI 유사 게시글 추천</h3>
+          <p className="mt-1 text-sm text-[#5e6a7d]">
+            궁금할 때만 현재 글과 의미가 가까운 야구 게시글을 RAG로 찾아봅니다.
+          </p>
+        </div>
+        <button
+          className="h-10 rounded-md bg-[#172033] px-4 text-sm font-semibold text-white hover:bg-[#2b3548] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+          disabled={isLoading}
+          onClick={handleLoadSimilarPosts}
+          type="button"
+        >
+          {isLoading
+            ? "찾는 중"
+            : hasRequested
+              ? "다시 찾기"
+              : "유사 게시글 찾기"}
+        </button>
       </div>
 
       {isLoading ? (
         <p className="mt-4 text-sm text-[#5e6a7d]">
           유사 게시글을 찾는 중입니다.
+        </p>
+      ) : null}
+
+      {!hasRequested ? (
+        <p className="mt-4 text-sm leading-6 text-[#5e6a7d]">
+          버튼을 누르면 OpenAI 임베딩과 pgvector 검색을 사용해 관련 글을
+          찾습니다.
         </p>
       ) : null}
 

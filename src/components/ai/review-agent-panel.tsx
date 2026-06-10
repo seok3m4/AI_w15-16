@@ -28,14 +28,35 @@ type ReviewAgentResponse = {
   };
 };
 
-export function ReviewAgentPanel() {
+export type ReviewAgentDraft = {
+  title: string;
+  draft: string;
+  tags: string[];
+};
+
+type ReviewAgentPanelProps = {
+  onApplyDraft?: (draft: ReviewAgentDraft) => void;
+};
+
+export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
   const [favoriteTeam, setFavoriteTeam] = useState("");
   const [memo, setMemo] = useState("");
   const [data, setData] = useState<ReviewAgentResponse | null>(null);
+  const [applyMessage, setApplyMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setApplyMessage("");
+
+    if (memo.trim().length < 10) {
+      setData({
+        status: "unavailable",
+        message: "경기 메모를 10자 이상 입력해주세요.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setData(null);
 
@@ -73,6 +94,19 @@ export function ReviewAgentPanel() {
     }
   }
 
+  function handleApplyDraft() {
+    if (!data?.result || !onApplyDraft) {
+      return;
+    }
+
+    onApplyDraft({
+      title: data.result.title,
+      draft: data.result.draft,
+      tags: data.result.tags,
+    });
+    setApplyMessage("AI 초안을 작성 폼에 적용했습니다.");
+  }
+
   return (
     <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
       <div className="border-b border-[#d9e2ec] pb-3">
@@ -100,7 +134,7 @@ export function ReviewAgentPanel() {
         />
         <button
           className="h-10 rounded-md bg-[#0f766e] px-4 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-          disabled={isLoading || memo.trim().length < 10}
+          disabled={isLoading || memo.trim().length === 0}
           type="submit"
         >
           {isLoading ? "Agent 실행 중" : "리뷰 초안 생성"}
@@ -143,6 +177,23 @@ export function ReviewAgentPanel() {
               {data.result.draft}
             </p>
           </div>
+
+          {onApplyDraft ? (
+            <div>
+              <button
+                className="h-10 w-full rounded-md bg-[#172033] px-4 text-sm font-semibold text-white hover:bg-[#2b3548]"
+                onClick={handleApplyDraft}
+                type="button"
+              >
+                작성 폼에 초안 적용
+              </button>
+              {applyMessage ? (
+                <p className="mt-2 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-sm text-[#166534]">
+                  {applyMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {data.result.checklist.length > 0 ? (
             <div>

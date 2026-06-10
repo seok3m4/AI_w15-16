@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import {
+  ReviewAgentPanel,
+  type ReviewAgentDraft,
+} from "@/components/ai/review-agent-panel";
+
 type CurrentUser = {
   id: string;
   email: string;
@@ -36,6 +41,7 @@ export function PostCreateForm() {
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -75,6 +81,7 @@ export function PostCreateForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+    setMessageType("error");
     setIsSubmitting(true);
 
     try {
@@ -104,6 +111,14 @@ export function PostCreateForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleApplyAgentDraft(draft: ReviewAgentDraft) {
+    setTitle(draft.title);
+    setContent(draft.draft);
+    setTags(draft.tags.join(", "));
+    setMessage("AI 초안을 작성 폼에 적용했습니다. 내용을 확인한 뒤 등록해주세요.");
+    setMessageType("success");
   }
 
   if (isAuthLoading) {
@@ -136,72 +151,84 @@ export function PostCreateForm() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-6 py-8">
-      <div className="border-b border-[#d9e2ec] pb-4">
-        <h2 className="text-xl font-semibold">새 게시글 작성</h2>
-        <p className="mt-2 text-sm text-[#5e6a7d]">
-          {currentUser.nickname} 님의 야구 이야기로 게시판을 채워주세요.
-        </p>
+    <section className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div>
+        <div className="border-b border-[#d9e2ec] pb-4">
+          <h2 className="text-xl font-semibold">새 게시글 작성</h2>
+          <p className="mt-2 text-sm text-[#5e6a7d]">
+            {currentUser.nickname} 님의 야구 이야기로 게시판을 채워주세요.
+          </p>
+        </div>
+
+        <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
+          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+            제목
+            <input
+              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+              maxLength={120}
+              minLength={2}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+              type="text"
+              value={title}
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+            본문
+            <textarea
+              className="min-h-60 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm font-normal leading-6 outline-none focus:border-[#0f766e]"
+              maxLength={20000}
+              onChange={(event) => setContent(event.target.value)}
+              required
+              value={content}
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+            태그
+            <input
+              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+              onChange={(event) => setTags(event.target.value)}
+              placeholder="kbo, 불펜, 경기리뷰"
+              type="text"
+              value={tags}
+            />
+          </label>
+
+          {message ? (
+            <p
+              className={`rounded-md border px-3 py-2 text-sm ${
+                messageType === "success"
+                  ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]"
+                  : "border-[#fecaca] bg-[#fff1f2] text-[#b91c1c]"
+              }`}
+            >
+              {message}
+            </p>
+          ) : null}
+
+          <div className="flex items-center justify-end gap-2">
+            <Link
+              className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
+              href="/"
+            >
+              취소
+            </Link>
+            <button
+              className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+              disabled={isSubmitting}
+              type="submit"
+            >
+              {isSubmitting ? "작성 중" : "게시글 등록"}
+            </button>
+          </div>
+        </form>
       </div>
 
-      <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          제목
-          <input
-            className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-            maxLength={120}
-            minLength={2}
-            onChange={(event) => setTitle(event.target.value)}
-            required
-            type="text"
-            value={title}
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          본문
-          <textarea
-            className="min-h-60 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm font-normal leading-6 outline-none focus:border-[#0f766e]"
-            maxLength={20000}
-            onChange={(event) => setContent(event.target.value)}
-            required
-            value={content}
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          태그
-          <input
-            className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-            onChange={(event) => setTags(event.target.value)}
-            placeholder="kbo, 불펜, 경기리뷰"
-            type="text"
-            value={tags}
-          />
-        </label>
-
-        {message ? (
-          <p className="rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
-            {message}
-          </p>
-        ) : null}
-
-        <div className="flex items-center justify-end gap-2">
-          <Link
-            className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
-            href="/"
-          >
-            취소
-          </Link>
-          <button
-            className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-            disabled={isSubmitting}
-            type="submit"
-          >
-            {isSubmitting ? "작성 중" : "게시글 등록"}
-          </button>
-        </div>
-      </form>
+      <aside className="lg:sticky lg:top-6 lg:self-start">
+        <ReviewAgentPanel onApplyDraft={handleApplyAgentDraft} />
+      </aside>
     </section>
   );
 }

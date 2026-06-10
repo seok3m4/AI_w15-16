@@ -4,11 +4,8 @@ import { useState } from "react";
 
 import { KboGamesPanel } from "@/components/ai/kbo-games-panel";
 import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
-import { ReviewAgentPanel } from "@/components/ai/review-agent-panel";
 import { PostList } from "@/components/posts/post-list";
 import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
-
-const aiActions = ["유사 글 추천", "KBO 경기 조회", "뉴스 브리핑", "리뷰 초안 작성"];
 
 export function BoardHome() {
   const [selectedTag, setSelectedTag] = useState("");
@@ -20,52 +17,30 @@ export function BoardHome() {
   }
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[1fr_320px]">
-      <PostList
-        onPageChange={setPage}
-        onSelectTag={handleSelectTag}
-        page={page}
-        selectedTag={selectedTag}
-      />
-
-      <aside className="space-y-4">
-        <TagFilterPanel
+    <section className="mx-auto max-w-6xl px-6 py-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <PostList
+          onPageChange={setPage}
           onSelectTag={handleSelectTag}
+          page={page}
           selectedTag={selectedTag}
         />
 
-        <McpBriefingPanel />
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <TagFilterPanel
+            onSelectTag={handleSelectTag}
+            selectedTag={selectedTag}
+          />
+        </aside>
+      </div>
 
-        <KboGamesPanel />
-
-        <ReviewAgentPanel />
-
-        <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
-          <h2 className="text-base font-semibold">AI 글쓰기 도구</h2>
-          <div className="mt-4 grid gap-2">
-            {aiActions.map((action) => (
-              <button
-                className="rounded-md border border-[#c8d3df] px-3 py-2 text-left text-sm font-medium hover:border-[#0f766e] hover:bg-[#f0fdfa]"
-                key={action}
-                type="button"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
-          <h2 className="text-base font-semibold">현재 구현 범위</h2>
-          <ul className="mt-3 space-y-2 text-sm leading-6 text-[#5e6a7d]">
-            <li>회원가입, 로그인, 게시글 CRUD</li>
-            <li>댓글, 태그, 검색, 페이지네이션 UI</li>
-            <li>RAG 기반 유사 야구 게시글 추천</li>
-            <li>MCP 기반 뉴스, URL, KBO 경기 데이터 연동</li>
-            <li>Agent 기반 경기 리뷰 작성 도우미</li>
-          </ul>
-        </section>
-      </aside>
+      <section className="mt-6">
+        <h2 className="text-lg font-semibold text-[#172033]">AI 경기 정보 도구</h2>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <KboGamesPanel />
+          <McpBriefingPanel />
+        </div>
+      </section>
     </section>
   );
 }
