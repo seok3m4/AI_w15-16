@@ -39,6 +39,24 @@ type CreatePostResponse = {
   };
 };
 
+type SimilarPost = {
+  id: string;
+  title: string;
+  content: string;
+  tags: {
+    id: string;
+    name: string;
+  }[];
+  similarity: number;
+};
+
+type DraftSimilarPostsResponse = {
+  status: "ready" | "disabled" | "unavailable" | "not_found";
+  message?: string;
+  summary: string | null;
+  similarPosts: SimilarPost[];
+};
+
 function parseTags(value: string): string[] {
   return value
     .split(",")
@@ -48,6 +66,16 @@ function parseTags(value: string): string[] {
 
 function formatTags(tagNames: string[]): string {
   return tagNames.join(", ");
+}
+
+function formatSimilarity(value: number): string {
+  const percent = Math.round(Math.max(0, Math.min(value, 1)) * 100);
+
+  return `${percent}%`;
+}
+
+function getPreview(content: string): string {
+  return content.length > 96 ? `${content.slice(0, 96)}...` : content;
 }
 
 export function PostCreateForm() {
@@ -60,6 +88,10 @@ export function PostCreateForm() {
   const [existingTags, setExistingTags] = useState<ExistingTag[]>([]);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
   const [tagMessage, setTagMessage] = useState("");
+  const [draftSimilarPosts, setDraftSimilarPosts] =
+    useState<DraftSimilarPostsResponse | null>(null);
+  const [isRagLoading, setIsRagLoading] = useState(false);
+  const [hasRequestedRag, setHasRequestedRag] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -211,6 +243,39 @@ export function PostCreateForm() {
     );
   }
 
+  async function handleFindSimilarDraftPosts() {
+    setIsRagLoading(true);
+    setHasRequestedRag(true);
+    setDraftSimilarPosts(null);
+
+    try {
+      const response = await fetch("/api/ai/rag/draft-similar-posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          title,
+          content,
+          tags: selectedTagNames,
+        }),
+      });
+      const data = (await response.json()) as DraftSimilarPostsResponse;
+
+      setDraftSimilarPosts(data);
+    } catch {
+      setDraftSimilarPosts({
+        status: "unavailable",
+        message: "초안과 유사한 게시글을 찾지 못했습니다.",
+        summary: null,
+        similarPosts: [],
+      });
+    } finally {
+      setIsRagLoading(false);
+    }
+  }
+
   if (isAuthLoading) {
     return (
       <section className="mx-auto max-w-3xl px-6 py-8">
@@ -354,6 +419,117 @@ export function PostCreateForm() {
                     </button>
                   );
                 })}
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-md border border-[#d7dde8] bg-white p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-[#071a3d]">
+                  RAG 유사 게시글 확인
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[#64748b]">
+                  작성 중인 제목, 본문, 태그를 기준으로 기존 게시글과 의미가
+                  가까운 글을 찾습니다.
+                </p>
+              </div>
+              <button
+                className="h-10 rounded-md bg-[#071a3d] px-4 text-sm font-bold text-white hover:bg-[#102a56] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                disabled={
+                  isRagLoading ||
+                  title.trim().length < 2 ||
+                  content.trim().length < 10
+                }
+                onClick={handleFindSimilarDraftPosts}
+                type="button"
+              >
+                {isRagLoading
+                  ? "찾는 중"
+                  : hasRequestedRag
+                    ? "다시 찾기"
+                    : "유사 게시글 확인"}
+              </button>
+            </div>
+
+            {!hasRequestedRag ? (
+              <p className="mt-3 text-sm text-[#64748b]">
+                게시글을 등록하기 전에 비슷한 주제가 이미 논의됐는지 확인할 수
+                있습니다.
+              </p>
+            ) : null}
+
+            {isRagLoading ? (
+              <p className="mt-3 text-sm text-[#64748b]">
+                OpenAI 임베딩과 pgvector 검색으로 유사 게시글을 찾는
+                중입니다.
+              </p>
+            ) : null}
+
+            {!isRagLoading && draftSimilarPosts?.message ? (
+              <p className="mt-3 rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+                {draftSimilarPosts.message}
+              </p>
+            ) : null}
+
+            {!isRagLoading && draftSimilarPosts?.summary ? (
+              <div className="mt-3 rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3">
+                <p className="text-xs font-black uppercase text-[#64748b]">
+                  RAG 요약
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[#071a3d]">
+                  {draftSimilarPosts.summary}
+                </p>
+              </div>
+            ) : null}
+
+            {!isRagLoading &&
+            draftSimilarPosts?.status === "ready" &&
+            draftSimilarPosts.similarPosts.length === 0 ? (
+              <p className="mt-3 text-sm text-[#64748b]">
+                아직 유사한 기존 게시글이 없습니다.
+              </p>
+            ) : null}
+
+            {!isRagLoading && draftSimilarPosts?.similarPosts.length ? (
+              <div className="mt-3 grid gap-3">
+                {draftSimilarPosts.similarPosts.map((post) => (
+                  <article
+                    className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3"
+                    key={post.id}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Link
+                        className="text-sm font-black text-[#071a3d] hover:text-[#d71920]"
+                        href={`/posts/${post.id}`}
+                      >
+                        {post.title}
+                      </Link>
+                      <span className="rounded-md bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
+                        유사도 {formatSimilarity(post.similarity)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-[#64748b]">
+                      {getPreview(post.content)}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {post.tags.length > 0 ? (
+                        post.tags.map((tag) => (
+                          <span
+                            className="rounded-md bg-white px-2 py-1 text-xs font-bold text-[#64748b]"
+                            key={tag.id}
+                          >
+                            #{tag.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="rounded-md bg-white px-2 py-1 text-xs font-bold text-[#64748b]">
+                          태그 없음
+                        </span>
+                      )}
+                    </div>
+                  </article>
+                ))}
               </div>
             ) : null}
           </section>

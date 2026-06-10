@@ -22,6 +22,12 @@ type PostForEmbedding = {
   }[];
 };
 
+type DraftForEmbedding = {
+  title: string;
+  content: string;
+  tags: string[];
+};
+
 type SimilarPostRow = {
   postId: string;
   similarity: number;
@@ -39,7 +45,7 @@ export type SimilarPost = ReturnType<typeof toPostResponse> & {
 export type SimilarPostsResult =
   | {
       ok: true;
-      sourcePostId: string;
+      sourcePostId: string | null;
       summary: string | null;
       similarPosts: SimilarPost[];
     }
@@ -76,6 +82,30 @@ function buildPostKnowledgeText(post: PostForEmbedding): string {
     "본문:",
     post.content,
   ].join("\n");
+}
+
+function buildDraftKnowledgeText(draft: DraftForEmbedding): string {
+  const tags = draft.tags.join(", ") || "태그 없음";
+
+  return [
+    `제목: ${draft.title}`,
+    `태그: ${tags}`,
+    "본문:",
+    draft.content,
+  ].join("\n");
+}
+
+function toPostLikeSource(draft: DraftForEmbedding): PostForEmbedding {
+  return {
+    id: "draft",
+    title: draft.title,
+    content: draft.content,
+    tags: draft.tags.map((tag) => ({
+      tag: {
+        name: tag,
+      },
+    })),
+  };
 }
 
 function createContentHash(text: string): string {
@@ -373,6 +403,67 @@ export async function findSimilarPostsForPost(
       ok: false,
       status: "unavailable",
       message: "RAG 검색을 실행하지 못했습니다. pgvector 설정과 임베딩 테이블을 확인해주세요.",
+    };
+  }
+}
+
+export async function findSimilarPostsForDraft(input: {
+  title: string;
+  content: string;
+  tags: string[];
+  limit: number;
+}): Promise<SimilarPostsResult> {
+  const title = input.title.trim();
+  const content = input.content.trim();
+  const tags = input.tags.map((tag) => tag.trim()).filter(Boolean);
+
+  if (title.length < 2 || content.length < 10) {
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "제목은 2자 이상, 본문은 10자 이상 입력해야 유사 게시글을 찾을 수 있습니다.",
+    };
+  }
+
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: "disabled",
+      message: "OPENAI_API_KEY가 설정되어 있지 않아 RAG 추천을 사용할 수 없습니다.",
+    };
+  }
+
+  try {
+    const draft = {
+      title,
+      content,
+      tags,
+    };
+    const embeddings = getEmbeddingsClient(apiKey);
+    const embedding = await embeddings.embedQuery(buildDraftKnowledgeText(draft));
+    const vectorLiteral = toVectorLiteral(embedding);
+    const rows = await findSimilarPostRows("draft", vectorLiteral, input.limit);
+    const similarPosts = await hydrateSimilarPosts(rows);
+    const summary = await summarizeSimilarPosts(
+      toPostLikeSource(draft),
+      similarPosts,
+    );
+
+    return {
+      ok: true,
+      sourcePostId: null,
+      summary,
+      similarPosts,
+    };
+  } catch (error) {
+    console.error("Failed to find similar posts for draft.", error);
+
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "초안 기반 RAG 검색을 실행하지 못했습니다. pgvector 또는 OpenAI 설정을 확인해주세요.",
     };
   }
 }
