@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
+import { ReviewAgentPanel } from "@/components/ai/review-agent-panel";
 import { PostList } from "@/components/posts/post-list";
 import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
 
@@ -33,6 +34,8 @@ export function BoardHome() {
         />
 
         <McpBriefingPanel />
+
+        <ReviewAgentPanel />
 
         <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
           <h2 className="text-base font-semibold">AI 글쓰기 도구</h2>
