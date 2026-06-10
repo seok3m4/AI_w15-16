@@ -1,165 +1,289 @@
 # Baseball AI Board
 
-RAG, MCP, AI Agent를 활용해 경기 리뷰와 야구 이슈 브리핑을 돕는 AI 야구 커뮤니티입니다.
+RAG, MCP, AI Agent를 활용해 야구 경기 리뷰와 이슈 브리핑을 돕는 AI 게시판입니다.
 
-기본 게시판 기능 위에 상용 LLM을 활용한 RAG, MCP, Agent 기능을 결합해 사용자가 더 쉽게 야구 이슈를 정리하고, 관련 게시글과 외부 자료를 찾고, 경기 리뷰 초안을 발전시킬 수 있는 서비스를 목표로 합니다.
+사용자는 야구 경기 리뷰, 선수 분석, 팀 이슈, 뉴스 브리핑 게시글을 작성하고 댓글, 태그, 검색, 페이지네이션으로 게시판을 사용할 수 있습니다. AI 기능은 기존 게시글 기반 유사 글 추천, 외부 뉴스/URL 브리핑, 경기 리뷰 작성 보조를 제공합니다.
 
 ## 1. 프로젝트 개요
 
-Baseball AI Board는 야구 팬들이 경기 리뷰, 선수 분석, 팀 전력 평가, 이적/부상 소식, 응원 글을 공유하는 게시판입니다.
+Baseball AI Board는 야구 팬들이 경기 리뷰와 야구 이슈를 기록하고 공유하는 커뮤니티형 게시판입니다.
 
-사용자가 글을 작성할 때 AI가 기존 야구 게시글을 검색해 유사한 토론을 추천하고, 외부 뉴스나 참고 URL을 브리핑하며, 짧은 아이디어를 경기 리뷰나 분석 글 초안으로 확장할 수 있도록 돕습니다.
+단순 CRUD 게시판에 그치지 않고, 사용자가 글을 읽거나 작성하는 과정에서 AI가 다음 작업을 도와줍니다.
+
+- 기존 게시글 중 의미적으로 비슷한 야구 글 추천
+- 야구 뉴스 키워드 또는 외부 URL 기반 브리핑 생성
+- 짧은 경기 메모를 게시글 초안으로 확장
 
 ## 2. 기술 스택
 
 | 영역 | 선택 기술 | 사용 이유 |
 | --- | --- | --- |
-| Frontend | React + Next.js | 게시글 목록, 작성, 상세, 검색, AI 브리핑 패널 같은 화면을 React 컴포넌트로 구성하고, 라우팅과 서버 연동을 같은 프레임워크 안에서 처리하기 위해 사용합니다. |
-| Backend | Next.js API Routes / Server Actions | 프론트엔드와 가까운 위치에서 게시판 API, 인증 처리, 야구 브리핑과 AI 기능 호출을 구현해 전체 구조를 단순하게 유지하기 위해 사용합니다. |
-| Language | TypeScript | 사용자, 게시글, 댓글, 태그, AI 응답처럼 구조가 있는 데이터를 타입으로 관리해 프론트엔드와 백엔드 사이의 실수를 줄이기 위해 사용합니다. |
-| Database | PostgreSQL | 사용자, 게시글, 댓글, 팀/선수/주제 태그처럼 관계가 있는 데이터를 안정적으로 저장하고, pgvector 확장까지 함께 사용할 수 있어 선택했습니다. |
-| ORM | Prisma | 데이터 모델과 관계를 코드로 명확히 정의하고, 마이그레이션과 쿼리 작성을 일관되게 관리하기 위해 사용합니다. |
-| Vector DB | PostgreSQL + pgvector | 별도 벡터 DB를 추가하지 않고 야구 게시글 데이터와 임베딩 벡터를 같은 DB에서 관리해 RAG 인프라를 단순화하기 위해 사용합니다. |
-| LLM | OpenAI API | 텍스트 생성, 요약, 임베딩, Function Calling을 하나의 API 생태계에서 사용할 수 있어 RAG와 Agent 기능을 연결하기 쉽습니다. |
-| RAG Framework | LangChain.js | 야구 게시글 데이터를 검색 가능한 지식 소스로 연결하고, 임베딩, 검색, 프롬프트 구성, LLM 응답 생성을 하나의 RAG 파이프라인으로 구성하기 위해 사용합니다. |
-| MCP | Node.js 기반 JSON-RPC 서버 직접 구현 | LLM이 야구 뉴스 검색이나 외부 URL 분석 같은 외부 도구를 호출할 수 있도록 요청/응답 규격을 분리하고, 도구 서버의 역할을 명확히 보여주기 위해 사용합니다. |
-| Agent | Function Calling 기반 직접 구현 | LLM이 상황에 따라 유사 게시글 검색, 야구 뉴스 브리핑, 태그 추천, 경기 리뷰 초안 확장 같은 도구를 선택하고 실행하는 추론 루프를 만들기 위해 사용합니다. |
-| Auth | JWT + HttpOnly Cookie | 로그인 상태를 서버에서 안전하게 검증하고, 브라우저 환경에서 토큰 노출 위험을 줄이기 위해 사용합니다. |
-| Styling | Tailwind CSS | 별도 UI 프레임워크에 크게 의존하지 않고, 빠르게 일관된 레이아웃과 컴포넌트 스타일을 구성하기 위해 사용합니다. |
+| Frontend | React + Next.js | React 컴포넌트로 게시판 화면과 AI 패널을 구성하고, 라우팅과 API를 같은 프로젝트에서 관리하기 위해 사용했습니다. |
+| Backend | Next.js API Routes | 인증, 게시글, 댓글, 태그, AI API를 REST 흐름으로 구현해 프론트엔드와 백엔드를 단순하게 연결했습니다. |
+| Language | TypeScript | 사용자, 게시글, 댓글, 태그, AI 응답 데이터를 타입으로 관리해 구현 실수를 줄였습니다. |
+| Database | PostgreSQL | 관계형 게시판 데이터를 안정적으로 저장하고, RAG용 pgvector 확장을 함께 사용할 수 있어 선택했습니다. |
+| ORM | Prisma | 데이터 모델, 관계, 마이그레이션을 코드 중심으로 관리하기 위해 사용했습니다. |
+| Vector DB | PostgreSQL + pgvector | 별도 벡터 DB 없이 게시글 데이터와 임베딩 벡터를 같은 DB에서 관리했습니다. |
+| RAG Framework | LangChain.js | OpenAI Embedding/Chat 모델과 RAG 흐름을 TypeScript 환경에서 연결하기 위해 사용했습니다. |
+| LLM / Embedding | OpenAI API | 임베딩 생성, 요약, Function Calling을 하나의 API로 연결했습니다. |
+| MCP | Node.js 기반 JSON-RPC 서버 | 외부 뉴스 검색과 URL 분석 도구를 JSON-RPC 규격으로 분리해 MCP 구조를 구현했습니다. |
+| Agent | OpenAI Function Calling 기반 직접 구현 | 도구 선택, 실행 결과 반영, 상태 관리를 포함한 작은 추론 루프를 직접 구현했습니다. |
+| Auth | JWT + HttpOnly Cookie | 로그인 토큰을 브라우저 JavaScript에서 직접 접근하지 못하게 해 인증 흐름을 구성했습니다. |
+| Styling | Tailwind CSS | 별도 UI 프레임워크 없이 빠르게 일관된 화면 스타일을 구성했습니다. |
 
 ## 3. 주요 구현 기능
 
-### 기본 게시판 기능
+### 기본 게시판
 
 - 회원가입
 - 로그인 / 로그아웃
-- 게시글 CRUD
-- 댓글 작성 / 삭제
-- 태그 등록 / 조회
+- 게시글 작성 / 조회 / 수정 / 삭제
+- 댓글 작성 / 수정 / 삭제
+- 태그 등록 / 조회 / 필터
 - 게시글 검색
-- 게시글 페이징
+- 게시글 / 댓글 페이지네이션
 
-### AI 활용 기능
+### AI 기능
 
 - RAG 기반 유사 야구 게시글 추천 및 요약
-- MCP 기반 야구 뉴스/외부 URL 브리핑
+- MCP 기반 야구 뉴스 키워드 검색 / 외부 URL 브리핑
 - AI Agent 기반 경기 리뷰 작성 도우미
 
-## 4. 전체 아키텍처 구조
+## 4. 실행 방법
+
+### 환경 요구사항
+
+- Node.js
+- PostgreSQL
+- PostgreSQL pgvector 확장
+- OpenAI API Key
+
+### 환경 변수
+
+`.env.example`을 참고해 프로젝트 루트에 `.env` 파일을 생성합니다.
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/baseball_ai_board?schema=public"
+AUTH_SECRET="replace-with-at-least-32-characters"
+OPENAI_API_KEY="replace-with-openai-api-key"
+OPENAI_EMBEDDING_MODEL="text-embedding-3-small"
+OPENAI_EMBEDDING_DIMENSIONS="1536"
+OPENAI_CHAT_MODEL="gpt-4o-mini"
+MCP_SHARED_SECRET="replace-with-optional-mcp-secret"
+```
+
+`MCP_SHARED_SECRET`은 선택값입니다. 설정하면 MCP JSON-RPC 엔드포인트 호출 시 `x-mcp-secret` 헤더로 같은 값을 전달해야 합니다.
+
+### 로컬 실행
+
+PowerShell에서는 `npm` 대신 `npm.cmd`를 사용합니다.
+
+```bash
+npm.cmd install
+npm.cmd run db:migrate
+npm.cmd run dev
+```
+
+개발 서버:
+
+```text
+http://localhost:3000
+```
+
+### 검증 명령
+
+```bash
+npm.cmd run lint
+npm.cmd run build
+npx.cmd prisma migrate status
+```
+
+## 5. 전체 아키텍처 구조
 
 ```mermaid
 flowchart LR
     User["사용자"] --> Web["Next.js / React UI"]
-    Web --> API["Next.js Backend API"]
+    Web --> API["Next.js API Routes"]
+    API --> Auth["JWT + HttpOnly Cookie"]
     API --> DB["PostgreSQL"]
-    DB --> Vector["pgvector"]
-    API --> LLM["OpenAI API"]
+    DB --> Vector["pgvector / PostEmbedding"]
+    API --> OpenAI["OpenAI API"]
     API --> MCP["MCP JSON-RPC Server"]
-    MCP --> External["News Search API / External URL"]
+    MCP --> External["Google News RSS / External URL"]
     API --> Agent["AI Agent Loop"]
-    Agent --> LLM
+    Agent --> OpenAI
     Agent --> DB
     Agent --> MCP
 ```
 
-## 5. AI 기능 설계
+## 6. 데이터베이스 구조
 
-### RAG 기능: 유사 야구 게시글 추천 및 요약
+| 모델 | 역할 |
+| --- | --- |
+| User | 사용자 계정, 이메일, 비밀번호 해시, 닉네임 저장 |
+| Post | 게시글 제목, 본문, 작성자, 생성/수정 시간 저장 |
+| Comment | 게시글 댓글과 작성자 정보 저장 |
+| Tag | 게시글 태그 이름 저장 |
+| PostTag | 게시글과 태그의 다대다 관계 저장 |
+| PostEmbedding | 게시글 임베딩 벡터와 내용 해시 저장 |
 
-RAG 파이프라인은 LangChain.js를 사용해 구성합니다. 사용자가 경기 리뷰나 선수 분석 글을 작성할 때 제목과 본문을 임베딩으로 변환하고, pgvector에 저장된 기존 야구 게시글 임베딩과 비교해 의미적으로 유사한 게시글을 검색합니다.
+RAG 검색을 위해 `PostEmbedding.embedding`은 `vector(1536)` 타입을 사용합니다.
 
-검색된 게시글은 LLM에 컨텍스트로 전달되며, LLM은 사용자가 참고할 수 있도록 비슷한 경기 이슈, 선수 평가, 팀 전력 논의의 핵심 내용을 요약합니다.
+## 7. API 구조
 
-LangChain.js는 RAG 파이프라인의 기본 흐름을 구성하는 데 사용하고, 게시글/댓글 데이터 소스 연동, pgvector 저장 및 유사도 검색, 야구 게시판 도메인에 맞춘 프롬프트 구성은 프로젝트 내부에서 직접 설계합니다.
+| API | 역할 |
+| --- | --- |
+| `/api/auth/signup` | 회원가입 |
+| `/api/auth/login` | 로그인 |
+| `/api/auth/logout` | 로그아웃 |
+| `/api/auth/me` | 현재 로그인 사용자 조회 |
+| `/api/posts` | 게시글 목록 조회 / 작성 |
+| `/api/posts/[postId]` | 게시글 상세 조회 / 수정 / 삭제 |
+| `/api/posts/[postId]/comments` | 댓글 목록 조회 / 작성 |
+| `/api/comments/[commentId]` | 댓글 수정 / 삭제 |
+| `/api/tags` | 태그 목록 조회 |
+| `/api/ai/rag/similar-posts` | RAG 유사 게시글 추천 |
+| `/api/mcp/baseball-briefing` | MCP JSON-RPC 서버 |
+| `/api/ai/mcp/briefing` | MCP 브리핑 결과를 AI 응답으로 변환 |
+| `/api/ai/agent/review-assistant` | Agent 경기 리뷰 작성 도우미 |
+
+## 8. AI 기능 상세
+
+### RAG: 유사 야구 게시글 추천 및 요약
+
+게시글을 작성하거나 수정하면 제목, 본문, 태그를 하나의 지식 텍스트로 구성하고 OpenAI Embedding을 생성합니다. 생성된 벡터는 PostgreSQL `pgvector`를 통해 `PostEmbedding` 테이블에 저장됩니다.
+
+게시글 상세 화면에서는 현재 게시글의 임베딩과 기존 게시글 임베딩을 비교해 의미적으로 유사한 글을 찾고, OpenAI Chat 모델로 추천 결과를 짧게 요약합니다.
 
 ```text
-경기 리뷰/선수 분석 글 제목과 본문 입력
-→ LangChain.js RAG pipeline
+게시글 작성/수정
+→ 제목 + 본문 + 태그를 지식 텍스트로 구성
 → OpenAI Embedding 생성
-→ pgvector 유사도 검색
-→ 관련 야구 게시글 3개 조회
-→ 검색 결과를 context로 구성
-→ LLM 요약
-→ 작성 화면에 추천 결과 표시
+→ PostEmbedding 테이블에 vector(1536) 저장
+→ 상세 화면에서 pgvector 유사도 검색
+→ 유사 게시글 목록과 RAG 요약 표시
 ```
 
-### MCP 기능: 야구 뉴스 및 외부 URL 브리핑
+주요 파일:
 
-사용자가 팀명, 선수명, 야구 이슈 키워드 또는 참고 URL을 입력하면 Next.js 서버가 별도 MCP 서버에 JSON-RPC 요청을 보냅니다. MCP 서버는 뉴스 검색 API나 외부 URL에서 제목, 링크, 요약 정보를 수집하고, 게시글 작성에 활용할 수 있는 브리핑 형태로 반환합니다.
+- `src/lib/ai/rag.ts`
+- `src/app/api/ai/rag/similar-posts/route.ts`
+- `src/components/ai/similar-posts-panel.tsx`
 
-KBO 공식 경기 데이터 API가 명확히 제공되지 않는 상황을 고려해, 비공식 KBO API에 의존하지 않고 뉴스 검색 API와 사용자가 입력한 URL을 중심으로 외부 데이터 연동을 설계합니다.
+### MCP: 야구 뉴스 / 외부 URL 브리핑
+
+MCP 기능은 JSON-RPC 요청/응답 구조로 구현했습니다. Next.js 내부에 MCP 서버 엔드포인트를 두고, 도구 목록 조회와 도구 실행을 JSON-RPC 메서드로 처리합니다.
+
+구현한 MCP 도구:
+
+- `search_baseball_news`: 야구 키워드로 Google News RSS 검색
+- `brief_external_url`: 외부 URL의 제목, 설명, 본문 일부 추출
+
+보안/권한 전략:
+
+- OpenAI API Key는 `.env`에서만 관리하고 GitHub에 올리지 않습니다.
+- `MCP_SHARED_SECRET`을 설정하면 MCP 서버 직접 호출 시 `x-mcp-secret` 헤더 검증을 수행합니다.
+- 외부 URL 브리핑은 `localhost`, 사설 IP, local 도메인을 차단해 내부망 접근을 방지합니다.
 
 ```text
-팀명/선수명/키워드/URL 입력
-→ Next.js API
-→ MCP JSON-RPC 요청
-→ 야구 뉴스 또는 외부 URL 데이터 수집
-→ 제목/링크/요약 반환
-→ 게시글 브리핑 카드 생성
+사용자 키워드 또는 URL 입력
+→ /api/ai/mcp/briefing
+→ /api/mcp/baseball-briefing JSON-RPC 호출
+→ MCP tool 실행
+→ 외부 뉴스 RSS 또는 URL 데이터 수집
+→ OpenAI Chat 모델로 게시글 브리핑 생성
+→ 화면에 브리핑과 출처 표시
 ```
 
-MCP 서버에서는 API Key와 외부 서비스 접근 권한을 서버 환경 변수로 관리합니다.
+주요 파일:
 
-### Agent 기능: 경기 리뷰 작성 도우미
+- `src/lib/mcp/json-rpc.ts`
+- `src/lib/mcp/baseball-briefing-tools.ts`
+- `src/app/api/mcp/baseball-briefing/route.ts`
+- `src/lib/ai/mcp-briefing.ts`
+- `src/components/ai/mcp-briefing-panel.tsx`
 
-AI Agent는 사용자의 짧은 야구 이슈나 경기 메모를 바탕으로 필요한 도구를 선택하고 실행합니다. 단순 LLM 호출이 아니라, Function Calling을 사용해 도구 선택과 실행 결과 반영을 반복하는 구조로 구현합니다.
+### Agent: 경기 리뷰 작성 도우미
 
-Agent가 사용할 수 있는 도구 예시는 다음과 같습니다.
+Agent는 사용자의 경기 메모를 받아 필요한 도구를 선택하고 실행한 뒤, 실행 결과를 memory/state에 반영해 최종 경기 리뷰 초안을 생성합니다.
 
-- 유사 야구 게시글 검색
-- 팀/선수/주제 기반 태그 추천
-- 야구 뉴스 및 외부 URL 브리핑
-- 경기 리뷰 초안 확장
-- 게시글 요약 생성
+Agent 도구:
+
+- `recommend_review_tags`: 경기 메모 기반 태그 추천
+- `search_board_posts`: 기존 게시글 검색
+- `fetch_baseball_news_briefing`: MCP 뉴스 브리핑 호출
+
+추론 루프 안정성:
+
+- Function Calling 기반 도구 선택
+- Agent state/memory 유지
+- 최대 반복 횟수 3회 제한
+- 같은 도구와 같은 인자의 반복 호출 방지
+- 도구 실패 시 fallback 초안 반환
 
 ```text
 사용자 경기 메모 입력
-→ LLM이 필요한 tool 선택
-→ tool 실행
-→ 실행 결과를 LLM에 다시 전달
-→ 최대 반복 횟수까지 추론
-→ 최종 경기 리뷰 초안 반환
+→ LLM이 필요한 도구 선택
+→ 도구 실행
+→ 실행 결과를 Agent memory에 저장
+→ 최대 3회까지 반복
+→ 추천 제목, 태그, 리뷰 초안, 보완 체크리스트 반환
 ```
 
-무한 루프를 방지하기 위해 Agent 실행은 최대 반복 횟수를 제한하고, 도구 실행 실패 시 fallback 응답을 반환하도록 설계합니다.
+주요 파일:
 
-## 6. 데이터베이스 설계 초안
+- `src/lib/ai/review-agent.ts`
+- `src/app/api/ai/agent/review-assistant/route.ts`
+- `src/components/ai/review-agent-panel.tsx`
 
-| 테이블 | 역할 |
-| --- | --- |
-| users | 사용자 계정 정보 |
-| posts | 게시글 정보 |
-| comments | 댓글 정보 |
-| tags | 팀, 선수, 리그, 이슈 유형 태그 정보 |
-| post_tags | 게시글과 태그의 다대다 관계 |
-| post_embeddings | 게시글 임베딩 벡터 저장 |
-| ai_logs | AI 기능 호출 로그 |
-| mcp_requests | MCP 요청/응답 기록 |
-| agent_runs | Agent 실행 상태 및 결과 기록 |
+## 9. 데모
 
-## 7. 데모 시나리오
+### 데모 시나리오
 
 1. 사용자가 회원가입 후 로그인합니다.
-2. 게시글 작성 페이지에서 경기 리뷰나 선수 분석 메모를 작성합니다.
-3. RAG 기능이 기존 유사 야구 게시글을 추천하고 요약합니다.
-4. 사용자가 팀명, 선수명, 야구 이슈 키워드 또는 참고 URL을 입력하면 MCP 서버가 외부 자료를 브리핑합니다.
-5. Agent가 경기 리뷰 초안, 팀/선수/주제 태그, 요약을 제안합니다.
-6. 사용자가 게시글을 등록하고 다른 사용자가 댓글로 의견을 남깁니다.
+2. 야구 경기 리뷰 게시글을 작성하고 태그를 등록합니다.
+3. 게시글 상세 화면에서 RAG 유사 게시글 추천과 요약을 확인합니다.
+4. 홈 화면의 MCP 패널에서 야구 키워드 또는 뉴스 URL로 브리핑을 생성합니다.
+5. Agent 패널에 짧은 경기 메모를 입력해 추천 제목, 태그, 리뷰 초안, 체크리스트를 생성합니다.
+6. 생성된 초안을 바탕으로 게시글을 작성하고 댓글을 남깁니다.
 
-## 8. 회고, 한계점, 개선 아이디어
+### 스크린샷
 
-### 예상 한계점
+![Baseball AI Board demo](docs/screenshots/baseball-ai-board-demo.png)
 
-- 상용 LLM API 비용과 응답 속도에 영향을 받을 수 있습니다.
-- pgvector 기반 검색 품질은 임베딩 모델과 게시글 데이터 품질에 의존합니다.
-- KBO 공식 경기 데이터 API가 명확히 제공되지 않아 실시간 경기 기록보다는 뉴스 검색과 URL 브리핑 중심으로 외부 데이터를 연동합니다.
-- MCP 서버의 외부 URL 수집은 사이트 구조나 접근 제한에 따라 실패할 수 있습니다.
-- Agent가 잘못된 도구를 선택할 가능성이 있어 실행 제한과 예외 처리가 필요합니다.
+## 10. 검증 결과
+
+현재 로컬 환경에서 아래 항목을 확인했습니다.
+
+- `npm.cmd run lint` 통과
+- `npm.cmd run build` 통과
+- `npx.cmd prisma migrate status` 기준 DB schema 최신 상태
+- PostgreSQL `pgvector 0.8.2` 확장 확인
+- `PostEmbedding` 테이블 생성 확인
+- 주요 페이지 `/`, `/login`, `/signup`, `/posts/new` 응답 확인
+- MCP JSON-RPC `tools/list` 응답 확인
+- OpenAI Embedding / Chat 호출을 통한 RAG 흐름 확인
+- AI Agent API 호출 및 도구 실행 기록 반환 확인
+
+## 11. 회고, 한계점, 개선 아이디어
+
+### 회고
+
+이번 프로젝트에서는 프론트엔드, 백엔드, DB, AI 응용 기능을 하나의 서비스 흐름으로 연결했습니다. 게시판 기본 기능을 먼저 안정화한 뒤 RAG, MCP, Agent를 순서대로 붙이면서 AI 기능이 단순한 API 호출이 아니라 실제 사용자 흐름 안에서 어떤 역할을 해야 하는지 확인할 수 있었습니다.
+
+### 한계점
+
+- OpenAI API 사용량에 따라 비용이 발생합니다.
+- RAG 추천 품질은 게시글 수와 게시글 내용 품질에 영향을 받습니다.
+- KBO 공식 경기 데이터 API가 명확하지 않아 실시간 경기 기록은 직접 연동하지 않았습니다.
+- Google News RSS와 외부 URL 수집은 사이트 구조, 네트워크 상태, 접근 제한에 따라 실패할 수 있습니다.
+- Agent는 직접 구현한 작은 추론 루프이므로 복잡한 장기 상태 관리에는 한계가 있습니다.
 
 ### 개선 아이디어
 
-- 사용자별 관심 팀/선수 기반 추천 기능 추가
-- 시즌별 팀 이슈와 게시판 반응을 요약하는 야구 트렌드 리포트 생성
-- 공식 데이터 제공 범위가 명확한 외부 스포츠 API를 활용한 경기 일정/결과 브리핑 확장
-- 관리자용 AI 모더레이션 기능 추가
+- 사용자별 관심 팀/선수 기반 개인화 추천
+- 게시판 전체 흐름을 요약하는 야구 트렌드 리포트
+- 공식 스포츠 데이터 API를 활용한 경기 일정/결과 브리핑
+- 관리자용 AI 모더레이션 기능
 - LangGraph 기반 Agent 상태 관리 고도화
+- AI 호출 로그와 Agent 실행 이력 저장 테이블 추가
