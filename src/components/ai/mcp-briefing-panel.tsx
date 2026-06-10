@@ -56,7 +56,7 @@ export function McpBriefingPanel() {
       if (!response.ok) {
         setData({
           status: "unavailable",
-          message: responseData.message ?? "MCP 브리핑을 생성하지 못했습니다.",
+          message: responseData.message ?? "브리핑을 생성하지 못했습니다.",
         });
         return;
       }
@@ -76,7 +76,7 @@ export function McpBriefingPanel() {
     <section className="kbo-panel overflow-hidden">
       <div className="border-b border-[#d7dde8] bg-white px-5 py-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d71920]">
-          MCP Briefing
+          News Briefing
         </p>
         <h2 className="mt-1 text-base font-black text-[#071a3d]">
           뉴스/URL 브리핑
@@ -139,7 +139,7 @@ export function McpBriefingPanel() {
         <div className="space-y-4 p-5 pt-4">
           <div className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3">
             <p className="text-xs font-black uppercase text-[#64748b]">
-              MCP 브리핑
+              브리핑
             </p>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#071a3d]">
               {data.briefing.briefing}

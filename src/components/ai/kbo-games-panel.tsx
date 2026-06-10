@@ -117,7 +117,7 @@ export function KboGamesPanel() {
           KBO 공식 경기 데이터
         </h2>
         <p className="mt-1 text-sm leading-6 text-[#64748b]">
-          KBO 공식 일정/결과 데이터를 MCP 도구로 조회합니다.
+          KBO 공식 일정/결과 데이터를 조회합니다.
         </p>
       </div>
 

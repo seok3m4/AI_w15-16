@@ -17,7 +17,7 @@ type AuthResponse = {
 const copy = {
   login: {
     title: "로그인",
-    description: "야구 AI 게시판에 다시 들어갑니다.",
+    description: "야구 게시판에 다시 들어갑니다.",
     submit: "로그인",
     endpoint: "/api/auth/login",
     alternateText: "아직 계정이 없다면",

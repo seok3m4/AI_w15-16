@@ -75,7 +75,7 @@ export function SimilarPostsPanel({ postId }: SimilarPostsPanelProps) {
         <div>
           <h3 className="text-lg font-semibold">AI 유사 게시글 추천</h3>
           <p className="mt-1 text-sm text-[#5e6a7d]">
-            궁금할 때만 현재 글과 의미가 가까운 야구 게시글을 RAG로 찾아봅니다.
+            궁금할 때만 현재 글과 주제가 가까운 야구 게시글을 찾아봅니다.
           </p>
         </div>
         <button
@@ -100,8 +100,7 @@ export function SimilarPostsPanel({ postId }: SimilarPostsPanelProps) {
 
       {!hasRequested ? (
         <p className="mt-4 text-sm leading-6 text-[#5e6a7d]">
-          버튼을 누르면 OpenAI 임베딩과 pgvector 검색을 사용해 관련 글을
-          찾습니다.
+          버튼을 누르면 비슷한 주제의 관련 글을 찾습니다.
         </p>
       ) : null}
 
@@ -114,7 +113,7 @@ export function SimilarPostsPanel({ postId }: SimilarPostsPanelProps) {
       {!isLoading && data?.summary ? (
         <div className="mt-4 rounded-md bg-[#eef4f7] p-3">
           <p className="text-xs font-semibold uppercase text-[#5e6a7d]">
-            RAG 요약
+            요약
           </p>
           <p className="mt-2 text-sm leading-6 text-[#172033]">
             {data.summary}
@@ -124,7 +123,7 @@ export function SimilarPostsPanel({ postId }: SimilarPostsPanelProps) {
 
       {!isLoading && data?.status === "ready" && data.similarPosts.length === 0 ? (
         <p className="mt-4 text-sm text-[#5e6a7d]">
-          아직 비교할 수 있는 다른 게시글 임베딩이 없습니다.
+          아직 비교할 수 있는 다른 게시글이 없습니다.
         </p>
       ) : null}
 

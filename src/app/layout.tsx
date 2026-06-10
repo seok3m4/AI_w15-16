@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "야구 AI 게시판",
-  description: "RAG, MCP, Agent를 활용한 야구 AI 브리핑 게시판입니다.",
+  title: "야구 게시판",
+  description: "경기 리뷰, 선수 분석, KBO 소식을 나누는 야구 커뮤니티입니다.",
 };
 
 export default function RootLayout({

@@ -110,7 +110,7 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
   return (
     <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
       <div className="border-b border-[#d9e2ec] pb-3">
-        <h2 className="text-base font-semibold">Agent 경기 리뷰 도우미</h2>
+        <h2 className="text-base font-semibold">경기 리뷰 도우미</h2>
         <p className="mt-1 text-sm leading-6 text-[#5e6a7d]">
           경기 메모를 바탕으로 도구를 선택해 리뷰 초안을 만듭니다.
         </p>
@@ -137,7 +137,7 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
           disabled={isLoading || memo.trim().length === 0}
           type="submit"
         >
-          {isLoading ? "Agent 실행 중" : "리뷰 초안 생성"}
+          {isLoading ? "초안 작성 중" : "리뷰 초안 생성"}
         </button>
       </form>
 
@@ -211,7 +211,7 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
           {data.result.steps.length > 0 ? (
             <div>
               <p className="text-xs font-semibold uppercase text-[#5e6a7d]">
-                Agent 실행 기록
+                작성 과정
               </p>
               <div className="mt-2 grid gap-2">
                 {data.result.steps.map((step) => (

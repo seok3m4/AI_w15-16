@@ -11,13 +11,6 @@ const navLinks = [
 export function SiteHeader() {
   return (
     <header className="border-b border-[#172554] bg-[#071a3d] text-white shadow-[0_10px_30px_rgba(7,26,61,0.18)]">
-      <div className="border-b border-white/10 bg-[#031129]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2 text-xs font-semibold uppercase tracking-wide text-white/70">
-          <span>Baseball AI Board</span>
-          <span>KBO News · RAG · MCP · Agent</span>
-        </div>
-      </div>
-
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
         <Link className="group flex items-center gap-3" href="/">
           <span className="flex h-12 w-12 items-center justify-center rounded-md bg-white text-lg font-black text-[#071a3d] shadow-sm">
@@ -25,10 +18,10 @@ export function SiteHeader() {
           </span>
           <span>
             <span className="block text-sm font-bold uppercase tracking-[0.18em] text-[#ffb4b7]">
-              AI Baseball
+              KBO TALK
             </span>
             <span className="block text-2xl font-black tracking-tight text-white group-hover:text-[#ffdadc]">
-              브리핑 보드
+              야구 게시판
             </span>
           </span>
         </Link>

@@ -427,7 +427,7 @@ export function PostCreateForm() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-black text-[#071a3d]">
-                  RAG 유사 게시글 확인
+                  관련 글 확인
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
                   작성 중인 제목, 본문, 태그를 기준으로 기존 게시글과 의미가
@@ -448,7 +448,7 @@ export function PostCreateForm() {
                   ? "찾는 중"
                   : hasRequestedRag
                     ? "다시 찾기"
-                    : "유사 게시글 확인"}
+                    : "관련 글 확인"}
               </button>
             </div>
 
@@ -461,8 +461,7 @@ export function PostCreateForm() {
 
             {isRagLoading ? (
               <p className="mt-3 text-sm text-[#64748b]">
-                OpenAI 임베딩과 pgvector 검색으로 유사 게시글을 찾는
-                중입니다.
+                비슷한 주제의 글을 찾는 중입니다.
               </p>
             ) : null}
 
@@ -475,7 +474,7 @@ export function PostCreateForm() {
             {!isRagLoading && draftSimilarPosts?.summary ? (
               <div className="mt-3 rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3">
                 <p className="text-xs font-black uppercase text-[#64748b]">
-                  RAG 요약
+                  요약
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[#071a3d]">
                   {draftSimilarPosts.summary}
