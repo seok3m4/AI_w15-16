@@ -13,7 +13,11 @@ const TAG_MIN_LENGTH = 1;
 const TAG_MAX_LENGTH = 30;
 
 export function normalizeTagName(value: string): string {
-  return value.trim().replace(/^#+/, "").replace(/\s+/g, " ").toLowerCase();
+  return value.trim().replace(/^#+/, "").replace(/\s+/g, " ");
+}
+
+export function getTagComparisonKey(value: string): string {
+  return normalizeTagName(value).toLowerCase();
 }
 
 export function validateTagNames(value: unknown): ValidationResult<string[]> {
@@ -32,7 +36,8 @@ export function validateTagNames(value: unknown): ValidationResult<string[]> {
     };
   }
 
-  const tagNames = new Set<string>();
+  const tagNames: string[] = [];
+  const tagKeys = new Set<string>();
 
   for (const item of value) {
     if (typeof item !== "string") {
@@ -51,12 +56,17 @@ export function validateTagNames(value: unknown): ValidationResult<string[]> {
       };
     }
 
-    tagNames.add(tagName);
+    const tagKey = getTagComparisonKey(tagName);
+
+    if (!tagKeys.has(tagKey)) {
+      tagKeys.add(tagKey);
+      tagNames.push(tagName);
+    }
   }
 
   return {
     ok: true,
-    data: [...tagNames],
+    data: tagNames,
   };
 }
 

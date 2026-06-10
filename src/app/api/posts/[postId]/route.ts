@@ -9,6 +9,10 @@ import { replacePostTags } from "@/lib/tags/mutations";
 
 export const runtime = "nodejs";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store",
+};
+
 type RouteContext = {
   params: Promise<{
     postId: string;
@@ -35,7 +39,10 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ message: "Post not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ post: toPostResponse(post) });
+  return NextResponse.json(
+    { post: toPostResponse(post) },
+    { headers: NO_STORE_HEADERS },
+  );
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -104,7 +111,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   await refreshPostEmbedding(post.id);
 
-  return NextResponse.json({ post: toPostResponse(post) });
+  return NextResponse.json(
+    { post: toPostResponse(post) },
+    { headers: NO_STORE_HEADERS },
+  );
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -135,5 +145,8 @@ export async function DELETE(_request: Request, context: RouteContext) {
     where: { id: postId },
   });
 
-  return NextResponse.json({ message: "Post deleted." });
+  return NextResponse.json(
+    { message: "Post deleted." },
+    { headers: NO_STORE_HEADERS },
+  );
 }

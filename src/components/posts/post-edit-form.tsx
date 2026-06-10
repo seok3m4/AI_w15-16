@@ -68,6 +68,7 @@ export function PostEditForm({ postId }: PostEditFormProps) {
       try {
         const [postResponse, userResponse] = await Promise.all([
           fetch(`/api/posts/${postId}`, {
+            cache: "no-store",
             credentials: "include",
           }),
           fetch("/api/auth/me", {
@@ -146,8 +147,7 @@ export function PostEditForm({ postId }: PostEditFormProps) {
         return;
       }
 
-      router.push(`/posts/${post.id}`);
-      router.refresh();
+      router.push(`/posts/${post.id}?revision=${Date.now()}`);
     } catch {
       setMessage("네트워크 연결을 확인해주세요.");
     } finally {

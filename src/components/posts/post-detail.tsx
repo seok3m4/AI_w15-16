@@ -44,6 +44,7 @@ type AuthMeResponse = {
 
 type PostDetailProps = {
   postId: string;
+  revision?: string;
 };
 
 function formatDate(value: string): string {
@@ -56,7 +57,7 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-export function PostDetail({ postId }: PostDetailProps) {
+export function PostDetail({ postId, revision = "" }: PostDetailProps) {
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -70,10 +71,12 @@ export function PostDetail({ postId }: PostDetailProps) {
     async function loadDetail() {
       setIsLoading(true);
       setMessage("");
+      setPost(null);
 
       try {
         const [postResponse, userResponse] = await Promise.all([
           fetch(`/api/posts/${postId}`, {
+            cache: "no-store",
             credentials: "include",
           }),
           fetch("/api/auth/me", {
@@ -117,7 +120,7 @@ export function PostDetail({ postId }: PostDetailProps) {
     return () => {
       isMounted = false;
     };
-  }, [postId]);
+  }, [postId, revision]);
 
   async function handleDelete() {
     if (!post || !confirm("이 게시글을 삭제할까요?")) {

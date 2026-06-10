@@ -1,5 +1,15 @@
 import type { Prisma } from "@prisma/client";
 
+async function deleteUnusedTags(tx: Prisma.TransactionClient): Promise<void> {
+  await tx.tag.deleteMany({
+    where: {
+      posts: {
+        none: {},
+      },
+    },
+  });
+}
+
 export async function replacePostTags(
   tx: Prisma.TransactionClient,
   postId: string,
@@ -10,6 +20,7 @@ export async function replacePostTags(
   });
 
   if (tagNames.length === 0) {
+    await deleteUnusedTags(tx);
     return;
   }
 
@@ -31,4 +42,6 @@ export async function replacePostTags(
     })),
     skipDuplicates: true,
   });
+
+  await deleteUnusedTags(tx);
 }

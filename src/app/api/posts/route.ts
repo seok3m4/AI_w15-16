@@ -11,6 +11,10 @@ import { replacePostTags } from "@/lib/tags/mutations";
 
 export const runtime = "nodejs";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store",
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const parsedQuery = parsePostListQuery(searchParams);
@@ -34,15 +38,18 @@ export async function GET(request: Request) {
     prisma.post.count({ where }),
   ]);
 
-  return NextResponse.json({
-    posts: posts.map(toPostResponse),
-    pagination: toPaginationResponse(pagination, total),
-    filters: {
-      q: searchQuery,
-      tag: tagNames[0] ?? "",
-      tags: tagNames,
+  return NextResponse.json(
+    {
+      posts: posts.map(toPostResponse),
+      pagination: toPaginationResponse(pagination, total),
+      filters: {
+        q: searchQuery,
+        tag: tagNames[0] ?? "",
+        tags: tagNames,
+      },
     },
-  });
+    { headers: NO_STORE_HEADERS },
+  );
 }
 
 export async function POST(request: Request) {
@@ -95,5 +102,8 @@ export async function POST(request: Request) {
 
   await refreshPostEmbedding(post.id);
 
-  return NextResponse.json({ post: toPostResponse(post) }, { status: 201 });
+  return NextResponse.json(
+    { post: toPostResponse(post) },
+    { status: 201, headers: NO_STORE_HEADERS },
+  );
 }

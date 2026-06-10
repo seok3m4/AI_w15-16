@@ -1,7 +1,10 @@
 import type { Prisma } from "@prisma/client";
 
 import { parsePagination, type Pagination } from "@/lib/pagination";
-import { normalizeTagName } from "@/lib/tags/validation";
+import {
+  getTagComparisonKey,
+  normalizeTagName,
+} from "@/lib/tags/validation";
 
 type ValidationResult<T> =
   | {
@@ -27,13 +30,24 @@ function normalizeSearchQuery(value: string | null): string {
 }
 
 function normalizeTagNames(searchParams: URLSearchParams): string[] {
-  const tagNames = searchParams
+  const tagNames: string[] = [];
+  const tagKeys = new Set<string>();
+
+  searchParams
     .getAll("tag")
     .flatMap((value) => value.split(","))
     .map(normalizeTagName)
-    .filter(Boolean);
+    .filter(Boolean)
+    .forEach((tagName) => {
+      const tagKey = getTagComparisonKey(tagName);
 
-  return [...new Set(tagNames)];
+      if (!tagKeys.has(tagKey)) {
+        tagKeys.add(tagKey);
+        tagNames.push(tagName);
+      }
+    });
+
+  return tagNames;
 }
 
 export function parsePostListQuery(

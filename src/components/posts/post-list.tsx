@@ -146,6 +146,7 @@ export function PostList({
 
       try {
         const response = await fetch(`/api/posts?${queryString}`, {
+          cache: "no-store",
           credentials: "include",
         });
         const data = (await response.json()) as Partial<PostsResponse> & {
