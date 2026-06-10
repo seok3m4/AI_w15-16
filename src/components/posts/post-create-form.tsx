@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   ReviewAgentPanel,
@@ -19,6 +19,19 @@ type AuthMeResponse = {
   user?: CurrentUser;
 };
 
+type ExistingTag = {
+  id: string;
+  name: string;
+  counts: {
+    posts: number;
+  };
+};
+
+type TagsResponse = {
+  tags?: ExistingTag[];
+  message?: string;
+};
+
 type CreatePostResponse = {
   message?: string;
   post?: {
@@ -33,6 +46,10 @@ function parseTags(value: string): string[] {
     .filter(Boolean);
 }
 
+function formatTags(tagNames: string[]): string {
+  return tagNames.join(", ");
+}
+
 export function PostCreateForm() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -40,9 +57,14 @@ export function PostCreateForm() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
+  const [existingTags, setExistingTags] = useState<ExistingTag[]>([]);
+  const [isTagsLoading, setIsTagsLoading] = useState(true);
+  const [tagMessage, setTagMessage] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedTagNames = useMemo(() => parseTags(tags), [tags]);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,6 +94,49 @@ export function PostCreateForm() {
     }
 
     void loadCurrentUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExistingTags() {
+      setIsTagsLoading(true);
+      setTagMessage("");
+
+      try {
+        const response = await fetch("/api/tags", {
+          credentials: "include",
+        });
+        const data = (await response.json()) as TagsResponse;
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!response.ok || !data.tags) {
+          setExistingTags([]);
+          setTagMessage(data.message ?? "기존 태그를 불러오지 못했습니다.");
+          return;
+        }
+
+        setExistingTags(data.tags);
+      } catch {
+        if (isMounted) {
+          setExistingTags([]);
+          setTagMessage("기존 태그를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsTagsLoading(false);
+        }
+      }
+    }
+
+    void loadExistingTags();
 
     return () => {
       isMounted = false;
@@ -119,6 +184,31 @@ export function PostCreateForm() {
     setTags(draft.tags.join(", "));
     setMessage("AI 초안을 작성 폼에 적용했습니다. 내용을 확인한 뒤 등록해주세요.");
     setMessageType("success");
+  }
+
+  function handleAddExistingTag(tagName: string) {
+    setTags((currentTags) => {
+      const nextTags = parseTags(currentTags);
+      const isDuplicated = nextTags.some(
+        (currentTag) => currentTag.toLowerCase() === tagName.toLowerCase(),
+      );
+
+      if (isDuplicated) {
+        return currentTags;
+      }
+
+      return formatTags([...nextTags, tagName]);
+    });
+  }
+
+  function handleRemoveTag(tagName: string) {
+    setTags((currentTags) =>
+      formatTags(
+        parseTags(currentTags).filter(
+          (currentTag) => currentTag.toLowerCase() !== tagName.toLowerCase(),
+        ),
+      ),
+    );
   }
 
   if (isAuthLoading) {
@@ -195,6 +285,78 @@ export function PostCreateForm() {
               value={tags}
             />
           </label>
+
+          <section className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-black text-[#071a3d]">기존 태그</p>
+                <p className="mt-1 text-xs font-medium text-[#64748b]">
+                  클릭하면 태그 입력창에 추가됩니다.
+                </p>
+              </div>
+              <span className="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-[#64748b]">
+                {existingTags.length}개
+              </span>
+            </div>
+
+            {selectedTagNames.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-[#d7dde8] pt-3">
+                {selectedTagNames.map((tagName) => (
+                  <button
+                    className="rounded-md bg-[#fff1f2] px-2.5 py-1 text-xs font-bold text-[#d71920] hover:bg-[#ffe4e6]"
+                    key={tagName}
+                    onClick={() => handleRemoveTag(tagName)}
+                    type="button"
+                  >
+                    #{tagName} 삭제
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {isTagsLoading ? (
+              <p className="mt-3 text-sm text-[#64748b]">
+                기존 태그를 불러오는 중입니다.
+              </p>
+            ) : null}
+
+            {tagMessage ? (
+              <p className="mt-3 text-sm text-[#b91c1c]">{tagMessage}</p>
+            ) : null}
+
+            {!isTagsLoading && existingTags.length === 0 && !tagMessage ? (
+              <p className="mt-3 text-sm text-[#64748b]">
+                아직 등록된 태그가 없습니다.
+              </p>
+            ) : null}
+
+            {existingTags.length > 0 ? (
+              <div className="mt-3 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+                {existingTags.map((tag) => {
+                  const isSelected = selectedTagNames.some(
+                    (tagName) =>
+                      tagName.toLowerCase() === tag.name.toLowerCase(),
+                  );
+
+                  return (
+                    <button
+                      className={
+                        isSelected
+                          ? "rounded-md border border-[#d71920] bg-[#fff1f2] px-2.5 py-1 text-xs font-black text-[#d71920]"
+                          : "rounded-md border border-[#d7dde8] bg-white px-2.5 py-1 text-xs font-bold text-[#475569] hover:border-[#d71920] hover:text-[#d71920]"
+                      }
+                      disabled={isSelected}
+                      key={tag.id}
+                      onClick={() => handleAddExistingTag(tag.name)}
+                      type="button"
+                    >
+                      #{tag.name} {tag.counts.posts}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
 
           {message ? (
             <p
