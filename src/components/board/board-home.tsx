@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 
+import { KboGamesPanel } from "@/components/ai/kbo-games-panel";
 import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
 import { ReviewAgentPanel } from "@/components/ai/review-agent-panel";
 import { PostList } from "@/components/posts/post-list";
 import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
 
-const aiActions = ["유사 글 추천", "뉴스 브리핑", "리뷰 초안 작성"];
+const aiActions = ["유사 글 추천", "KBO 경기 조회", "뉴스 브리핑", "리뷰 초안 작성"];
 
 export function BoardHome() {
   const [selectedTag, setSelectedTag] = useState("");
@@ -35,6 +36,8 @@ export function BoardHome() {
 
         <McpBriefingPanel />
 
+        <KboGamesPanel />
+
         <ReviewAgentPanel />
 
         <section className="rounded-md border border-[#d9e2ec] bg-white p-5">
@@ -57,9 +60,9 @@ export function BoardHome() {
           <ul className="mt-3 space-y-2 text-sm leading-6 text-[#5e6a7d]">
             <li>회원가입, 로그인, 게시글 CRUD</li>
             <li>댓글, 태그, 검색, 페이지네이션 UI</li>
-            <li>RAG 기반 유사 야구 게시글 추천 예정</li>
-            <li>MCP 기반 뉴스와 URL 브리핑 예정</li>
-            <li>Agent 기반 경기 리뷰 작성 도우미 예정</li>
+            <li>RAG 기반 유사 야구 게시글 추천</li>
+            <li>MCP 기반 뉴스, URL, KBO 경기 데이터 연동</li>
+            <li>Agent 기반 경기 리뷰 작성 도우미</li>
           </ul>
         </section>
       </aside>

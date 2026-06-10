@@ -35,10 +35,72 @@ export type UrlBriefingResult = {
   excerpt: string;
 };
 
+export type KboGameStatus = "scheduled" | "completed" | "draw";
+
+export type KboGame = {
+  gameDate: string;
+  displayDate: string;
+  time: string;
+  awayTeam: string;
+  homeTeam: string;
+  awayScore: number | null;
+  homeScore: number | null;
+  status: KboGameStatus;
+  stadium: string;
+  tv: string;
+  note: string;
+  gameId: string | null;
+  reviewUrl: string | null;
+  highlightUrl: string | null;
+};
+
+export type KboGamesResult = {
+  date: string;
+  team: string | null;
+  source: string;
+  games: KboGame[];
+};
+
 const NEWS_LIMIT = 5;
 const MAX_KEYWORD_LENGTH = 80;
 const MAX_URL_BYTES = 400_000;
 const GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search";
+const KBO_BASE_URL = "https://www.koreabaseball.com";
+const KBO_SCHEDULE_URL = `${KBO_BASE_URL}/Schedule/Schedule.aspx`;
+const KBO_SCHEDULE_LIST_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetScheduleList`;
+const KBO_REGULAR_SEASON_IDS = "0,9,6";
+const KBO_TEAM_NAMES = [
+  "LG",
+  "한화",
+  "SSG",
+  "삼성",
+  "NC",
+  "KT",
+  "롯데",
+  "KIA",
+  "두산",
+  "키움",
+];
+const KBO_TEAM_ALIASES: Record<string, string[]> = {
+  LG: ["lg", "엘지", "트윈스"],
+  한화: ["한화", "이글스"],
+  SSG: ["ssg", "랜더스"],
+  삼성: ["삼성", "라이온즈"],
+  NC: ["nc", "엔씨", "다이노스"],
+  KT: ["kt", "케이티", "위즈"],
+  롯데: ["롯데", "자이언츠"],
+  KIA: ["kia", "기아", "타이거즈"],
+  두산: ["두산", "베어스"],
+  키움: ["키움", "히어로즈"],
+};
+const kboScheduleCache = new Map<
+  string,
+  {
+    expiresAt: number;
+    result: KboGamesResult;
+  }
+>();
+const KBO_CACHE_TTL_MS = 60_000;
 
 const tools: ToolDefinition[] = [
   {
@@ -69,6 +131,24 @@ const tools: ToolDefinition[] = [
         },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "get_kbo_games",
+    description:
+      "Fetch official KBO regular-season game schedule and result data by date and optional team.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        date: {
+          type: "string",
+          description: "조회할 날짜. YYYY-MM-DD 또는 YYYYMMDD 형식",
+        },
+        team: {
+          type: "string",
+          description: "선택 팀명. 예: LG, 한화, SSG, KIA",
+        },
+      },
     },
   },
 ];
@@ -199,11 +279,114 @@ function normalizePublicUrl(value: unknown): URL {
   return url;
 }
 
-async function fetchText(url: string): Promise<string> {
+function getKstDateParts(date = new Date()): {
+  year: string;
+  month: string;
+  day: string;
+} {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value ?? "2026";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+
+  return { year, month, day };
+}
+
+function normalizeKboDate(value: unknown): {
+  date: string;
+  compactDate: string;
+  year: string;
+  month: string;
+} {
+  const rawDate =
+    typeof value === "string" && value.trim()
+      ? value.trim()
+      : (() => {
+          const today = getKstDateParts();
+
+          return `${today.year}-${today.month}-${today.day}`;
+        })();
+  const match = rawDate.match(/^(\d{4})-?(\d{2})-?(\d{2})$/);
+
+  if (!match) {
+    throw new Error("date must be YYYY-MM-DD or YYYYMMDD.");
+  }
+
+  const [, year, month, day] = match;
+  const yearNumber = Number(year);
+  const monthNumber = Number(month);
+  const dayNumber = Number(day);
+  const maxDay = new Date(yearNumber, monthNumber, 0).getDate();
+
+  if (
+    yearNumber < 1982 ||
+    monthNumber < 1 ||
+    monthNumber > 12 ||
+    dayNumber < 1 ||
+    dayNumber > maxDay
+  ) {
+    throw new Error("date is invalid.");
+  }
+
+  return {
+    date: `${year}-${month}-${day}`,
+    compactDate: `${year}${month}${day}`,
+    year,
+    month,
+  };
+}
+
+function normalizeKboTeam(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error("team must be a string.");
+  }
+
+  const team = value.trim();
+  const normalizedInput = team.toLowerCase().replace(/\s+/g, "");
+
+  if (!team) {
+    return null;
+  }
+
+  const normalizedTeam = KBO_TEAM_NAMES.find((teamName) =>
+    (KBO_TEAM_ALIASES[teamName] ?? []).some((alias) =>
+      normalizedInput.includes(alias.toLowerCase()),
+    ),
+  );
+
+  if (!normalizedTeam) {
+    throw new Error(`team must be one of: ${KBO_TEAM_NAMES.join(", ")}.`);
+  }
+
+  return normalizedTeam;
+}
+
+function getBoundedKboLimit(value: unknown): number {
+  const limit = Number(value);
+
+  if (!Number.isInteger(limit) || limit <= 0) {
+    return 10;
+  }
+
+  return Math.min(limit, 30);
+}
+
+async function fetchText(url: string, init?: RequestInit): Promise<string> {
   const response = await fetch(url, {
+    ...init,
     headers: {
       Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       "User-Agent": "BaseballAIBoard/0.1 MCP briefing crawler",
+      ...init?.headers,
     },
     signal: AbortSignal.timeout(8_000),
   });
@@ -270,6 +453,200 @@ function extractHtmlBrief(url: string, html: string): UrlBriefingResult {
   };
 }
 
+type KboScheduleCell = {
+  Text?: string | null;
+  Class?: string | null;
+};
+
+type KboScheduleRow = {
+  row?: KboScheduleCell[];
+};
+
+type KboScheduleResponse = {
+  rows?: KboScheduleRow[];
+};
+
+function getCellText(cell: KboScheduleCell | undefined): string {
+  return stripHtml(decodeXml(cell?.Text ?? ""));
+}
+
+function extractKboLink(html: string): string | null {
+  const match = html.match(/href=["']([^"']+)["']/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return new URL(decodeXml(match[1]), KBO_BASE_URL).toString();
+}
+
+function extractKboGameId(url: string | null): string | null {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    return new URL(url).searchParams.get("gameId");
+  } catch {
+    return null;
+  }
+}
+
+function parseKboDisplayDate(displayDate: string, seasonId: string): string | null {
+  const match = displayDate.match(/^(\d{2})\.(\d{2})/);
+
+  if (!match) {
+    return null;
+  }
+
+  return `${seasonId}-${match[1]}-${match[2]}`;
+}
+
+function parseKboPlayCell(playHtml: string): {
+  awayTeam: string;
+  homeTeam: string;
+  awayScore: number | null;
+  homeScore: number | null;
+  status: KboGameStatus;
+} | null {
+  const match = playHtml.match(
+    /<span[^>]*>([^<]+)<\/span>\s*<em>([\s\S]*?)<\/em>\s*<span[^>]*>([^<]+)<\/span>/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, awayTeamRaw, scoreHtml, homeTeamRaw] = match;
+  const scoreParts = [...scoreHtml.matchAll(/<span[^>]*>([^<]+)<\/span>/gi)]
+    .map((scoreMatch) => stripHtml(decodeXml(scoreMatch[1])))
+    .filter((part) => /^\d+$/.test(part));
+  const awayScore = scoreParts[0] ? Number(scoreParts[0]) : null;
+  const homeScore = scoreParts[1] ? Number(scoreParts[1]) : null;
+  const status =
+    awayScore === null || homeScore === null
+      ? "scheduled"
+      : awayScore === homeScore
+        ? "draw"
+        : "completed";
+
+  return {
+    awayTeam: stripHtml(decodeXml(awayTeamRaw)),
+    homeTeam: stripHtml(decodeXml(homeTeamRaw)),
+    awayScore,
+    homeScore,
+    status,
+  };
+}
+
+function parseKboScheduleRows(
+  rows: KboScheduleRow[],
+  seasonId: string,
+): KboGame[] {
+  const games: KboGame[] = [];
+  let currentDisplayDate = "";
+  let currentGameDate = "";
+
+  for (const item of rows) {
+    const cells = item.row ?? [];
+
+    if (cells.length < 2) {
+      continue;
+    }
+
+    let offset = 0;
+
+    if (cells[0]?.Class === "day") {
+      currentDisplayDate = getCellText(cells[0]);
+      currentGameDate =
+        parseKboDisplayDate(currentDisplayDate, seasonId) ?? currentGameDate;
+      offset = 1;
+    }
+
+    const time = getCellText(cells[offset]);
+    const playHtml = cells[offset + 1]?.Text ?? "";
+    const play = parseKboPlayCell(playHtml);
+
+    if (!currentGameDate || !time || !play) {
+      continue;
+    }
+
+    const reviewUrl = extractKboLink(cells[offset + 2]?.Text ?? "");
+    const highlightUrl = extractKboLink(cells[offset + 3]?.Text ?? "");
+    const isPregameScore =
+      play.awayScore === 0 &&
+      play.homeScore === 0 &&
+      reviewUrl === null &&
+      highlightUrl === null;
+
+    games.push({
+      gameDate: currentGameDate,
+      displayDate: currentDisplayDate,
+      time,
+      awayTeam: play.awayTeam,
+      homeTeam: play.homeTeam,
+      awayScore: isPregameScore ? null : play.awayScore,
+      homeScore: isPregameScore ? null : play.homeScore,
+      status: isPregameScore ? "scheduled" : play.status,
+      stadium: getCellText(cells[offset + 6]),
+      tv: getCellText(cells[offset + 4]),
+      note: getCellText(cells[offset + 7]),
+      gameId: extractKboGameId(reviewUrl ?? highlightUrl),
+      reviewUrl,
+      highlightUrl,
+    });
+  }
+
+  return games;
+}
+
+async function fetchKboMonthlyGames(
+  seasonId: string,
+  gameMonth: string,
+): Promise<KboGame[]> {
+  const body = new URLSearchParams({
+    leId: "1",
+    srIdList: KBO_REGULAR_SEASON_IDS,
+    seasonId,
+    gameMonth,
+    teamId: "",
+  });
+  const text = await fetchText(KBO_SCHEDULE_LIST_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      Referer: KBO_SCHEDULE_URL,
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body,
+  });
+  const data = JSON.parse(text) as KboScheduleResponse;
+
+  return parseKboScheduleRows(data.rows ?? [], seasonId);
+}
+
+function formatKboGame(game: KboGame): string {
+  const score =
+    game.awayScore === null || game.homeScore === null
+      ? "경기 전"
+      : `${game.awayScore} : ${game.homeScore}`;
+  const status =
+    game.status === "scheduled"
+      ? "예정"
+      : game.status === "draw"
+        ? "무승부"
+        : "종료";
+  const stadium = game.stadium ? ` / ${game.stadium}` : "";
+
+  return `${game.time} ${game.awayTeam} vs ${game.homeTeam} (${score}, ${status}${stadium})`;
+}
+
+function formatKboGamesText(result: KboGamesResult): string {
+  return result.games.length > 0
+    ? result.games.map(formatKboGame).join("\n")
+    : `${result.date} 기준 KBO 공식 경기 일정/결과가 없습니다.`;
+}
+
 export function listBaseballBriefingTools(): ToolDefinition[] {
   return tools;
 }
@@ -326,6 +703,59 @@ export async function briefExternalUrl(
   };
 }
 
+export async function getKboGames(
+  args: Record<string, unknown>,
+): Promise<McpToolResult<KboGamesResult>> {
+  const targetDate = normalizeKboDate(args.date);
+  const team = normalizeKboTeam(args.team);
+  const limit = getBoundedKboLimit(args.limit);
+  const cacheKey = `${targetDate.date}:${team ?? "all"}:${limit}`;
+  const cached = kboScheduleCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: formatKboGamesText(cached.result),
+        },
+      ],
+      structuredContent: cached.result,
+    };
+  }
+
+  const monthlyGames = await fetchKboMonthlyGames(
+    targetDate.year,
+    targetDate.month,
+  );
+  const games = monthlyGames
+    .filter((game) => game.gameDate === targetDate.date)
+    .filter(
+      (game) =>
+        !team || game.awayTeam.toLowerCase() === team.toLowerCase() || game.homeTeam.toLowerCase() === team.toLowerCase(),
+    )
+    .slice(0, limit);
+  const source = `${KBO_SCHEDULE_URL}?seriesId=${encodeURIComponent(
+    KBO_REGULAR_SEASON_IDS,
+  )}&gamedate=${targetDate.compactDate}`;
+  const result: KboGamesResult = {
+    date: targetDate.date,
+    team,
+    source,
+    games,
+  };
+
+  kboScheduleCache.set(cacheKey, {
+    expiresAt: Date.now() + KBO_CACHE_TTL_MS,
+    result,
+  });
+
+  return {
+    content: [{ type: "text", text: formatKboGamesText(result) }],
+    structuredContent: result,
+  };
+}
+
 export async function callBaseballBriefingTool(
   name: string,
   args: Record<string, unknown>,
@@ -336,6 +766,10 @@ export async function callBaseballBriefingTool(
 
   if (name === "brief_external_url") {
     return briefExternalUrl(args);
+  }
+
+  if (name === "get_kbo_games") {
+    return getKboGames(args);
   }
 
   throw new Error(`Unknown MCP tool: ${name}`);

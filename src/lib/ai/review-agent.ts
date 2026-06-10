@@ -8,12 +8,18 @@ import {
 
 import { getChatModel, getOpenAIApiKey } from "@/lib/ai/config";
 import { createMcpBriefing } from "@/lib/ai/mcp-briefing";
+import type {
+  KboGamesResult,
+  McpToolResult,
+} from "@/lib/mcp/baseball-briefing-tools";
+import { invokeBaseballMcpTool } from "@/lib/mcp/json-rpc";
 import { prisma } from "@/lib/prisma";
 
 type AgentToolName =
   | "recommend_review_tags"
   | "search_board_posts"
-  | "fetch_baseball_news_briefing";
+  | "fetch_baseball_news_briefing"
+  | "fetch_kbo_games";
 
 type AgentToolCall = {
   id?: string;
@@ -43,6 +49,7 @@ type AgentMemory = {
     url: string;
   }[];
   newsBriefing?: string;
+  kboGames?: KboGamesResult;
   sources: AgentSource[];
 };
 
@@ -161,6 +168,27 @@ const reviewAgentTools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "fetch_kbo_games",
+      description:
+        "Fetch official KBO game schedule and result data for a date and optional team.",
+      parameters: {
+        type: "object",
+        properties: {
+          date: {
+            type: "string",
+            description: "조회할 날짜. YYYY-MM-DD 형식",
+          },
+          team: {
+            type: "string",
+            description: "조회할 KBO 팀명. 예: LG, 한화, SSG, KIA",
+          },
+        },
+      },
+    },
+  },
 ] as const;
 
 function getTrimmedString(value: unknown): string {
@@ -252,6 +280,20 @@ function getMessageText(content: unknown): string {
     })
     .join("")
     .trim();
+}
+
+function getMcpResult<TStructuredContent>(
+  value: unknown,
+): McpToolResult<TStructuredContent> {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("structuredContent" in value)
+  ) {
+    throw new Error("MCP response is invalid.");
+  }
+
+  return value as McpToolResult<TStructuredContent>;
 }
 
 function getToolCalls(message: unknown): AgentToolCall[] {
@@ -391,6 +433,36 @@ async function fetchBaseballNewsBriefing(
   };
 }
 
+async function fetchKboGames(
+  state: AgentState,
+  args: Record<string, unknown>,
+) {
+  const date = getTrimmedString(args.date);
+  const team = getTrimmedString(args.team) || state.favoriteTeam;
+  const toolResult = await invokeBaseballMcpTool("get_kbo_games", {
+    date,
+    team,
+  });
+  const result = getMcpResult<KboGamesResult>(toolResult).structuredContent;
+
+  state.memory.kboGames = result;
+  state.memory.sources = [
+    ...state.memory.sources,
+    {
+      title: `KBO 공식 경기 일정/결과 ${result.date}`,
+      url: result.source,
+      source: "KBO",
+    },
+  ];
+
+  return {
+    date: result.date,
+    team: result.team,
+    games: result.games,
+    summary: `KBO 공식 경기 데이터 ${result.games.length}건을 조회했습니다.`,
+  };
+}
+
 async function executeAgentTool(
   state: AgentState,
   toolCall: AgentToolCall,
@@ -407,6 +479,10 @@ async function executeAgentTool(
     return fetchBaseballNewsBriefing(state, toolCall.args);
   }
 
+  if (toolCall.name === "fetch_kbo_games") {
+    return fetchKboGames(state, toolCall.args);
+  }
+
   throw new Error(`Unknown agent tool: ${toolCall.name}`);
 }
 
@@ -415,6 +491,7 @@ function buildAgentSystemPrompt(): string {
     "너는 야구 게시판의 AI Agent 경기 리뷰 작성 도우미다.",
     "단순 답변 대신 필요한 도구를 선택해 실행하고, 도구 결과를 기억한 뒤 최종 리뷰 초안을 만든다.",
     "가능하면 recommend_review_tags를 먼저 사용하고, 게시판 맥락이 필요하면 search_board_posts를 사용해라.",
+    "경기 날짜, 팀 경기 결과, 공식 일정 맥락이 필요하면 fetch_kbo_games를 사용해라.",
     "최신 외부 이슈가 필요할 때만 fetch_baseball_news_briefing을 사용해라.",
     "같은 도구와 같은 인자는 반복 호출하지 마라.",
     "도구 호출은 최대 3회까지만 가능하다.",
