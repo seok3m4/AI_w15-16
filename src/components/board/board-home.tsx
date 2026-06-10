@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { KboGamesPanel } from "@/components/ai/kbo-games-panel";
+import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
 import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
 import { PostList } from "@/components/posts/post-list";
 import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
@@ -78,12 +79,13 @@ export function BoardHome() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)_328px]">
-        <aside className="lg:sticky lg:top-6 lg:self-start">
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <TagFilterPanel
             onClearTags={handleClearTags}
             onToggleTag={handleToggleTag}
             selectedTags={selectedTags}
           />
+          <KboStandingsPanel />
         </aside>
 
         <PostList
