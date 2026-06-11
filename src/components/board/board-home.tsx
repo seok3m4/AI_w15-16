@@ -43,7 +43,7 @@ export function BoardHome() {
               KBO TALK
             </p>
             <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
-              오늘 경기 얘기, 편하게 남겨주세요
+              KBO Talk
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
               경기 리뷰, 선수 분석, 팀 소식, 뉴스 링크까지 야구 이야기를
@@ -68,11 +68,6 @@ export function BoardHome() {
               </div>
             ))}
           </div>
-        </div>
-        <div className="grid border-t border-white/10 bg-[#031129] px-6 py-3 text-xs font-bold uppercase tracking-wide text-white/60 sm:grid-cols-3">
-          <span>자유 게시글</span>
-          <span>태그 모아보기</span>
-          <span>경기 정보</span>
         </div>
       </div>
 
