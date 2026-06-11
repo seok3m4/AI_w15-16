@@ -30,7 +30,7 @@ export function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="login-title">
-        <p className="eyebrow">CineReview AI</p>
+        <p className="eyebrow">숨겨진 여행 코스</p>
         <h1 id="login-title">로그인</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>

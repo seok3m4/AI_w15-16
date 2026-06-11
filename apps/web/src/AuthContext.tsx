@@ -9,7 +9,7 @@ import {
 import { getMe, login as requestLogin, type AuthUser } from './api'
 import { AuthContext } from './auth-context'
 
-const TOKEN_STORAGE_KEY = 'cine-review-token'
+const TOKEN_STORAGE_KEY = 'hidden-travel-course-token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>

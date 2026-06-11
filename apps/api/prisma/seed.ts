@@ -1,4 +1,4 @@
-// 📌 개발용 초기 데이터 생성 파일. DB를 비운 뒤에도 같은 샘플 데이터를 다시 넣을 수 있다.
+// 📌 개발용 초기 데이터 생성 파일. DB를 비운 뒤에도 같은 여행 코스 샘플을 다시 넣을 수 있다.
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { config } from 'dotenv';
@@ -16,9 +16,16 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
 });
 
-// User, Movie, Review, Tag, ReviewTag 샘플 데이터를 순서대로 생성한다.
+// 기존 개발용 게시글 데이터를 정리하고 User, Post, Tag, PostTag 샘플 데이터를 생성한다.
 async function main() {
-  // 현재는 인증 학습 전이므로 실제 bcrypt 해시 대신 임시 문자열을 저장한다.
+  // seed를 반복 실행해도 여행 코스 샘플이 중복되지 않도록 게시판 데이터를 먼저 비운다.
+  await prisma.postTag.deleteMany();
+  await prisma.postEmbedding.deleteMany();
+  await prisma.comment.deleteMany();
+  await prisma.post.deleteMany();
+  await prisma.tag.deleteMany();
+
+  // 인증 기능은 유지하므로 기존 seed 사용자 2명을 그대로 사용한다.
   const [minji, dohyun] = await Promise.all([
     prisma.user.upsert({
       where: { email: 'minji@example.com' },
@@ -48,68 +55,51 @@ async function main() {
     }),
   ]);
 
-  // 리뷰가 연결될 영화 3편을 먼저 만든다.
-  const [parasite, oldboy, burning] = await Promise.all([
-    prisma.movie.upsert({
-      where: { tmdbId: 496243 },
-      update: {
-        title: '기생충',
-        originalTitle: 'Parasite',
-        overview: '계층 격차를 블랙코미디와 스릴러로 풀어낸 봉준호 감독의 영화.',
-        releaseDate: new Date('2019-05-30'),
-      },
-      create: {
-        id: 'seed_movie_parasite',
-        tmdbId: 496243,
-        title: '기생충',
-        originalTitle: 'Parasite',
-        overview: '계층 격차를 블랙코미디와 스릴러로 풀어낸 봉준호 감독의 영화.',
-        releaseDate: new Date('2019-05-30'),
+  // 여행 코스 게시판에서 보여줄 샘플 게시글 3개를 만든다.
+  const [osakaPost, parisPost, jejuPost] = await Promise.all([
+    prisma.post.create({
+      data: {
+        id: 'seed_post_osaka',
+        title: '오사카 3박 4일 현지 맛집 중심 코스',
+        content:
+          '도톤보리와 난바를 중심으로 움직이되, 관광객이 적은 골목 맛집과 시장을 함께 묶은 3박 4일 코스입니다. 첫날은 난바 적응, 둘째 날은 교토 당일치기, 셋째 날은 우메다와 로컬 이자카야를 추천합니다.',
+        city: '오사카',
+        country: '일본',
+        duration: 4,
+        authorId: minji.id,
       },
     }),
-    prisma.movie.upsert({
-      where: { tmdbId: 670 },
-      update: {
-        title: '올드보이',
-        originalTitle: 'Oldboy',
-        overview: '오랜 감금 이후 복수를 추적하는 박찬욱 감독의 스릴러.',
-        releaseDate: new Date('2003-11-21'),
-      },
-      create: {
-        id: 'seed_movie_oldboy',
-        tmdbId: 670,
-        title: '올드보이',
-        originalTitle: 'Oldboy',
-        overview: '오랜 감금 이후 복수를 추적하는 박찬욱 감독의 스릴러.',
-        releaseDate: new Date('2003-11-21'),
+    prisma.post.create({
+      data: {
+        id: 'seed_post_paris',
+        title: '파리 5박 6일 도심 산책 코스',
+        content:
+          '루브르와 오르세 같은 대표 미술관을 무리 없이 보고, 마레 지구와 생마르탱 운하 주변을 천천히 걷는 일정입니다. 하루 한두 개의 핵심 동선만 잡아 여유 있게 파리를 즐기는 코스입니다.',
+        city: '파리',
+        country: '프랑스',
+        duration: 6,
+        authorId: dohyun.id,
       },
     }),
-    prisma.movie.upsert({
-      where: { tmdbId: 491584 },
-      update: {
-        title: '버닝',
-        originalTitle: 'Burning',
-        overview: '미스터리한 관계와 불안을 섬세하게 따라가는 이창동 감독의 영화.',
-        releaseDate: new Date('2018-05-17'),
-      },
-      create: {
-        id: 'seed_movie_burning',
-        tmdbId: 491584,
-        title: '버닝',
-        originalTitle: 'Burning',
-        overview: '미스터리한 관계와 불안을 섬세하게 따라가는 이창동 감독의 영화.',
-        releaseDate: new Date('2018-05-17'),
+    prisma.post.create({
+      data: {
+        id: 'seed_post_jeju',
+        title: '제주 2박 3일 자연과 가성비 코스',
+        content:
+          '렌터카를 이용해 동쪽 해안도로와 오름을 중심으로 움직이는 2박 3일 코스입니다. 숙소는 시내권으로 잡고, 낮에는 자연 명소를 돌고 저녁에는 가성비 좋은 현지 식당을 추천합니다.',
+        city: '제주',
+        country: '한국',
+        duration: 3,
+        authorId: minji.id,
       },
     }),
   ]);
 
-  // 검색과 분류에 사용할 기본 태그를 만든다.
+  // 검색과 분류에 사용할 여행 태그를 만든다.
   const tags = await Promise.all(
-    ['드라마', '스릴러', '공포', '감동', '반전'].map((name) =>
-      prisma.tag.upsert({
-        where: { name },
-        update: {},
-        create: { name },
+    ['맛집', '자연', '도심', '가성비', '혼행'].map((name) =>
+      prisma.tag.create({
+        data: { name },
       }),
     ),
   );
@@ -117,99 +107,21 @@ async function main() {
   // 태그 이름으로 id를 쉽게 찾기 위해 Map으로 바꾼다.
   const tagByName = new Map(tags.map((tag) => [tag.name, tag]));
 
-  // 각 영화마다 하나씩 리뷰를 생성하고 작성자와 영화를 연결한다.
-  const [parasiteReview, oldboyReview, burningReview] = await Promise.all([
-    prisma.review.upsert({
-      where: { id: 'seed_review_parasite' },
-      update: {
-        title: '기생충은 왜 오래 남는가',
-        content:
-          '기생충은 가족 이야기처럼 시작하지만 계층 문제를 날카롭게 드러낸다. 장면마다 긴장과 유머가 공존해서 다시 보고 싶은 영화다.',
-        rating: 5,
-        isSpoiler: false,
-        authorId: minji.id,
-        movieId: parasite.id,
-      },
-      create: {
-        id: 'seed_review_parasite',
-        title: '기생충은 왜 오래 남는가',
-        content:
-          '기생충은 가족 이야기처럼 시작하지만 계층 문제를 날카롭게 드러낸다. 장면마다 긴장과 유머가 공존해서 다시 보고 싶은 영화다.',
-        rating: 5,
-        isSpoiler: false,
-        authorId: minji.id,
-        movieId: parasite.id,
-      },
-    }),
-    prisma.review.upsert({
-      where: { id: 'seed_review_oldboy' },
-      update: {
-        title: '올드보이의 강렬한 반전',
-        content:
-          '올드보이는 복수극의 형태를 빌려 인간의 집착과 죄책감을 밀도 있게 보여준다. 결말의 충격이 영화 전체를 다시 보게 만든다.',
-        rating: 5,
-        isSpoiler: true,
-        authorId: dohyun.id,
-        movieId: oldboy.id,
-      },
-      create: {
-        id: 'seed_review_oldboy',
-        title: '올드보이의 강렬한 반전',
-        content:
-          '올드보이는 복수극의 형태를 빌려 인간의 집착과 죄책감을 밀도 있게 보여준다. 결말의 충격이 영화 전체를 다시 보게 만든다.',
-        rating: 5,
-        isSpoiler: true,
-        authorId: dohyun.id,
-        movieId: oldboy.id,
-      },
-    }),
-    prisma.review.upsert({
-      where: { id: 'seed_review_burning' },
-      update: {
-        title: '버닝이 남기는 불안감',
-        content:
-          '버닝은 사건을 명확히 설명하기보다 인물의 공허함과 의심을 천천히 쌓아 올린다. 여운이 길게 남는 드라마다.',
-        rating: 4,
-        isSpoiler: false,
-        authorId: minji.id,
-        movieId: burning.id,
-      },
-      create: {
-        id: 'seed_review_burning',
-        title: '버닝이 남기는 불안감',
-        content:
-          '버닝은 사건을 명확히 설명하기보다 인물의 공허함과 의심을 천천히 쌓아 올린다. 여운이 길게 남는 드라마다.',
-        rating: 4,
-        isSpoiler: false,
-        authorId: minji.id,
-        movieId: burning.id,
-      },
-    }),
-  ]);
-
-  // ReviewTag 연결 테이블에 리뷰와 태그의 N:M 관계를 저장한다.
-  const reviewTags = [
-    { reviewId: parasiteReview.id, tagId: tagByName.get('드라마')!.id },
-    { reviewId: parasiteReview.id, tagId: tagByName.get('스릴러')!.id },
-    { reviewId: oldboyReview.id, tagId: tagByName.get('스릴러')!.id },
-    { reviewId: oldboyReview.id, tagId: tagByName.get('반전')!.id },
-    { reviewId: burningReview.id, tagId: tagByName.get('드라마')!.id },
-    { reviewId: burningReview.id, tagId: tagByName.get('감동')!.id },
+  // PostTag 연결 테이블에 게시글과 태그의 N:M 관계를 저장한다.
+  const postTags = [
+    { postId: osakaPost.id, tagId: tagByName.get('맛집')!.id },
+    { postId: osakaPost.id, tagId: tagByName.get('가성비')!.id },
+    { postId: parisPost.id, tagId: tagByName.get('도심')!.id },
+    { postId: parisPost.id, tagId: tagByName.get('혼행')!.id },
+    { postId: jejuPost.id, tagId: tagByName.get('자연')!.id },
+    { postId: jejuPost.id, tagId: tagByName.get('가성비')!.id },
   ];
 
-  await Promise.all(
-    reviewTags.map((reviewTag) =>
-      prisma.reviewTag.upsert({
-        where: {
-          reviewId_tagId: reviewTag,
-        },
-        update: {},
-        create: reviewTag,
-      }),
-    ),
-  );
+  await prisma.postTag.createMany({
+    data: postTags,
+  });
 
-  console.log('Seed data inserted');
+  console.log('Travel seed data inserted');
 }
 
 main()

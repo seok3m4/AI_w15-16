@@ -30,7 +30,7 @@ export function SignupPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="signup-title">
-        <p className="eyebrow">CineReview AI</p>
+        <p className="eyebrow">숨겨진 여행 코스</p>
         <h1 id="signup-title">회원가입</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>

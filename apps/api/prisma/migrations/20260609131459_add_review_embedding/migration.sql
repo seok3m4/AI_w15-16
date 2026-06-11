@@ -1,4 +1,3 @@
--- vector(1536) 컬럼을 만들기 전에 PostgreSQL의 pgvector 확장을 활성화한다.
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- CreateTable

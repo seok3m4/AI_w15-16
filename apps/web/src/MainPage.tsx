@@ -16,12 +16,12 @@ export function MainPage() {
     <main className="app-page">
       <section className="dashboard-header" aria-labelledby="dashboard-title">
         <div>
-          <p className="eyebrow">CineReview AI</p>
+          <p className="eyebrow">숨겨진 여행 코스</p>
           <h1 id="dashboard-title">
             {user ? `${user.name}님, 환영합니다.` : '로그인이 필요합니다.'}
           </h1>
           <p className="dashboard-copy">
-            영화 리뷰 게시판의 인증 흐름이 연결된 상태입니다.
+            여행 코스 공유 게시판의 인증 흐름이 연결된 상태입니다.
           </p>
         </div>
         <button type="button" className="secondary-button" onClick={logout}>
