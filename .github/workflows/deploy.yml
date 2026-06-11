@@ -1,0 +1,36 @@
+name: Push Backend Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [gyugo]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_ACCOUNT_ID: "489535778783"
+  ECR_REPOSITORY: nammanmu/gyugo/backend
+
+jobs:
+  push-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::489535778783:role/NammanmuGithubOidcTrustPolicy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        run: |
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}
+          docker build -t $IMAGE_URI ./backend
+          docker push $IMAGE_URI
+          echo "Pushed $IMAGE_URI"

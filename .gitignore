@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 **/node_modules/
+.m2/
+**/.m2/
 
 # Build outputs
 dist/
