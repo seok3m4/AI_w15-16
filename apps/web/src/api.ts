@@ -13,15 +13,67 @@ export type AuthResponse = {
   user: AuthUser
 }
 
+export type PostTag = {
+  id: string
+  name: string
+}
+
+export type PostComment = {
+  id: string
+  content: string
+  createdAt: string
+  updatedAt: string
+  author: {
+    id: string
+    name: string
+  }
+}
+
+export type TravelPost = {
+  id: string
+  title: string
+  content: string
+  city: string
+  country: string
+  duration: number | null
+  authorId: string
+  createdAt: string
+  updatedAt: string
+  author: {
+    id: string
+    name: string
+  }
+  tags: PostTag[]
+}
+
+export type TravelPostDetail = TravelPost & {
+  comments: PostComment[]
+}
+
+export type PaginatedPosts = {
+  items: TravelPost[]
+  total: number
+  page: number
+  limit: number
+}
+
+export type PostPayload = {
+  title: string
+  content: string
+  city: string
+  country: string
+  duration?: number
+}
+
 // NestJS 에러 응답에서 사용자에게 보여줄 메시지를 꺼낸다.
 function getErrorMessage(body: unknown, fallback: string) {
   if (
     typeof body === 'object' &&
     body !== null &&
     'message' in body &&
-    typeof body.message === 'string'
+    (typeof body.message === 'string' || Array.isArray(body.message))
   ) {
-    return body.message
+    return Array.isArray(body.message) ? body.message.join('\n') : body.message
   }
 
   return fallback
@@ -32,12 +84,14 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const { headers, ...restOptions } = options
+
   const response = await fetch(`${API_BASE}${path}`, {
+    ...restOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...headers,
     },
-    ...options,
   })
 
   const body = (await response.json().catch(() => null)) as unknown
@@ -68,6 +122,53 @@ export function login(email: string, password: string) {
 // 저장된 JWT로 현재 로그인한 사용자 정보를 조회한다.
 export function getMe(token: string) {
   return request<AuthUser>('/auth/me', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+// 여행 코스 게시글 목록을 페이지 단위로 조회한다.
+export function getPosts(page = 1, limit = 10) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  })
+
+  return request<PaginatedPosts>(`/posts?${params.toString()}`)
+}
+
+// 특정 여행 코스 게시글의 상세 정보를 조회한다.
+export function getPost(id: string) {
+  return request<TravelPostDetail>(`/posts/${id}`)
+}
+
+// 로그인한 사용자의 JWT로 새 여행 코스 게시글을 작성한다.
+export function createPost(token: string, payload: PostPayload) {
+  return request<TravelPostDetail>('/posts', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+// 로그인한 사용자의 JWT로 본인 여행 코스 게시글을 수정한다.
+export function updatePost(token: string, id: string, payload: PostPayload) {
+  return request<TravelPostDetail>(`/posts/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  })
+}
+
+// 로그인한 사용자의 JWT로 본인 여행 코스 게시글을 삭제한다.
+export function deletePost(token: string, id: string) {
+  return request<{ success: boolean }>(`/posts/${id}`, {
+    method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
     },

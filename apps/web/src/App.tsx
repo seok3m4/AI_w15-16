@@ -4,6 +4,9 @@ import './App.css'
 import { AuthProvider } from './AuthContext'
 import { LoginPage } from './LoginPage'
 import { MainPage } from './MainPage'
+import { PostDetailPage } from './PostDetailPage'
+import { PostFormPage } from './PostFormPage'
+import { PostListPage } from './PostListPage'
 import { SignupPage } from './SignupPage'
 import { useAuth } from './useAuth'
 
@@ -28,6 +31,10 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeRoute />} />
           <Route path="/signup" element={<SignupRoute />} />
+          <Route path="/posts" element={<PostListPage />} />
+          <Route path="/posts/new" element={<PostFormPage />} />
+          <Route path="/posts/:id" element={<PostDetailPage />} />
+          <Route path="/posts/:id/edit" element={<PostFormPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
