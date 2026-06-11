@@ -10,26 +10,19 @@ const navLinks = [
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-[#172554] bg-[#071a3d] text-white shadow-[0_10px_30px_rgba(7,26,61,0.18)]">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-        <Link className="group flex items-center gap-3" href="/">
-          <span className="flex h-12 w-12 items-center justify-center rounded-md bg-white text-lg font-black text-[#071a3d] shadow-sm">
-            B
+    <header className="border-b border-[#1f3470] bg-[#2f4f9f] text-white">
+      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between">
+        <Link className="flex items-center gap-2" href="/">
+          <span className="rounded-sm bg-white px-2 py-1 text-sm font-black text-[#2f4f9f]">
+            KBO
           </span>
-          <span>
-            <span className="block text-sm font-bold uppercase tracking-[0.18em] text-[#ffb4b7]">
-              KBO TALK
-            </span>
-            <span className="block text-2xl font-black tracking-tight text-white group-hover:text-[#ffdadc]">
-              야구 게시판
-            </span>
-          </span>
+          <span className="text-lg font-black tracking-tight">KBO Talk</span>
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-2 text-sm font-bold">
+        <nav className="flex flex-wrap items-center gap-1 text-sm font-bold">
           {navLinks.map((link) => (
             <Link
-              className="rounded-md px-3 py-2 text-white/80 hover:bg-white/10 hover:text-white"
+              className="rounded-sm px-2.5 py-1.5 text-white/85 hover:bg-white/10 hover:text-white"
               href={link.href}
               key={`${link.href}-${link.label}`}
             >

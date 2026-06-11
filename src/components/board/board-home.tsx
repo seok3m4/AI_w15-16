@@ -35,44 +35,41 @@ export function BoardHome() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-8">
-      <div className="overflow-hidden rounded-md border border-[#1f3768] bg-[#071a3d] text-white shadow-[0_20px_48px_rgba(7,26,61,0.18)]">
-        <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-7">
+    <section className="mx-auto max-w-7xl px-4 py-5">
+      <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
+        <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#f6f8fc] px-4 py-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#ffb4b7]">
-              KBO TALK
-            </p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
+            <h1 className="text-2xl font-black tracking-tight text-[#1f3470]">
               KBO Talk
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
-              경기 리뷰, 선수 분석, 팀 소식, 뉴스 링크까지 야구 이야기를
-              자유롭게 공유하는 게시판입니다.
+            </h1>
+            <p className="mt-1 text-sm text-[#667085]">
+              경기 리뷰, 선수 분석, 팀 소식, 뉴스 링크를 자유롭게 공유하는 게시판
             </p>
           </div>
-
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              ["경기 리뷰", "오늘 경기"],
-              ["선수 분석", "기록·폼"],
-              ["팀 이슈", "라인업·소식"],
-            ].map(([label, value]) => (
-              <div
-                className="rounded-md border border-white/10 bg-white/10 px-3 py-4"
-                key={label}
-              >
-                <p className="text-xs font-black uppercase tracking-widest text-[#ffb4b7]">
-                  {label}
-                </p>
-                <p className="mt-2 text-sm font-bold text-white">{value}</p>
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-1.5 text-xs font-bold text-[#4b5563]">
+            <span className="rounded-sm border border-[#d8deea] bg-white px-2 py-1">
+              경기 리뷰
+            </span>
+            <span className="rounded-sm border border-[#d8deea] bg-white px-2 py-1">
+              선수 분석
+            </span>
+            <span className="rounded-sm border border-[#d8deea] bg-white px-2 py-1">
+              팀 이슈
+            </span>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-1 border-b border-[#d8deea] bg-white px-4 py-2 text-xs font-bold text-[#667085]">
+          <span className="rounded-sm bg-[#2f4f9f] px-2 py-1 text-white">
+            전체글
+          </span>
+          <span className="rounded-sm px-2 py-1">인기 태그</span>
+          <span className="rounded-sm px-2 py-1">경기 정보</span>
+          <span className="rounded-sm px-2 py-1">뉴스</span>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[248px_minmax(0,1fr)_328px]">
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
+        <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
           <TagFilterPanel
             onClearTags={handleClearTags}
             onToggleTag={handleToggleTag}
@@ -89,14 +86,11 @@ export function BoardHome() {
           selectedTags={selectedTags}
         />
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-md bg-[#071a3d] px-4 py-3 text-white">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ffb4b7]">
-              Game Info
-            </p>
-            <h2 className="mt-1 text-lg font-black">경기 정보 도구</h2>
+        <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+          <div className="rounded-sm border border-[#b9c3d7] bg-[#f6f8fc] px-3 py-2">
+            <h2 className="text-sm font-black text-[#1f3470]">경기 정보</h2>
           </div>
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             <KboGamesPanel />
             <McpBriefingPanel />
           </div>

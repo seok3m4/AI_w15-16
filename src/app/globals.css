@@ -21,9 +21,7 @@
 
 body {
   margin: 0;
-  background:
-    linear-gradient(180deg, #e7edf6 0, #f6f8fb 360px),
-    var(--background);
+  background: #f3f6fa;
   color: var(--foreground);
   font-family:
     Arial,
@@ -48,9 +46,9 @@ textarea {
 
 .kbo-panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 2px;
   background: var(--surface);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
 }
 
 .kbo-panel-title {

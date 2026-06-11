@@ -31,8 +31,8 @@ type KboStandingsResponse = {
 function formatFetchedAt(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
-    month: "long",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
@@ -117,96 +117,74 @@ export function KboStandingsPanel() {
   }, []);
 
   return (
-    <section className="kbo-panel overflow-hidden">
-      <div className="border-b border-[#d7dde8] bg-white px-5 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d71920]">
-              Standings
-            </p>
-            <h2 className="mt-1 text-base font-black text-[#071a3d]">
-              현재 KBO 순위
-            </h2>
-          </div>
-          <button
-            className="rounded-md border border-[#d7dde8] px-2 py-1 text-xs font-black text-[#071a3d] hover:border-[#d71920] hover:text-[#d71920] disabled:cursor-not-allowed disabled:text-[#94a3b8]"
-            disabled={isLoading}
-            onClick={() => void loadStandings(true)}
-            type="button"
-          >
-            새로고침
-          </button>
-        </div>
+    <section className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
+      <div className="flex items-center justify-between border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
+        <h2 className="text-sm font-black text-[#1f3470]">KBO 순위</h2>
+        <button
+          className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline disabled:cursor-not-allowed disabled:text-[#a0a7b4]"
+          disabled={isLoading}
+          onClick={() => void loadStandings(true)}
+          type="button"
+        >
+          새로고침
+        </button>
+      </div>
 
-        {data?.result ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-bold text-[#64748b]">
-            <span>{data.result.seasonYear} 정규시즌</span>
-            <span>·</span>
+      {data?.result ? (
+        <div className="border-b border-[#edf1f7] px-3 py-2 text-[11px] font-bold text-[#667085]">
+          <div>{data.result.seasonYear} 정규시즌</div>
+          <div className="mt-0.5 flex items-center justify-between gap-2">
             <span>{formatFetchedAt(data.result.fetchedAt)} 기준</span>
             <a
-              className="font-black text-[#d71920] hover:underline"
+              className="shrink-0 text-[#2f4f9f] hover:underline"
               href={data.result.source}
               rel="noreferrer"
               target="_blank"
             >
-              KBO 원문
+              원문
             </a>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {isLoading ? (
-        <p className="p-5 text-sm text-[#64748b]">KBO 순위를 불러오는 중입니다.</p>
+        <p className="px-3 py-4 text-xs text-[#667085]">
+          KBO 순위를 불러오는 중입니다.
+        </p>
       ) : null}
 
       {!isLoading && data?.message ? (
-        <p className="m-5 rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+        <p className="m-2 rounded-sm border border-[#fecaca] bg-[#fff1f2] px-2 py-2 text-xs text-[#b91c1c]">
           {data.message}
         </p>
       ) : null}
 
       {!isLoading && data?.result ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[300px] border-collapse text-left text-xs">
-            <thead className="bg-[#f8fafc] text-[#64748b]">
-              <tr>
-                <th className="px-3 py-2 font-black">순위</th>
-                <th className="px-3 py-2 font-black">팀</th>
-                <th className="px-3 py-2 text-right font-black">승률</th>
-                <th className="px-3 py-2 text-right font-black">게임차</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.result.rows.map((row) => (
-                <tr
-                  className="border-t border-[#e5eaf1] align-top"
-                  key={row.team}
-                >
-                  <td className="px-3 py-2">
-                    <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-[#071a3d] px-1.5 text-xs font-black text-white">
-                      {row.rank}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <p className="font-black text-[#071a3d]">{row.team}</p>
-                    <p className="mt-1 text-[11px] font-bold text-[#64748b]">
-                      {row.wins}승 {row.losses}패 {row.draws}무
-                    </p>
-                    <p className="mt-1 text-[11px] text-[#64748b]">
-                      최근 {row.lastTenGames} · {row.streak}
-                    </p>
-                  </td>
-                  <td className="px-3 py-2 text-right font-black text-[#071a3d]">
+        <ol className="divide-y divide-[#edf1f7]">
+          {data.result.rows.map((row) => (
+            <li className="flex gap-2 px-3 py-2" key={row.team}>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-[#2f4f9f] text-xs font-black text-white">
+                {row.rank}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="truncate text-xs font-black text-[#202632]">
+                    {row.team}
+                  </p>
+                  <span className="shrink-0 text-xs font-black text-[#1f3470]">
                     {row.winningRate}
-                  </td>
-                  <td className="px-3 py-2 text-right font-bold text-[#64748b]">
-                    {row.gamesBehind}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#667085]">
+                  <span>
+                    {row.wins}승 {row.draws}무 {row.losses}패
+                  </span>
+                  <span>GB {row.gamesBehind}</span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
       ) : null}
     </section>
   );
