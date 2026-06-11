@@ -79,13 +79,13 @@ PW: password
 ### Documentation
 
 - 프론트엔드 설계 문서:
-  - `docs/superpowers/specs/2026-06-05-front-ionic-react-capacitor-design.md`
+    - `docs/superpowers/specs/2026-06-05-front-ionic-react-capacitor-design.md`
 - 프론트엔드 구현 계획:
-  - `docs/superpowers/plans/2026-06-05-front-ionic-react-capacitor.md`
+    - `docs/superpowers/plans/2026-06-05-front-ionic-react-capacitor.md`
 - 과제 요구사항과 팀 운영 노트:
-  - `과제내용.md`
-  - `myself/260605.txt`
-  - `myself/팀.md`
+    - `과제내용.md`
+    - `myself/260605.txt`
+    - `myself/팀.md`
 
 ## 실행 방법
 
