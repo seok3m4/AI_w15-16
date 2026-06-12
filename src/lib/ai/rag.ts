@@ -7,6 +7,7 @@ import {
   getEmbeddingDimensions,
   getEmbeddingModel,
   getOpenAIApiKey,
+  MAX_RAG_LIMIT,
 } from "@/lib/ai/config";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { prisma } from "@/lib/prisma";
@@ -53,6 +54,20 @@ export type SimilarPostsResult =
       ok: false;
       status: "not_found" | "disabled" | "unavailable";
       message: string;
+    };
+
+export type RelatedPostBundleSummaryResult =
+  | {
+      ok: true;
+      title: string;
+      summary: string;
+      sources: SimilarPost[];
+    }
+  | {
+      ok: false;
+      status: "not_found" | "disabled" | "unavailable";
+      message: string;
+      sources: SimilarPost[];
     };
 
 const postEmbeddingSelect = {
@@ -359,6 +374,55 @@ async function summarizeSimilarPosts(
   }
 }
 
+async function summarizeRelatedPostBundle(input: {
+  title: string;
+  description: string;
+  posts: SimilarPost[];
+}): Promise<string | null> {
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey || input.posts.length === 0) {
+    return null;
+  }
+
+  const prompt = [
+    "너는 야구 커뮤니티의 경기방/팀 게시판 반응을 정리하는 RAG 요약 도우미다.",
+    "아래 검색된 게시글들만 근거로 삼아 한국어로 요약해라.",
+    "없는 사실을 만들지 말고, 경기 기록처럼 확정되지 않은 내용은 커뮤니티 의견이라고 표현해라.",
+    "출력은 짧은 제목 1줄, 핵심 요약 2~3문장, 주요 쟁점 3개 bullet로 구성해라.",
+    "",
+    "[요약 대상]",
+    `제목: ${input.title}`,
+    `설명: ${input.description}`,
+    "",
+    "[검색된 게시글]",
+    ...input.posts.map((post, index) =>
+      [
+        `${index + 1}. ${post.title}`,
+        `태그: ${post.tags.map((tag) => tag.name).join(", ") || "없음"}`,
+        `추천점수: ${post.counts.voteScore}, 댓글: ${post.counts.comments}, 조회: ${post.counts.views}`,
+        `본문: ${post.content.slice(0, 900)}`,
+      ].join("\n"),
+    ),
+  ].join("\n");
+
+  try {
+    const chat = new ChatOpenAI({
+      apiKey,
+      model: getChatModel(),
+      temperature: 0.2,
+    });
+    const response = await chat.invoke(prompt);
+    const summary = getMessageText(response.content);
+
+    return summary || null;
+  } catch (error) {
+    console.error("Failed to summarize related post bundle.", error);
+
+    return null;
+  }
+}
+
 export async function refreshPostEmbedding(postId: string): Promise<void> {
   try {
     const result = await getOrCreatePostEmbedding(postId);
@@ -466,4 +530,94 @@ export async function findSimilarPostsForDraft(input: {
       message: "초안 기반 RAG 검색을 실행하지 못했습니다. pgvector 또는 OpenAI 설정을 확인해주세요.",
     };
   }
+}
+
+export async function summarizeRelatedPostsByTags(input: {
+  title: string;
+  description: string;
+  tags: string[];
+  limit: number;
+}): Promise<RelatedPostBundleSummaryResult> {
+  const title = input.title.trim();
+  const description = input.description.trim();
+  const tags = input.tags
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(0, MAX_RAG_LIMIT);
+  const limit = Math.min(Math.max(input.limit, 1), MAX_RAG_LIMIT);
+
+  if (tags.length === 0) {
+    return {
+      ok: false,
+      status: "not_found",
+      message: "요약할 태그가 없습니다.",
+      sources: [],
+    };
+  }
+
+  const posts = await prisma.post.findMany({
+    where: {
+      OR: tags.map((tagName) => ({
+        tags: {
+          some: {
+            tag: {
+              name: {
+                equals: tagName,
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      })),
+    },
+    orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
+    take: limit,
+    select: postSelect,
+  });
+  const sources = posts.map((post) => ({
+    ...toPostResponse(post),
+    similarity: 1,
+  }));
+
+  if (sources.length === 0) {
+    return {
+      ok: false,
+      status: "not_found",
+      message: "아직 요약할 관련 게시글이 없습니다.",
+      sources,
+    };
+  }
+
+  const apiKey = getOpenAIApiKey();
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: "disabled",
+      message: "OPENAI_API_KEY가 설정되어 있지 않아 관련 글 요약을 사용할 수 없습니다.",
+      sources,
+    };
+  }
+
+  const summary = await summarizeRelatedPostBundle({
+    title,
+    description,
+    posts: sources,
+  });
+
+  if (!summary) {
+    return {
+      ok: false,
+      status: "unavailable",
+      message: "관련 글 요약을 생성하지 못했습니다.",
+      sources,
+    };
+  }
+
+  return {
+    ok: true,
+    title,
+    summary,
+    sources,
+  };
 }

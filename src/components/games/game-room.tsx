@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-panel";
 import {
   type KboGame,
   getGameKey,
@@ -240,6 +241,16 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
   }
 
   const winnerTeam = getWinnerTeam(game);
+  const summaryTags = [game.awayTeam, game.homeTeam];
+  const summaryTitle = `${game.gameDate} ${game.awayTeam} VS ${game.homeTeam} 관련 글`;
+  const summaryDescription = [
+    `${game.awayTeam}와 ${game.homeTeam} 경기방`,
+    `스코어: ${getScoreText(game)}`,
+    game.stadium ? `구장: ${game.stadium}` : "",
+    winnerTeam ? `결과: ${winnerTeam} 승` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-5">
@@ -323,6 +334,12 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 </p>
               </div>
             </div>
+
+            <RelatedPostSummaryPanel
+              description={summaryDescription}
+              tags={summaryTags}
+              title={summaryTitle}
+            />
 
             <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
               <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
