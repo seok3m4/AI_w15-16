@@ -11,14 +11,15 @@ datasource db {
 
 /// 서비스에 가입한 사용자.
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
+  id           String      @id @default(cuid())
+  email        String      @unique
   name         String
   passwordHash String
   posts        Post[]
   comments     Comment[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  savedPosts   SavedPost[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 /// 여행 코스 게시글.
@@ -27,13 +28,13 @@ model Post {
   title     String
   content   String
   city      String
-  country   String
   duration  Int?
   authorId  String
   author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   tags      PostTag[]
   places    Place[]
+  savedBy   SavedPost[]
   embedding PostEmbedding?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
@@ -41,6 +42,19 @@ model Post {
   @@index([authorId])
   @@index([city])
   @@index([createdAt])
+}
+
+/// 사용자가 "나중에 보기"처럼 저장한 게시글. (User-Post N:M 북마크)
+model SavedPost {
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@index([postId])
+  @@index([userId])
 }
 
 /// 여행 코스를 구성하는 개별 경유지(장소). 지도에 순서대로 표시된다.

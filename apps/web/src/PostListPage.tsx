@@ -32,7 +32,7 @@ export function PostListPage() {
     setState({ kind: 'loading' })
 
     // 현재 page와 검색 조건에 해당하는 게시글 목록을 백엔드에서 가져온다.
-    getPosts(page, PAGE_SIZE, { q: query.q, tag: query.tag })
+    getPosts(page, PAGE_SIZE, { q: query.q, tag: query.tag }, token)
       .then((data) => {
         if (isMounted) setState({ kind: 'ready', data })
       })
@@ -50,7 +50,7 @@ export function PostListPage() {
     return () => {
       isMounted = false
     }
-  }, [page, query])
+  }, [page, query, token])
 
   const totalPages =
     state.kind === 'ready'
@@ -79,9 +79,10 @@ export function PostListPage() {
         <header className="page-header">
           <div>
             <p className="eyebrow">여행 코스 게시판</p>
-            <h1>숨겨진 여행 코스</h1>
+            <h1>정글 여행</h1>
             <p className="dashboard-copy">
-              직접 다녀온 도시별 코스를 공유하고 다음 여행 아이디어를 찾아보세요.
+              직접 다녀온 국내 도시별 코스를 공유하고 다음 여행 아이디어를
+              찾아보세요.
             </p>
           </div>
           {token && (
@@ -136,13 +137,17 @@ export function PostListPage() {
               {state.data.items.map((post) => (
                 <article className="post-card" key={post.id}>
                   <Link to={`/posts/${post.id}`}>
-                    <p className="post-location">
-                      {post.country} · {post.city}
-                    </p>
+                    <p className="post-location">{post.city}</p>
                     <h2>{post.title}</h2>
                     <p className="post-meta">
                       작성자 {post.author.name}
                       {post.duration ? ` · ${post.duration}일 코스` : ''}
+                      {post.saveCount > 0 && (
+                        <span className="post-save-count">
+                          {' '}
+                          · 🔖 {post.saveCount}
+                        </span>
+                      )}
                     </p>
                     <p className="post-excerpt">{post.content}</p>
                     {post.tags.length > 0 && (

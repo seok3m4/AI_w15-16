@@ -44,7 +44,6 @@ export type TravelPost = {
   title: string
   content: string
   city: string
-  country: string
   duration: number | null
   authorId: string
   createdAt: string
@@ -55,6 +54,10 @@ export type TravelPost = {
   }
   tags: PostTag[]
   places: Place[]
+  // 이 게시글이 저장된 총 횟수
+  saveCount: number
+  // 현재 로그인한 사용자가 이 게시글을 저장했는지 여부 (비로그인 시 false)
+  isSaved: boolean
 }
 
 export type TravelPostDetail = TravelPost & {
@@ -81,7 +84,6 @@ export type PostPayload = {
   title: string
   content: string
   city: string
-  country: string
   duration?: number
   tags?: string[]
   places?: PlaceInput[]
@@ -150,11 +152,18 @@ export function getMe(token: string) {
   })
 }
 
+// 로그인 토큰이 있으면 Authorization 헤더를 만들어 주고, 없으면 빈 객체를 반환한다.
+function authHeaders(token?: string | null): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 // 여행 코스 게시글 목록을 페이지 단위로 조회한다. 검색어(q)와 태그 필터를 함께 받는다.
+// 토큰을 주면 각 게시글의 저장 여부(isSaved)도 함께 받는다.
 export function getPosts(
   page = 1,
   limit = 10,
   options: { q?: string; tag?: string } = {},
+  token?: string | null,
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -168,12 +177,45 @@ export function getPosts(
     params.set('tag', options.tag.trim())
   }
 
-  return request<PaginatedPosts>(`/posts?${params.toString()}`)
+  return request<PaginatedPosts>(`/posts?${params.toString()}`, {
+    headers: authHeaders(token),
+  })
 }
 
-// 특정 여행 코스 게시글의 상세 정보를 조회한다.
-export function getPost(id: string) {
-  return request<TravelPostDetail>(`/posts/${id}`)
+// 특정 여행 코스 게시글의 상세 정보를 조회한다. 토큰을 주면 저장 여부도 함께 받는다.
+export function getPost(id: string, token?: string | null) {
+  return request<TravelPostDetail>(`/posts/${id}`, {
+    headers: authHeaders(token),
+  })
+}
+
+// 게시글을 저장("나중에 보기") 목록에 추가한다.
+export function savePost(token: string, postId: string) {
+  return request<{ saved: boolean; saveCount: number }>(
+    `/posts/${postId}/save`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+    },
+  )
+}
+
+// 게시글을 저장 목록에서 제거한다.
+export function unsavePost(token: string, postId: string) {
+  return request<{ saved: boolean; saveCount: number }>(
+    `/posts/${postId}/save`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    },
+  )
+}
+
+// 마이페이지에서 보여줄 내가 저장한 게시글 목록을 조회한다.
+export function getSavedPosts(token: string) {
+  return request<TravelPost[]>('/me/saved-posts', {
+    headers: authHeaders(token),
+  })
 }
 
 // 로그인한 사용자의 JWT로 새 여행 코스 게시글을 작성한다.

@@ -30,8 +30,11 @@ export function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="login-title">
-        <p className="eyebrow">숨겨진 여행 코스</p>
-        <h1 id="login-title">로그인</h1>
+        <Link className="auth-brand" to="/">
+          <span aria-hidden>✈</span> 정글 여행
+        </Link>
+        <p className="eyebrow">로그인</p>
+        <h1 id="login-title">다시 오신 걸 환영해요</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
             이메일

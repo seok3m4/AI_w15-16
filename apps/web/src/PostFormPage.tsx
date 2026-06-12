@@ -9,7 +9,6 @@ type FormState = {
   title: string
   content: string
   city: string
-  country: string
   duration: string
   tags: string
 }
@@ -18,7 +17,6 @@ const emptyForm: FormState = {
   title: '',
   content: '',
   city: '',
-  country: '',
   duration: '',
   tags: '',
 }
@@ -62,7 +60,6 @@ export function PostFormPage() {
           title: post.title,
           content: post.content,
           city: post.city,
-          country: post.country,
           duration: post.duration ? String(post.duration) : '',
           tags: post.tags.map((tag) => tag.name).join(', '),
         })
@@ -91,7 +88,7 @@ export function PostFormPage() {
   }, [id])
 
   if (!token) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/login" replace />
   }
 
   const authToken = token
@@ -110,7 +107,6 @@ export function PostFormPage() {
       title: form.title,
       content: form.content,
       city: form.city,
-      country: form.country,
       tags: parseTags(form.tags),
       // 화면에 보이는 순서를 그대로 코스 순서(order)로 저장한다.
       places: places.map((place, index) => ({
@@ -190,18 +186,20 @@ export function PostFormPage() {
                   type="text"
                   value={form.city}
                   onChange={(event) => updateField('city', event.target.value)}
+                  placeholder="예: 부산, 강릉, 제주"
                   required
                 />
               </label>
               <label>
-                국가
+                여행 기간
                 <input
-                  type="text"
-                  value={form.country}
+                  type="number"
+                  min="1"
+                  value={form.duration}
                   onChange={(event) =>
-                    updateField('country', event.target.value)
+                    updateField('duration', event.target.value)
                   }
-                  required
+                  placeholder="예: 3"
                 />
               </label>
             </div>
@@ -211,16 +209,6 @@ export function PostFormPage() {
               <PlaceEditor places={places} onChange={setPlaces} />
             </div>
 
-            <label>
-              여행 기간
-              <input
-                type="number"
-                min="1"
-                value={form.duration}
-                onChange={(event) => updateField('duration', event.target.value)}
-                placeholder="예: 3"
-              />
-            </label>
             <label>
               태그
               <input

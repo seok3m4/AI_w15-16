@@ -56,29 +56,27 @@ async function main() {
     }),
   ]);
 
-  // 여행 코스 게시판에서 보여줄 샘플 게시글 3개를 만든다.
-  const [osakaPost, parisPost, jejuPost] = await Promise.all([
+  // 여행 코스 게시판에서 보여줄 샘플 국내 여행 코스 3개를 만든다.
+  const [busanPost, gangneungPost, jejuPost] = await Promise.all([
     prisma.post.create({
       data: {
-        id: 'seed_post_osaka',
-        title: '오사카 3박 4일 현지 맛집 중심 코스',
+        id: 'seed_post_busan',
+        title: '부산 2박 3일 바다와 골목 맛집 코스',
         content:
-          '도톤보리와 난바를 중심으로 움직이되, 관광객이 적은 골목 맛집과 시장을 함께 묶은 3박 4일 코스입니다. 첫날은 난바 적응, 둘째 날은 교토 당일치기, 셋째 날은 우메다와 로컬 이자카야를 추천합니다.',
-        city: '오사카',
-        country: '일본',
-        duration: 4,
+          '부산역에서 시작해 감천문화마을의 골목을 둘러보고, 자갈치시장에서 회를 맛본 뒤 해운대 야경으로 마무리하는 2박 3일 코스입니다. 지하철과 버스로 충분히 이동할 수 있어 뚜벅이 여행에도 좋습니다.',
+        city: '부산',
+        duration: 3,
         authorId: minji.id,
       },
     }),
     prisma.post.create({
       data: {
-        id: 'seed_post_paris',
-        title: '파리 5박 6일 도심 산책 코스',
+        id: 'seed_post_gangneung',
+        title: '강릉 1박 2일 바다 커피 여행 코스',
         content:
-          '루브르와 오르세 같은 대표 미술관을 무리 없이 보고, 마레 지구와 생마르탱 운하 주변을 천천히 걷는 일정입니다. 하루 한두 개의 핵심 동선만 잡아 여유 있게 파리를 즐기는 코스입니다.',
-        city: '파리',
-        country: '프랑스',
-        duration: 6,
+          '강릉역에 내려 오죽헌을 둘러보고, 경포해변을 산책한 뒤 안목해변 커피거리에서 바다를 보며 커피로 마무리하는 1박 2일 코스입니다. 혼자 천천히 걷기 좋은 동선으로 묶었습니다.',
+        city: '강릉',
+        duration: 2,
         authorId: dohyun.id,
       },
     }),
@@ -89,7 +87,6 @@ async function main() {
         content:
           '렌터카를 이용해 동쪽 해안도로와 오름을 중심으로 움직이는 2박 3일 코스입니다. 숙소는 시내권으로 잡고, 낮에는 자연 명소를 돌고 저녁에는 가성비 좋은 현지 식당을 추천합니다.',
         city: '제주',
-        country: '한국',
         duration: 3,
         authorId: minji.id,
       },
@@ -110,10 +107,10 @@ async function main() {
 
   // PostTag 연결 테이블에 게시글과 태그의 N:M 관계를 저장한다.
   const postTags = [
-    { postId: osakaPost.id, tagId: tagByName.get('맛집')!.id },
-    { postId: osakaPost.id, tagId: tagByName.get('가성비')!.id },
-    { postId: parisPost.id, tagId: tagByName.get('도심')!.id },
-    { postId: parisPost.id, tagId: tagByName.get('혼행')!.id },
+    { postId: busanPost.id, tagId: tagByName.get('맛집')!.id },
+    { postId: busanPost.id, tagId: tagByName.get('도심')!.id },
+    { postId: gangneungPost.id, tagId: tagByName.get('자연')!.id },
+    { postId: gangneungPost.id, tagId: tagByName.get('혼행')!.id },
     { postId: jejuPost.id, tagId: tagByName.get('자연')!.id },
     { postId: jejuPost.id, tagId: tagByName.get('가성비')!.id },
   ];
@@ -125,70 +122,70 @@ async function main() {
   // 각 게시글에 지도에 표시할 경유지(장소)를 순서대로 넣는다. 좌표는 실제 위치 기준이다.
   await prisma.place.createMany({
     data: [
-      // 오사카 코스: 난바 → 도톤보리 → 오사카성 → 우메다
+      // 부산 코스: 부산역 → 감천문화마을 → 자갈치시장 → 해운대해수욕장
       {
-        postId: osakaPost.id,
-        name: '난바역',
-        address: '오사카 난바',
-        lat: 34.6657,
-        lng: 135.5012,
+        postId: busanPost.id,
+        name: '부산역',
+        address: '부산 동구 중앙대로',
+        lat: 35.1151,
+        lng: 129.0413,
         order: 0,
       },
       {
-        postId: osakaPost.id,
-        name: '도톤보리',
-        address: '오사카 주오구 도톤보리',
-        lat: 34.6687,
-        lng: 135.5013,
+        postId: busanPost.id,
+        name: '감천문화마을',
+        address: '부산 사하구 감내2로',
+        lat: 35.0975,
+        lng: 129.0107,
         order: 1,
       },
       {
-        postId: osakaPost.id,
-        name: '오사카성',
-        address: '오사카 주오구 오사카성',
-        lat: 34.6873,
-        lng: 135.5259,
+        postId: busanPost.id,
+        name: '자갈치시장',
+        address: '부산 중구 자갈치해안로',
+        lat: 35.0966,
+        lng: 129.0306,
         order: 2,
       },
       {
-        postId: osakaPost.id,
-        name: '우메다 스카이빌딩',
-        address: '오사카 기타구 우메다',
-        lat: 34.7053,
-        lng: 135.4902,
+        postId: busanPost.id,
+        name: '해운대해수욕장',
+        address: '부산 해운대구 우동',
+        lat: 35.1587,
+        lng: 129.1604,
         order: 3,
       },
-      // 파리 코스: 루브르 → 오르세 → 노트르담 → 마레 지구
+      // 강릉 코스: 강릉역 → 오죽헌 → 경포해변 → 안목해변 커피거리
       {
-        postId: parisPost.id,
-        name: '루브르 박물관',
-        address: 'Rue de Rivoli, Paris',
-        lat: 48.8606,
-        lng: 2.3376,
+        postId: gangneungPost.id,
+        name: '강릉역',
+        address: '강원 강릉시 용지로',
+        lat: 37.7637,
+        lng: 128.8996,
         order: 0,
       },
       {
-        postId: parisPost.id,
-        name: '오르세 미술관',
-        address: "Esplanade Valéry Giscard d'Estaing, Paris",
-        lat: 48.86,
-        lng: 2.3266,
+        postId: gangneungPost.id,
+        name: '오죽헌',
+        address: '강원 강릉시 율곡로',
+        lat: 37.7793,
+        lng: 128.8784,
         order: 1,
       },
       {
-        postId: parisPost.id,
-        name: '노트르담 대성당',
-        address: 'Parvis Notre-Dame, Paris',
-        lat: 48.853,
-        lng: 2.3499,
+        postId: gangneungPost.id,
+        name: '경포해변',
+        address: '강원 강릉시 강문동',
+        lat: 37.8055,
+        lng: 128.9095,
         order: 2,
       },
       {
-        postId: parisPost.id,
-        name: '마레 지구',
-        address: 'Le Marais, Paris',
-        lat: 48.8575,
-        lng: 2.3622,
+        postId: gangneungPost.id,
+        name: '안목해변 커피거리',
+        address: '강원 강릉시 창해로14번길',
+        lat: 37.7714,
+        lng: 128.9476,
         order: 3,
       },
       // 제주 코스: 제주공항 → 성산일출봉 → 섭지코지 → 카페거리

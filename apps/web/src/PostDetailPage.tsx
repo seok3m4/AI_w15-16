@@ -6,6 +6,8 @@ import {
   deleteComment,
   deletePost,
   getPost,
+  savePost,
+  unsavePost,
   type TravelPostDetail,
 } from './api'
 import { CourseMap } from './CourseMap'
@@ -23,6 +25,13 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
+// 경유지 이름과 좌표로 카카오맵에서 해당 장소 페이지를 여는 링크를 만든다.
+function kakaoPlaceUrl(place: { name: string; lat: number; lng: number }) {
+  return `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${
+    place.lat
+  },${place.lng}`
+}
+
 export function PostDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -32,14 +41,16 @@ export function PostDetailPage() {
   const [commentInput, setCommentInput] = useState('')
   const [commentError, setCommentError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [savePending, setSavePending] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     if (!id) return
 
     let isMounted = true
 
-    // URL의 게시글 id로 상세 정보를 조회한다.
-    getPost(id)
+    // URL의 게시글 id로 상세 정보를 조회한다. (토큰이 있으면 저장 여부도 함께 받는다)
+    getPost(id, token)
       .then((post) => {
         if (isMounted) setState({ kind: 'ready', post })
       })
@@ -57,7 +68,7 @@ export function PostDetailPage() {
     return () => {
       isMounted = false
     }
-  }, [id])
+  }, [id, token])
 
   if (!id) {
     return <Navigate to="/posts" replace />
@@ -78,6 +89,29 @@ export function PostDetailPage() {
       setDeleteError(
         error instanceof Error ? error.message : '게시글 삭제에 실패했습니다.',
       )
+    }
+  }
+
+  // 저장 버튼 토글: 저장돼 있으면 해제, 아니면 저장하고 응답으로 받은 갯수를 반영한다.
+  async function handleToggleSave() {
+    if (!token || !post) return
+
+    setSaveError('')
+    setSavePending(true)
+    try {
+      const result = post.isSaved
+        ? await unsavePost(token, post.id)
+        : await savePost(token, post.id)
+      setState({
+        kind: 'ready',
+        post: { ...post, isSaved: result.saved, saveCount: result.saveCount },
+      })
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : '저장 처리에 실패했습니다.',
+      )
+    } finally {
+      setSavePending(false)
     }
   }
 
@@ -146,9 +180,7 @@ export function PostDetailPage() {
         {post && (
           <article className="detail-panel">
             <header className="detail-header">
-              <p className="post-location">
-                {post.country} · {post.city}
-              </p>
+              <p className="post-location">{post.city}</p>
               <h1>{post.title}</h1>
               <p className="post-meta">
                 작성자 {post.author.name} · {formatDate(post.createdAt)}
@@ -165,20 +197,48 @@ export function PostDetailPage() {
               )}
             </header>
 
+            <div className="save-bar">
+              {token ? (
+                <button
+                  type="button"
+                  className={post.isSaved ? 'save-button saved' : 'save-button'}
+                  onClick={handleToggleSave}
+                  disabled={savePending}
+                >
+                  {post.isSaved ? '🔖 저장됨' : '🔖 저장'}
+                </button>
+              ) : null}
+              <span className="save-count">
+                {post.saveCount}명이 저장했어요
+              </span>
+            </div>
+            {saveError && <p className="error-message">{saveError}</p>}
+
             <p className="detail-content">{post.content}</p>
 
             {post.places.length > 0 && (
               <section className="course-section" aria-labelledby="course-title">
                 <h2 id="course-title">코스 경로</h2>
                 <CourseMap places={post.places} height={360} />
-                <ol className="course-list">
+                <ol className="course-list course-list--links">
                   {post.places.map((place, index) => (
                     <li key={place.id}>
-                      <span className="place-order">{index + 1}</span>
-                      <div className="place-course-info">
-                        <strong>{place.name}</strong>
-                        {place.address && <span>{place.address}</span>}
-                      </div>
+                      <a
+                        className="course-place-link"
+                        href={kakaoPlaceUrl(place)}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`카카오맵에서 ${place.name} 보기`}
+                      >
+                        <span className="place-order">{index + 1}</span>
+                        <div className="place-course-info">
+                          <strong>{place.name}</strong>
+                          {place.address && <span>{place.address}</span>}
+                        </div>
+                        <span className="course-place-arrow" aria-hidden>
+                          ↗
+                        </span>
+                      </a>
                     </li>
                   ))}
                 </ol>
@@ -256,7 +316,7 @@ export function PostDetailPage() {
                 </form>
               ) : (
                 <p className="status-text">
-                  댓글을 작성하려면 <Link to="/">로그인</Link>이 필요합니다.
+                  댓글을 작성하려면 <Link to="/login">로그인</Link>이 필요합니다.
                 </p>
               )}
             </section>

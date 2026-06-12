@@ -19,7 +19,7 @@ export function SignupPage() {
 
     try {
       await signup(email, name, password)
-      navigate('/')
+      navigate('/login')
     } catch (err) {
       setError(err instanceof Error ? err.message : '회원가입에 실패했습니다.')
     } finally {
@@ -30,8 +30,11 @@ export function SignupPage() {
   return (
     <main className="auth-page">
       <section className="auth-panel" aria-labelledby="signup-title">
-        <p className="eyebrow">숨겨진 여행 코스</p>
-        <h1 id="signup-title">회원가입</h1>
+        <Link className="auth-brand" to="/">
+          <span aria-hidden>✈</span> 정글 여행
+        </Link>
+        <p className="eyebrow">회원가입</p>
+        <h1 id="signup-title">새 계정 만들기</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
             이메일
@@ -69,7 +72,7 @@ export function SignupPage() {
           </button>
         </form>
         <p className="auth-link">
-          이미 계정이 있나요? <Link to="/">로그인</Link>
+          이미 계정이 있나요? <Link to="/login">로그인</Link>
         </p>
       </section>
     </main>

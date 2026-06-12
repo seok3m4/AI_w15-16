@@ -60,7 +60,7 @@ export function PlaceEditor({ places, onChange }: Props) {
     }
   }
 
-  // 검색 결과를 코스 경유지 목록 끝에 추가한다.
+  // 검색 결과를 코스 경유지 목록 끝에 추가하고, 선택 후 검색 결과 목록은 닫는다.
   function addPlace(result: KakaoPlace) {
     const next: PlaceDraft = {
       name: result.place_name,
@@ -69,6 +69,9 @@ export function PlaceEditor({ places, onChange }: Props) {
       lng: Number(result.x),
     }
     onChange([...places, next])
+    setResults([])
+    setQuery('')
+    setError('')
   }
 
   function removePlace(index: number) {

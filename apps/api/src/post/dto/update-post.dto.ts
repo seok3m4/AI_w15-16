@@ -25,10 +25,6 @@ export class UpdatePostDto {
   @IsNotEmpty()
   city: string;
 
-  @IsString()
-  @IsNotEmpty()
-  country: string;
-
   @IsOptional()
   @Type(() => Number)
   @IsInt()

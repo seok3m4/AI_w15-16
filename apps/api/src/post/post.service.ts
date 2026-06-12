@@ -10,45 +10,65 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PlaceInputDto } from './dto/place-input.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
-const postListInclude = {
-  author: {
-    select: {
-      id: true,
-      name: true,
+// 목록/상세 공통 include. userId가 있으면 그 사용자의 저장 여부(savedBy)도 함께 가져온다.
+function buildPostInclude(userId?: string): Prisma.PostInclude {
+  return {
+    author: {
+      select: {
+        id: true,
+        name: true,
+      },
     },
-  },
-  tags: {
-    include: {
-      tag: true,
+    tags: {
+      include: {
+        tag: true,
+      },
     },
-  },
-  places: {
-    orderBy: {
-      order: 'asc' as const,
+    places: {
+      orderBy: {
+        order: 'asc' as const,
+      },
     },
-  },
-};
+    // 저장된 횟수(saveCount) 계산용
+    _count: {
+      select: {
+        savedBy: true,
+      },
+    },
+    // 로그인한 경우에만 본인이 저장했는지 확인한다.
+    ...(userId
+      ? {
+          savedBy: {
+            where: { userId },
+            select: { userId: true },
+          },
+        }
+      : {}),
+  };
+}
 
-const postDetailInclude = {
-  ...postListInclude,
-  comments: {
-    orderBy: {
-      createdAt: 'asc' as const,
-    },
-    select: {
-      id: true,
-      content: true,
-      createdAt: true,
-      updatedAt: true,
-      author: {
-        select: {
-          id: true,
-          name: true,
+function buildPostDetailInclude(userId?: string): Prisma.PostInclude {
+  return {
+    ...buildPostInclude(userId),
+    comments: {
+      orderBy: {
+        createdAt: 'asc' as const,
+      },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
       },
     },
-  },
-};
+  };
+}
 
 @Injectable()
 export class PostService {
@@ -61,7 +81,6 @@ export class PostService {
         title: dto.title,
         content: dto.content,
         city: dto.city,
-        country: dto.country,
         duration: dto.duration ?? null,
         authorId,
       },
@@ -71,11 +90,17 @@ export class PostService {
     await this.syncTags(post.id, dto.tags ?? []);
     await this.syncPlaces(post.id, dto.places ?? []);
 
-    return this.findOne(post.id);
+    return this.findOne(post.id, authorId);
   }
 
   // 최신순으로 게시글 목록을 가져오고 검색어/태그 필터와 페이지네이션을 적용한다.
-  async findAll(page: number, limit: number, q?: string, tag?: string) {
+  async findAll(
+    page: number,
+    limit: number,
+    q?: string,
+    tag?: string,
+    userId?: string,
+  ) {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(Math.max(1, limit), 50);
     const skip = (safePage - 1) * safeLimit;
@@ -90,7 +115,7 @@ export class PostService {
         orderBy: {
           createdAt: 'desc',
         },
-        include: postListInclude,
+        include: buildPostInclude(userId),
       }),
       this.prisma.post.count({ where }),
     ]);
@@ -104,10 +129,10 @@ export class PostService {
   }
 
   // 게시글 상세 정보를 작성자, 태그, 댓글 작성자 정보와 함께 조회한다.
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string) {
     const post = await this.prisma.post.findUnique({
       where: { id },
-      include: postDetailInclude,
+      include: buildPostDetailInclude(userId),
     });
 
     if (!post) {
@@ -115,6 +140,45 @@ export class PostService {
     }
 
     return this.serializePost(post);
+  }
+
+  // 사용자가 저장("나중에 보기")한 게시글 목록을 최근 저장 순으로 가져온다.
+  async findSavedByUser(userId: string) {
+    const saved = await this.prisma.savedPost.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        post: {
+          include: buildPostInclude(userId),
+        },
+      },
+    });
+
+    return saved.map((entry) => this.serializePost(entry.post));
+  }
+
+  // 게시글을 사용자의 저장 목록에 추가한다. (이미 저장돼 있으면 그대로 둔다)
+  async savePost(userId: string, postId: string) {
+    await this.assertPostExists(postId);
+
+    await this.prisma.savedPost.upsert({
+      where: { userId_postId: { userId, postId } },
+      update: {},
+      create: { userId, postId },
+    });
+
+    const saveCount = await this.prisma.savedPost.count({ where: { postId } });
+    return { saved: true, saveCount };
+  }
+
+  // 게시글을 사용자의 저장 목록에서 제거한다.
+  async unsavePost(userId: string, postId: string) {
+    await this.assertPostExists(postId);
+
+    await this.prisma.savedPost.deleteMany({ where: { userId, postId } });
+
+    const saveCount = await this.prisma.savedPost.count({ where: { postId } });
+    return { saved: false, saveCount };
   }
 
   // 작성자 본인인지 확인한 뒤 게시글 내용과 태그를 수정한다.
@@ -127,7 +191,6 @@ export class PostService {
         title: dto.title,
         content: dto.content,
         city: dto.city,
-        country: dto.country,
         duration: dto.duration ?? null,
       },
       select: { id: true },
@@ -143,7 +206,7 @@ export class PostService {
       await this.syncPlaces(id, dto.places);
     }
 
-    return this.findOne(id);
+    return this.findOne(id, userId);
   }
 
   // 작성자 본인인지 확인한 뒤 게시글을 삭제한다.
@@ -248,6 +311,18 @@ export class PostService {
     });
   }
 
+  // 저장/해제 전에 게시글이 존재하는지 확인한다.
+  private async assertPostExists(postId: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+  }
+
   // 수정/삭제 전에 게시글 존재 여부와 작성자 권한을 확인한다.
   private async assertAuthor(id: string, userId: string) {
     const post = await this.prisma.post.findUnique({
@@ -266,11 +341,15 @@ export class PostService {
     }
   }
 
-  // Prisma의 PostTag 중간 테이블 응답을 프론트에서 쓰기 쉬운 tags 배열로 정리한다.
+  // Prisma 응답을 프론트에서 쓰기 쉬운 형태로 정리한다.
+  // tags 평탄화 + 저장 횟수(saveCount) + 본인 저장 여부(isSaved)를 덧붙인다.
   private serializePost(post) {
+    const { _count, savedBy, ...rest } = post;
     return {
-      ...post,
+      ...rest,
       tags: post.tags.map((postTag) => postTag.tag),
+      saveCount: _count?.savedBy ?? 0,
+      isSaved: Array.isArray(savedBy) && savedBy.length > 0,
     };
   }
 }
