@@ -32,6 +32,8 @@ export async function POST(request: Request) {
       memo: body.memo,
       favoriteTeam:
         typeof body.favoriteTeam === "string" ? body.favoriteTeam : undefined,
+      gameDate:
+        typeof body.gameDate === "string" ? body.gameDate : undefined,
     });
 
     return NextResponse.json({

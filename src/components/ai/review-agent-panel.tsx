@@ -40,6 +40,7 @@ type ReviewAgentPanelProps = {
 
 export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
   const [favoriteTeam, setFavoriteTeam] = useState("");
+  const [gameDate, setGameDate] = useState("");
   const [memo, setMemo] = useState("");
   const [data, setData] = useState<ReviewAgentResponse | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
@@ -69,6 +70,7 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
         credentials: "include",
         body: JSON.stringify({
           favoriteTeam,
+          gameDate,
           memo,
         }),
       });
@@ -104,7 +106,7 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
       draft: data.result.draft,
       tags: data.result.tags,
     });
-    setApplyMessage("AI 초안을 작성 폼에 적용했습니다.");
+    setApplyMessage("초안을 작성 폼에 적용했습니다.");
   }
 
   return (
@@ -123,6 +125,12 @@ export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {
           placeholder="응원팀 또는 관심팀"
           type="text"
           value={favoriteTeam}
+        />
+        <input
+          className="h-10 rounded-md border border-[#c8d3df] bg-white px-3 text-sm outline-none focus:border-[#0f766e]"
+          onChange={(event) => setGameDate(event.target.value)}
+          type="date"
+          value={gameDate}
         />
         <textarea
           className="min-h-32 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-[#0f766e]"
