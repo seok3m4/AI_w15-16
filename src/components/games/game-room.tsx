@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { KboRecordBriefingPanel } from "@/components/ai/kbo-record-briefing-panel";
 import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-panel";
 import {
   type KboGame,
@@ -334,6 +335,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 </p>
               </div>
             </div>
+
+            <KboRecordBriefingPanel game={game} />
 
             <RelatedPostSummaryPanel
               description={summaryDescription}

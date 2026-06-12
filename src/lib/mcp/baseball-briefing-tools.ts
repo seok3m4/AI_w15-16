@@ -61,6 +61,22 @@ export type KboGamesResult = {
   games: KboGame[];
 };
 
+export type KboGameRecordBriefingResult = {
+  gameId: string | null;
+  gameDate: string;
+  awayTeam: string;
+  homeTeam: string;
+  awayScore: number | null;
+  homeScore: number | null;
+  status: KboGameStatus;
+  stadium: string;
+  sourceUrl: string | null;
+  sourceType: "review" | "highlight" | "schedule";
+  officialSummary: string;
+  recordItems: string[];
+  officialExcerpt: string;
+};
+
 const NEWS_LIMIT = 5;
 const MAX_KEYWORD_LENGTH = 80;
 const MAX_URL_BYTES = 400_000;
@@ -68,6 +84,8 @@ const GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search";
 const KBO_BASE_URL = "https://www.koreabaseball.com";
 const KBO_SCHEDULE_URL = `${KBO_BASE_URL}/Schedule/Schedule.aspx`;
 const KBO_SCHEDULE_LIST_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetScheduleList`;
+const KBO_SCOREBOARD_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetScoreBoardScroll`;
+const KBO_BOXSCORE_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetBoxScoreScroll`;
 const KBO_REGULAR_SEASON_IDS = "0,9,6";
 const KBO_TEAM_NAMES = [
   "LG",
@@ -149,6 +167,57 @@ const tools: ToolDefinition[] = [
           description: "선택 팀명. 예: LG, 한화, SSG, KIA",
         },
       },
+    },
+  },
+  {
+    name: "brief_kbo_game_record",
+    description:
+      "Fetch an official KBO game review/highlight page when available and create a boxscore-style record briefing for a game room.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        gameId: {
+          type: "string",
+          description: "KBO gameId when available.",
+        },
+        gameDate: {
+          type: "string",
+          description: "경기 날짜. YYYY-MM-DD 형식",
+        },
+        awayTeam: {
+          type: "string",
+          description: "원정 팀명",
+        },
+        homeTeam: {
+          type: "string",
+          description: "홈 팀명",
+        },
+        awayScore: {
+          type: "number",
+          description: "원정 팀 점수",
+        },
+        homeScore: {
+          type: "number",
+          description: "홈 팀 점수",
+        },
+        status: {
+          type: "string",
+          description: "scheduled, completed, draw 중 하나",
+        },
+        stadium: {
+          type: "string",
+          description: "경기장",
+        },
+        reviewUrl: {
+          type: "string",
+          description: "KBO 공식 리뷰 URL",
+        },
+        highlightUrl: {
+          type: "string",
+          description: "KBO 공식 하이라이트 URL",
+        },
+      },
+      required: ["gameDate", "awayTeam", "homeTeam", "status"],
     },
   },
 ];
@@ -453,6 +522,242 @@ function extractHtmlBrief(url: string, html: string): UrlBriefingResult {
   };
 }
 
+function normalizeOptionalString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeNullableScore(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const score = Number(value);
+
+  return Number.isFinite(score) ? score : null;
+}
+
+function normalizeKboGameStatus(value: unknown): KboGameStatus {
+  if (value === "scheduled" || value === "completed" || value === "draw") {
+    return value;
+  }
+
+  return "scheduled";
+}
+
+function normalizeKboOfficialUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const url = new URL(value.trim(), KBO_BASE_URL);
+  const hostname = url.hostname.toLowerCase();
+
+  if (
+    hostname !== "koreabaseball.com" &&
+    hostname !== "www.koreabaseball.com"
+  ) {
+    throw new Error("Only official KBO URLs are supported.");
+  }
+
+  return url.toString();
+}
+
+function normalizeRecordText(value: string): string {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/([가-힣])\s+([.,:;])/g, "$1$2")
+    .trim();
+}
+
+function removeHtmlBlocks(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<header[\s\S]*?<\/header>/gi, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<form[\s\S]*?<\/form>/gi, " ");
+}
+
+function extractHtmlCandidate(html: string, pattern: RegExp): string | null {
+  const match = html.match(pattern);
+
+  return match ? match[1] : null;
+}
+
+function scoreKboRecordText(text: string): number {
+  const recordKeywords = [
+    "결승타",
+    "홈런",
+    "승리투수",
+    "패전투수",
+    "세이브",
+    "홀드",
+    "실책",
+    "도루",
+    "관중",
+    "스코어",
+    "이닝",
+  ];
+
+  return recordKeywords.reduce(
+    (score, keyword) => score + (text.includes(keyword) ? 3 : 0),
+    Math.min(text.length / 500, 4),
+  );
+}
+
+const KBO_MENU_MARKERS = [
+  "일정・결과",
+  "기록・순위",
+  "선수 조회",
+  "미디어・뉴스",
+  "KBO 리그",
+  "구단 소개",
+  "티켓 안내",
+];
+
+function isKboMenuNoise(text: string): boolean {
+  return KBO_MENU_MARKERS.filter((marker) => text.includes(marker)).length >= 2;
+}
+
+function removeKboMenuNoise(text: string): string {
+  if (!isKboMenuNoise(text)) {
+    return text;
+  }
+
+  const recordMarkers = [
+    "결승타",
+    "승리투수",
+    "패전투수",
+    "홈런",
+    "2루타",
+    "3루타",
+    "실책",
+    "도루",
+  ];
+  const firstRecordIndex = recordMarkers
+    .map((marker) => text.indexOf(marker))
+    .filter((index) => index >= 0)
+    .sort((left, right) => left - right)[0];
+
+  if (firstRecordIndex === undefined) {
+    return "";
+  }
+
+  return text.slice(Math.max(0, firstRecordIndex - 120));
+}
+
+function extractKboOfficialRecordText(html: string): string {
+  const cleanedHtml = removeHtmlBlocks(html);
+  const candidates = [
+    extractHtmlCandidate(
+      cleanedHtml,
+      /<div[^>]+id=["']contents["'][^>]*>([\s\S]*?)<footer/i,
+    ),
+    extractHtmlCandidate(
+      cleanedHtml,
+      /<section[^>]+id=["']contents["'][^>]*>([\s\S]*?)<\/section>/i,
+    ),
+    extractHtmlCandidate(
+      cleanedHtml,
+      /<div[^>]+class=["'][^"']*(?:game|record|score|boxscore|content)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    ),
+    cleanedHtml,
+  ]
+    .filter((candidate): candidate is string => Boolean(candidate))
+    .map((candidate) => normalizeRecordText(stripHtml(candidate)))
+    .map(removeKboMenuNoise)
+    .filter(Boolean);
+
+  const bestCandidate = candidates
+    .map((text) => ({
+      text,
+      score: scoreKboRecordText(text),
+    }))
+    .sort((left, right) => right.score - left.score)[0]?.text;
+
+  return bestCandidate ?? "";
+}
+
+function getScoreSummary(input: {
+  awayTeam: string;
+  homeTeam: string;
+  awayScore: number | null;
+  homeScore: number | null;
+  status: KboGameStatus;
+  stadium: string;
+}): string {
+  const statusLabel =
+    input.status === "scheduled"
+      ? "경기 전"
+      : input.status === "draw"
+        ? "무승부"
+        : "경기 종료";
+  const scoreText =
+    input.awayScore === null || input.homeScore === null
+      ? "스코어 미정"
+      : `${input.awayTeam} ${input.awayScore} : ${input.homeScore} ${input.homeTeam}`;
+  const stadium = input.stadium ? `, ${input.stadium}` : "";
+
+  return `${scoreText} (${statusLabel}${stadium})`;
+}
+
+function findKeywordSnippet(text: string, keyword: string): string | null {
+  const index = text.indexOf(keyword);
+
+  if (index < 0) {
+    return null;
+  }
+
+  const start = Math.max(0, index - 80);
+  const end = Math.min(text.length, index + 160);
+  const snippet = normalizeRecordText(text.slice(start, end));
+
+  if (snippet.length < keyword.length || isKboMenuNoise(snippet)) {
+    return null;
+  }
+
+  return snippet.length > 220 ? `${snippet.slice(0, 220)}...` : snippet;
+}
+
+function extractRecordItems(text: string): string[] {
+  const keywords = [
+    "결승타",
+    "홈런",
+    "2루타",
+    "3루타",
+    "실책",
+    "도루",
+    "병살",
+    "폭투",
+    "승리투수",
+    "패전투수",
+    "세이브",
+    "홀드",
+    "관중",
+    "시간",
+  ];
+  const items: string[] = [];
+  const seen = new Set<string>();
+
+  for (const keyword of keywords) {
+    const snippet = findKeywordSnippet(text, keyword);
+    const key = snippet?.toLowerCase();
+
+    if (snippet && key && !seen.has(key)) {
+      items.push(snippet);
+      seen.add(key);
+    }
+
+    if (items.length >= 6) {
+      break;
+    }
+  }
+
+  return items;
+}
+
 type KboScheduleCell = {
   Text?: string | null;
   Class?: string | null;
@@ -466,8 +771,298 @@ type KboScheduleResponse = {
   rows?: KboScheduleRow[];
 };
 
+type KboGridTable = {
+  headers?: KboScheduleRow[];
+  rows?: KboScheduleRow[];
+  tfoot?: KboScheduleRow[];
+};
+
+type KboScoreBoardResponse = {
+  code?: string;
+  msg?: string;
+  S_NM?: string;
+  CROWD_CN?: string;
+  START_TM?: string;
+  END_TM?: string;
+  USE_TM?: string;
+  table2?: string;
+  table3?: string;
+  T_SCORE_CN?: number | string;
+  B_SCORE_CN?: number | string;
+};
+
+type KboBoxScoreResponse = {
+  code?: string;
+  msg?: string;
+  tableEtc?: string;
+  arrPitcher?: {
+    table?: string;
+  }[];
+};
+
+type KboOfficialRecordData = {
+  recordItems: string[];
+  officialExcerpt: string;
+};
+
 function getCellText(cell: KboScheduleCell | undefined): string {
   return stripHtml(decodeXml(cell?.Text ?? ""));
+}
+
+function normalizeKboTableText(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return normalizeRecordText(
+    stripHtml(decodeXml(String(value).replace(/&nbsp;/gi, " "))),
+  );
+}
+
+function parseKboGridTable(value: unknown): KboGridTable | null {
+  if (typeof value === "string" && value.trim()) {
+    try {
+      return JSON.parse(value) as KboGridTable;
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return value as KboGridTable;
+  }
+
+  return null;
+}
+
+function getKboGridRows(value: unknown): string[][] {
+  const table = parseKboGridTable(value);
+
+  return (table?.rows ?? [])
+    .map((row) =>
+      (row.row ?? []).map((cell) => normalizeKboTableText(cell.Text)),
+    )
+    .filter((row) => row.some(Boolean));
+}
+
+function getKboGridHeader(value: unknown): string[] {
+  const table = parseKboGridTable(value);
+  const headerRow = table?.headers?.[0]?.row ?? [];
+
+  return headerRow.map((cell) => normalizeKboTableText(cell.Text));
+}
+
+function getKboTableColumn(
+  row: string[],
+  header: string[],
+  columnName: string,
+): string {
+  const index = header.indexOf(columnName);
+
+  return index >= 0 ? row[index] ?? "" : "";
+}
+
+function getKboSeriesIdFromGameId(gameId: string): string {
+  return gameId.match(/\d$/)?.[0] ?? "0";
+}
+
+function formatKboTotalLine(team: string, row: string[] | undefined): string | null {
+  if (!row || row.length < 4) {
+    return null;
+  }
+
+  const [runs, hits, errors, basesOnBalls] = row;
+
+  return `${team} ${runs}득점 ${hits}안타 ${errors}실책 ${basesOnBalls}B`;
+}
+
+function formatKboScoringInnings(
+  team: string,
+  inningHeader: string[],
+  inningScores: string[] | undefined,
+): string | null {
+  if (!inningScores) {
+    return null;
+  }
+
+  const scoringInnings = inningScores
+    .map((score, index) => ({
+      inning: inningHeader[index] ?? `${index + 1}`,
+      score: Number(score),
+    }))
+    .filter((inning) => Number.isFinite(inning.score) && inning.score > 0)
+    .map((inning) => `${inning.inning}회 ${inning.score}점`);
+
+  if (scoringInnings.length === 0) {
+    return `${team}: 득점 이닝 없음`;
+  }
+
+  return `${team}: ${scoringInnings.join(", ")}`;
+}
+
+function extractKboEtcItems(boxScore: KboBoxScoreResponse | null): string[] {
+  return getKboGridRows(boxScore?.tableEtc)
+    .map(([label, value]) => {
+      if (!label || !value) {
+        return null;
+      }
+
+      return `${label}: ${value}`;
+    })
+    .filter((item): item is string => Boolean(item));
+}
+
+function formatKboPitcherLine(
+  team: string,
+  header: string[],
+  row: string[],
+): string | null {
+  const name = getKboTableColumn(row, header, "선수명");
+  const role = getKboTableColumn(row, header, "등판");
+  const result = getKboTableColumn(row, header, "결과");
+  const inning = getKboTableColumn(row, header, "이닝");
+  const hits = getKboTableColumn(row, header, "피안타");
+  const strikeouts = getKboTableColumn(row, header, "삼진");
+  const runs = getKboTableColumn(row, header, "실점");
+  const earnedRuns = getKboTableColumn(row, header, "자책");
+  const marker = result || (role === "선발" ? "선발" : "");
+
+  if (!name || !marker) {
+    return null;
+  }
+
+  return `${team} ${name} ${marker}: ${inning}이닝 ${hits}피안타 ${runs}실점 ${earnedRuns}자책 ${strikeouts}K`;
+}
+
+function extractKboPitcherItems(
+  boxScore: KboBoxScoreResponse | null,
+  awayTeam: string,
+  homeTeam: string,
+): string | null {
+  const teams = [awayTeam, homeTeam];
+  const pitcherLines = (boxScore?.arrPitcher ?? [])
+    .flatMap((pitcher, index) => {
+      const header = getKboGridHeader(pitcher.table);
+      const rows = getKboGridRows(pitcher.table);
+      const team = teams[index] ?? "";
+
+      return rows
+        .map((row) => formatKboPitcherLine(team, header, row))
+        .filter((item): item is string => Boolean(item));
+    })
+    .slice(0, 5);
+
+  return pitcherLines.length > 0
+    ? `주요 투수 기록: ${pitcherLines.join(" / ")}`
+    : null;
+}
+
+function buildKboOfficialRecordData(input: {
+  scoreBoard: KboScoreBoardResponse | null;
+  boxScore: KboBoxScoreResponse | null;
+  awayTeam: string;
+  homeTeam: string;
+}): KboOfficialRecordData | null {
+  const scoreRows = getKboGridRows(input.scoreBoard?.table2);
+  const scoreHeader = getKboGridHeader(input.scoreBoard?.table2);
+  const totalRows = getKboGridRows(input.scoreBoard?.table3);
+  const totalLine = [
+    formatKboTotalLine(input.awayTeam, totalRows[0]),
+    formatKboTotalLine(input.homeTeam, totalRows[1]),
+  ].filter(Boolean);
+  const scoringLine = [
+    formatKboScoringInnings(input.awayTeam, scoreHeader, scoreRows[0]),
+    formatKboScoringInnings(input.homeTeam, scoreHeader, scoreRows[1]),
+  ].filter(Boolean);
+  const gameInfo = [
+    input.scoreBoard?.S_NM ? `구장 ${input.scoreBoard.S_NM}` : "",
+    input.scoreBoard?.CROWD_CN ? `관중 ${input.scoreBoard.CROWD_CN}명` : "",
+    input.scoreBoard?.START_TM ? `개시 ${input.scoreBoard.START_TM}` : "",
+    input.scoreBoard?.END_TM ? `종료 ${input.scoreBoard.END_TM}` : "",
+    input.scoreBoard?.USE_TM ? `경기시간 ${input.scoreBoard.USE_TM}` : "",
+  ].filter(Boolean);
+  const recordItems = [
+    totalLine.length > 0 ? `스코어보드: ${totalLine.join(", ")}` : null,
+    scoringLine.length > 0 ? `득점 이닝: ${scoringLine.join(" / ")}` : null,
+    ...extractKboEtcItems(input.boxScore),
+    extractKboPitcherItems(input.boxScore, input.awayTeam, input.homeTeam),
+    gameInfo.length > 0 ? `경기 정보: ${gameInfo.join(", ")}` : null,
+  ].filter((item): item is string => Boolean(item));
+  const uniqueItems = [...new Set(recordItems)].slice(0, 12);
+
+  if (uniqueItems.length === 0) {
+    return null;
+  }
+
+  return {
+    recordItems: uniqueItems,
+    officialExcerpt: uniqueItems.join("\n"),
+  };
+}
+
+async function fetchKboOfficialJson<T>(
+  url: string,
+  params: Record<string, string>,
+  referer: string,
+): Promise<T> {
+  const text = await fetchText(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json,text/plain,*/*",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      Referer: referer,
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: new URLSearchParams(params),
+  });
+
+  return JSON.parse(text) as T;
+}
+
+async function fetchKboOfficialRecordData(input: {
+  gameId: string | null;
+  gameDate: string;
+  awayTeam: string;
+  homeTeam: string;
+  sourceUrl: string | null;
+}): Promise<KboOfficialRecordData | null> {
+  if (!input.gameId) {
+    return null;
+  }
+
+  const compactDate = input.gameDate.replace(/-/g, "");
+  const params = {
+    leId: "1",
+    srId: getKboSeriesIdFromGameId(input.gameId),
+    seasonId: input.gameDate.slice(0, 4),
+    gameId: input.gameId,
+  };
+  const referer =
+    input.sourceUrl ??
+    `${KBO_BASE_URL}/Schedule/GameCenter/Main.aspx?gameDate=${compactDate}&gameId=${input.gameId}&section=REVIEW`;
+  const [scoreBoardResult, boxScoreResult] = await Promise.allSettled([
+    fetchKboOfficialJson<KboScoreBoardResponse>(
+      KBO_SCOREBOARD_URL,
+      params,
+      referer,
+    ),
+    fetchKboOfficialJson<KboBoxScoreResponse>(
+      KBO_BOXSCORE_URL,
+      params,
+      referer,
+    ),
+  ]);
+  const scoreBoard =
+    scoreBoardResult.status === "fulfilled" ? scoreBoardResult.value : null;
+  const boxScore =
+    boxScoreResult.status === "fulfilled" ? boxScoreResult.value : null;
+
+  return buildKboOfficialRecordData({
+    scoreBoard,
+    boxScore,
+    awayTeam: input.awayTeam,
+    homeTeam: input.homeTeam,
+  });
 }
 
 function extractKboLink(html: string): string | null {
@@ -756,6 +1351,163 @@ export async function getKboGames(
   };
 }
 
+export async function briefKboGameRecord(
+  args: Record<string, unknown>,
+): Promise<McpToolResult<KboGameRecordBriefingResult>> {
+  const gameDate = normalizeKboDate(args.gameDate).date;
+  const awayTeam = normalizeOptionalString(args.awayTeam);
+  const homeTeam = normalizeOptionalString(args.homeTeam);
+  const awayScore = normalizeNullableScore(args.awayScore);
+  const homeScore = normalizeNullableScore(args.homeScore);
+  const status = normalizeKboGameStatus(args.status);
+  const stadium = normalizeOptionalString(args.stadium);
+  const gameId = normalizeOptionalString(args.gameId) || null;
+  const reviewUrl = normalizeKboOfficialUrl(args.reviewUrl);
+  const highlightUrl = normalizeKboOfficialUrl(args.highlightUrl);
+  const sourceUrl = reviewUrl ?? highlightUrl;
+  const sourceType = reviewUrl ? "review" : highlightUrl ? "highlight" : "schedule";
+  const scoreSummary = getScoreSummary({
+    awayTeam,
+    homeTeam,
+    awayScore,
+    homeScore,
+    status,
+    stadium,
+  });
+
+  if (!awayTeam || !homeTeam) {
+    throw new Error("awayTeam and homeTeam are required.");
+  }
+
+  const officialRecordData = await fetchKboOfficialRecordData({
+    gameId,
+    gameDate,
+    awayTeam,
+    homeTeam,
+    sourceUrl,
+  }).catch(() => null);
+
+  if (officialRecordData) {
+    const { recordItems, officialExcerpt } = officialRecordData;
+    const officialSummary = [
+      `${gameDate} ${awayTeam} vs ${homeTeam} 공식 기록 브리핑입니다.`,
+      scoreSummary,
+      `KBO 공식 스코어보드/박스스코어에서 ${recordItems.length}개의 기록 포인트를 확인했습니다.`,
+    ].join(" ");
+    const text = [
+      officialSummary,
+      recordItems.map((item, index) => `${index + 1}. ${item}`).join("\n"),
+      sourceUrl,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    return {
+      content: [{ type: "text", text }],
+      structuredContent: {
+        gameId,
+        gameDate,
+        awayTeam,
+        homeTeam,
+        awayScore,
+        homeScore,
+        status,
+        stadium,
+        sourceUrl,
+        sourceType,
+        officialSummary,
+        recordItems,
+        officialExcerpt,
+      },
+    };
+  }
+
+  if (!sourceUrl) {
+    const officialSummary =
+      status === "scheduled"
+        ? `${gameDate} ${awayTeam} vs ${homeTeam} 경기는 아직 KBO 공식 리뷰가 제공되지 않았습니다. 현재 확인 가능한 공식 정보는 일정과 경기장 정보입니다.`
+        : `${gameDate} ${awayTeam} vs ${homeTeam} 경기의 KBO 공식 리뷰 URL을 찾지 못했습니다. 현재는 일정/스코어 정보만 확인할 수 있습니다.`;
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `${scoreSummary}\n${officialSummary}`,
+        },
+      ],
+      structuredContent: {
+        gameId,
+        gameDate,
+        awayTeam,
+        homeTeam,
+        awayScore,
+        homeScore,
+        status,
+        stadium,
+        sourceUrl: null,
+        sourceType: "schedule",
+        officialSummary,
+        recordItems: [],
+        officialExcerpt: "",
+      },
+    };
+  }
+
+  const html = await fetchText(sourceUrl, {
+    headers: {
+      Referer: KBO_SCHEDULE_URL,
+    },
+  });
+  const pageTitle =
+    extractMetaContent(html, /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+    extractMetaContent(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
+  const pageDescription =
+    extractMetaContent(html, /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+    extractMetaContent(html, /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  const officialText = normalizeRecordText(
+    [pageTitle, pageDescription, extractKboOfficialRecordText(html)]
+      .filter(Boolean)
+      .join(" "),
+  );
+  const recordItems = extractRecordItems(officialText);
+  const officialSummary = [
+    `${gameDate} ${awayTeam} vs ${homeTeam} 공식 기록 브리핑입니다.`,
+    scoreSummary,
+    recordItems.length > 0
+      ? `공식 페이지에서 ${recordItems.length}개의 기록 포인트를 추출했습니다.`
+      : "공식 페이지는 확인했지만 메뉴를 제외한 상세 기록 문장을 충분히 추출하지 못했습니다. 원문에서 세부 기록을 확인해주세요.",
+  ].join(" ");
+  const officialExcerpt = recordItems.length > 0 ? officialText.slice(0, 900) : "";
+  const text = [
+    officialSummary,
+    recordItems.length > 0
+      ? recordItems.map((item, index) => `${index + 1}. ${item}`).join("\n")
+      : officialExcerpt,
+    sourceUrl,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return {
+    content: [{ type: "text", text }],
+    structuredContent: {
+      gameId,
+      gameDate,
+      awayTeam,
+      homeTeam,
+      awayScore,
+      homeScore,
+      status,
+      stadium,
+      sourceUrl,
+      sourceType,
+      officialSummary,
+      recordItems,
+      officialExcerpt,
+    },
+  };
+}
+
 export async function callBaseballBriefingTool(
   name: string,
   args: Record<string, unknown>,
@@ -770,6 +1522,10 @@ export async function callBaseballBriefingTool(
 
   if (name === "get_kbo_games") {
     return getKboGames(args);
+  }
+
+  if (name === "brief_kbo_game_record") {
+    return briefKboGameRecord(args);
   }
 
   throw new Error(`Unknown MCP tool: ${name}`);
