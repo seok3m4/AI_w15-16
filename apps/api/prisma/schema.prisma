@@ -33,6 +33,7 @@ model Post {
   author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   tags      PostTag[]
+  places    Place[]
   embedding PostEmbedding?
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
@@ -40,6 +41,21 @@ model Post {
   @@index([authorId])
   @@index([city])
   @@index([createdAt])
+}
+
+/// 여행 코스를 구성하는 개별 경유지(장소). 지도에 순서대로 표시된다.
+model Place {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  lat       Float
+  lng       Float
+  order     Int
+  createdAt DateTime @default(now())
+
+  @@index([postId])
 }
 
 /// 게시글에 달리는 댓글.

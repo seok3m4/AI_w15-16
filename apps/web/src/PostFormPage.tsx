@@ -1,7 +1,8 @@
-// 📌 여행 코스 게시글 작성/수정에 함께 사용하는 폼 화면.
+// 📌 여행 코스 게시글 작성/수정에 함께 사용하는 폼 화면. 태그 입력과 코스 경유지(지도)를 포함한다.
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { createPost, getPost, updatePost, type PostPayload } from './api'
+import { PlaceEditor, type PlaceDraft } from './PlaceEditor'
 import { useAuth } from './useAuth'
 
 type FormState = {
@@ -10,6 +11,7 @@ type FormState = {
   city: string
   country: string
   duration: string
+  tags: string
 }
 
 const emptyForm: FormState = {
@@ -18,6 +20,22 @@ const emptyForm: FormState = {
   city: '',
   country: '',
   duration: '',
+  tags: '',
+}
+
+// 쉼표로 구분된 태그 문자열을 배열로 바꾼다. (공백/중복 제거)
+function parseTags(raw: string): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const part of raw.split(',')) {
+    const name = part.trim()
+    const key = name.toLowerCase()
+    if (name && !seen.has(key)) {
+      seen.add(key)
+      result.push(name)
+    }
+  }
+  return result
 }
 
 export function PostFormPage() {
@@ -26,6 +44,7 @@ export function PostFormPage() {
   const { token } = useAuth()
   const isEditMode = Boolean(id)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [places, setPlaces] = useState<PlaceDraft[]>([])
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -35,7 +54,7 @@ export function PostFormPage() {
 
     let isMounted = true
 
-    // 수정 모드에서는 기존 게시글 정보를 불러와 폼에 채운다.
+    // 수정 모드에서는 기존 게시글 정보를 불러와 폼과 경유지에 채운다.
     getPost(id)
       .then((post) => {
         if (!isMounted) return
@@ -45,7 +64,16 @@ export function PostFormPage() {
           city: post.city,
           country: post.country,
           duration: post.duration ? String(post.duration) : '',
+          tags: post.tags.map((tag) => tag.name).join(', '),
         })
+        setPlaces(
+          post.places.map((place) => ({
+            name: place.name,
+            address: place.address ?? undefined,
+            lat: place.lat,
+            lng: place.lng,
+          })),
+        )
       })
       .catch((err) => {
         if (!isMounted) return
@@ -76,13 +104,22 @@ export function PostFormPage() {
     }))
   }
 
-  // duration은 선택값이므로 비어 있으면 payload에서 제외한다.
+  // duration/tags/places는 선택값이므로 정리해서 payload를 만든다.
   function buildPayload(): PostPayload {
     const payload: PostPayload = {
       title: form.title,
       content: form.content,
       city: form.city,
       country: form.country,
+      tags: parseTags(form.tags),
+      // 화면에 보이는 순서를 그대로 코스 순서(order)로 저장한다.
+      places: places.map((place, index) => ({
+        name: place.name,
+        address: place.address,
+        lat: place.lat,
+        lng: place.lng,
+        order: index,
+      })),
     }
 
     if (form.duration.trim()) {
@@ -168,6 +205,12 @@ export function PostFormPage() {
                 />
               </label>
             </div>
+
+            <div className="form-field-block">
+              <span className="field-label">코스 경유지</span>
+              <PlaceEditor places={places} onChange={setPlaces} />
+            </div>
+
             <label>
               여행 기간
               <input
@@ -176,6 +219,15 @@ export function PostFormPage() {
                 value={form.duration}
                 onChange={(event) => updateField('duration', event.target.value)}
                 placeholder="예: 3"
+              />
+            </label>
+            <label>
+              태그
+              <input
+                type="text"
+                value={form.tags}
+                onChange={(event) => updateField('tags', event.target.value)}
+                placeholder="쉼표로 구분 (예: 단풍, 료칸, 가족여행)"
               />
             </label>
             {error && <p className="error-message">{error}</p>}

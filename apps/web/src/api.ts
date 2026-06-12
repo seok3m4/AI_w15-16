@@ -29,6 +29,16 @@ export type PostComment = {
   }
 }
 
+// 코스를 구성하는 개별 경유지(장소). 지도에 순서대로 마커로 표시된다.
+export type Place = {
+  id: string
+  name: string
+  address: string | null
+  lat: number
+  lng: number
+  order: number
+}
+
 export type TravelPost = {
   id: string
   title: string
@@ -44,6 +54,7 @@ export type TravelPost = {
     name: string
   }
   tags: PostTag[]
+  places: Place[]
 }
 
 export type TravelPostDetail = TravelPost & {
@@ -57,12 +68,23 @@ export type PaginatedPosts = {
   limit: number
 }
 
+// 게시글을 만들/고칠 때 보내는 경유지 입력값. (id 없이 좌표와 순서만 보낸다)
+export type PlaceInput = {
+  name: string
+  address?: string
+  lat: number
+  lng: number
+  order: number
+}
+
 export type PostPayload = {
   title: string
   content: string
   city: string
   country: string
   duration?: number
+  tags?: string[]
+  places?: PlaceInput[]
 }
 
 // NestJS 에러 응답에서 사용자에게 보여줄 메시지를 꺼낸다.
@@ -128,12 +150,23 @@ export function getMe(token: string) {
   })
 }
 
-// 여행 코스 게시글 목록을 페이지 단위로 조회한다.
-export function getPosts(page = 1, limit = 10) {
+// 여행 코스 게시글 목록을 페이지 단위로 조회한다. 검색어(q)와 태그 필터를 함께 받는다.
+export function getPosts(
+  page = 1,
+  limit = 10,
+  options: { q?: string; tag?: string } = {},
+) {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   })
+
+  if (options.q?.trim()) {
+    params.set('q', options.q.trim())
+  }
+  if (options.tag?.trim()) {
+    params.set('tag', options.tag.trim())
+  }
 
   return request<PaginatedPosts>(`/posts?${params.toString()}`)
 }
@@ -174,3 +207,32 @@ export function deletePost(token: string, id: string) {
     },
   })
 }
+
+// 로그인한 사용자가 특정 게시글에 댓글을 작성한다.
+export function createComment(token: string, postId: string, content: string) {
+  return request<PostComment>(`/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content }),
+  })
+}
+
+// 댓글 작성자 본인이 자신의 댓글을 삭제한다.
+export function deleteComment(
+  token: string,
+  postId: string,
+  commentId: string,
+) {
+  return request<{ success: boolean }>(
+    `/posts/${postId}/comments/${commentId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+}
+

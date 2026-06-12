@@ -37,13 +37,15 @@ export class PostController {
     return this.postService.create(req.user.userId, dto);
   }
 
-  // 게시글 목록을 최신순으로 페이지네이션해서 조회한다.
+  // 게시글 목록을 최신순으로 페이지네이션하고 검색어/태그 필터를 적용해 조회한다.
   @Get()
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('q') q?: string,
+    @Query('tag') tag?: string,
   ) {
-    return this.postService.findAll(page, limit);
+    return this.postService.findAll(page, limit, q, tag);
   }
 
   // 특정 게시글의 상세 내용을 조회한다.

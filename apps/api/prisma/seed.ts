@@ -20,6 +20,7 @@ const prisma = new PrismaClient({
 async function main() {
   // seed를 반복 실행해도 여행 코스 샘플이 중복되지 않도록 게시판 데이터를 먼저 비운다.
   await prisma.postTag.deleteMany();
+  await prisma.place.deleteMany();
   await prisma.postEmbedding.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.post.deleteMany();
@@ -119,6 +120,111 @@ async function main() {
 
   await prisma.postTag.createMany({
     data: postTags,
+  });
+
+  // 각 게시글에 지도에 표시할 경유지(장소)를 순서대로 넣는다. 좌표는 실제 위치 기준이다.
+  await prisma.place.createMany({
+    data: [
+      // 오사카 코스: 난바 → 도톤보리 → 오사카성 → 우메다
+      {
+        postId: osakaPost.id,
+        name: '난바역',
+        address: '오사카 난바',
+        lat: 34.6657,
+        lng: 135.5012,
+        order: 0,
+      },
+      {
+        postId: osakaPost.id,
+        name: '도톤보리',
+        address: '오사카 주오구 도톤보리',
+        lat: 34.6687,
+        lng: 135.5013,
+        order: 1,
+      },
+      {
+        postId: osakaPost.id,
+        name: '오사카성',
+        address: '오사카 주오구 오사카성',
+        lat: 34.6873,
+        lng: 135.5259,
+        order: 2,
+      },
+      {
+        postId: osakaPost.id,
+        name: '우메다 스카이빌딩',
+        address: '오사카 기타구 우메다',
+        lat: 34.7053,
+        lng: 135.4902,
+        order: 3,
+      },
+      // 파리 코스: 루브르 → 오르세 → 노트르담 → 마레 지구
+      {
+        postId: parisPost.id,
+        name: '루브르 박물관',
+        address: 'Rue de Rivoli, Paris',
+        lat: 48.8606,
+        lng: 2.3376,
+        order: 0,
+      },
+      {
+        postId: parisPost.id,
+        name: '오르세 미술관',
+        address: "Esplanade Valéry Giscard d'Estaing, Paris",
+        lat: 48.86,
+        lng: 2.3266,
+        order: 1,
+      },
+      {
+        postId: parisPost.id,
+        name: '노트르담 대성당',
+        address: 'Parvis Notre-Dame, Paris',
+        lat: 48.853,
+        lng: 2.3499,
+        order: 2,
+      },
+      {
+        postId: parisPost.id,
+        name: '마레 지구',
+        address: 'Le Marais, Paris',
+        lat: 48.8575,
+        lng: 2.3622,
+        order: 3,
+      },
+      // 제주 코스: 제주공항 → 성산일출봉 → 섭지코지 → 카페거리
+      {
+        postId: jejuPost.id,
+        name: '제주국제공항',
+        address: '제주시 공항로',
+        lat: 33.5113,
+        lng: 126.4929,
+        order: 0,
+      },
+      {
+        postId: jejuPost.id,
+        name: '성산일출봉',
+        address: '서귀포시 성산읍',
+        lat: 33.4581,
+        lng: 126.9425,
+        order: 1,
+      },
+      {
+        postId: jejuPost.id,
+        name: '섭지코지',
+        address: '서귀포시 성산읍 고성리',
+        lat: 33.4239,
+        lng: 126.9293,
+        order: 2,
+      },
+      {
+        postId: jejuPost.id,
+        name: '월정리 카페거리',
+        address: '제주시 구좌읍 월정리',
+        lat: 33.5564,
+        lng: 126.7953,
+        order: 3,
+      },
+    ],
   });
 
   console.log('Travel seed data inserted');

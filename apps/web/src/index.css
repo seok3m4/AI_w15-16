@@ -1,24 +1,30 @@
-/* 📌 앱 전체에 적용되는 기본 색상, 글꼴, body 스타일. */
+/* 📌 앱 전체에 적용되는 기본 색상, 글꼴, body 스타일. (Apple 스타일) */
 :root {
-  --bg: #f7f5f2;
+  --bg: #f5f5f7;
   --surface: #ffffff;
-  --field: #fbfaf8;
-  --text: #2f2a28;
-  --text-strong: #151210;
-  --text-muted: #6d6560;
-  --border: #ded8d2;
-  --accent: #9f2d20;
-  --accent-soft: rgba(159, 45, 32, 0.16);
-  --danger: #b42318;
-  --shadow: 0 18px 40px rgba(36, 25, 18, 0.08);
+  --field: #ffffff;
+  --text: #1d1d1f;
+  --text-strong: #1d1d1f;
+  --text-muted: #6e6e73;
+  --border: #d2d2d7;
+  --border-soft: #e8e8ed;
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --accent-soft: rgba(0, 113, 227, 0.1);
+  --danger: #ff3b30;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.1);
+  --radius: 18px;
+  --radius-sm: 12px;
 
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    sans-serif;
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', Inter, ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,6 +41,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
+  letter-spacing: inherit;
 }
