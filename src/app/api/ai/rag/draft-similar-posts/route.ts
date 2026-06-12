@@ -66,6 +66,9 @@ export async function POST(request: Request) {
       message: result.message,
       similarPosts: [],
       summary: null,
+      duplicateRisk: "none",
+      duplicateWarning: null,
+      topSimilarity: null,
     });
   }
 
@@ -73,5 +76,8 @@ export async function POST(request: Request) {
     status: "ready",
     similarPosts: result.similarPosts,
     summary: result.summary,
+    duplicateRisk: result.duplicateRisk,
+    duplicateWarning: result.duplicateWarning,
+    topSimilarity: result.topSimilarity,
   });
 }

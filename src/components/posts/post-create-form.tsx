@@ -50,11 +50,16 @@ type SimilarPost = {
   similarity: number;
 };
 
+type DuplicateRisk = "none" | "low" | "medium" | "high";
+
 type DraftSimilarPostsResponse = {
   status: "ready" | "disabled" | "unavailable" | "not_found";
   message?: string;
   summary: string | null;
   similarPosts: SimilarPost[];
+  duplicateRisk: DuplicateRisk;
+  duplicateWarning: string | null;
+  topSimilarity: number | null;
 };
 
 type PostCreateFormProps = {
@@ -84,6 +89,38 @@ function getPreview(content: string): string {
   return content.length > 96 ? `${content.slice(0, 96)}...` : content;
 }
 
+function isBlockingDuplicateRisk(risk: DuplicateRisk): boolean {
+  return risk === "high" || risk === "medium";
+}
+
+function getDuplicateRiskLabel(risk: DuplicateRisk): string {
+  if (risk === "high") {
+    return "중복 가능성 높음";
+  }
+
+  if (risk === "medium") {
+    return "중복 가능성 있음";
+  }
+
+  if (risk === "low") {
+    return "비슷한 글 있음";
+  }
+
+  return "중복 가능성 낮음";
+}
+
+function getDuplicateRiskClassName(risk: DuplicateRisk): string {
+  if (risk === "high") {
+    return "border-[#fecaca] bg-[#fff1f2] text-[#991b1b]";
+  }
+
+  if (risk === "medium") {
+    return "border-[#fde68a] bg-[#fffbeb] text-[#92400e]";
+  }
+
+  return "border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]";
+}
+
 export function PostCreateForm({
   initialTitle = "",
   initialContent = "",
@@ -102,11 +139,40 @@ export function PostCreateForm({
     useState<DraftSimilarPostsResponse | null>(null);
   const [isRagLoading, setIsRagLoading] = useState(false);
   const [hasRequestedRag, setHasRequestedRag] = useState(false);
+  const [ragCheckedFingerprint, setRagCheckedFingerprint] = useState("");
+  const [
+    acknowledgedDuplicateFingerprint,
+    setAcknowledgedDuplicateFingerprint,
+  ] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedTagNames = useMemo(() => parseTags(tags), [tags]);
+  const draftFingerprint = useMemo(
+    () =>
+      JSON.stringify({
+        title: title.trim(),
+        content: content.trim(),
+        tags: selectedTagNames
+          .map((tag) => tag.toLowerCase())
+          .sort((left, right) => left.localeCompare(right)),
+      }),
+    [content, selectedTagNames, title],
+  );
+  const isDuplicateCheckCurrent =
+    hasRequestedRag && ragCheckedFingerprint === draftFingerprint;
+  const duplicateRisk = isDuplicateCheckCurrent
+    ? draftSimilarPosts?.duplicateRisk ?? "none"
+    : "none";
+  const hasAcknowledgedDuplicateRisk =
+    acknowledgedDuplicateFingerprint === draftFingerprint;
+  const hasBlockingDuplicateRisk =
+    isBlockingDuplicateRisk(duplicateRisk) && !hasAcknowledgedDuplicateRisk;
+  const canRunDuplicateCheck =
+    title.trim().length >= 2 && content.trim().length >= 10;
+  const needsDuplicateCheck =
+    canRunDuplicateCheck && !isDuplicateCheckCurrent;
 
   useEffect(() => {
     let isMounted = true;
@@ -189,6 +255,21 @@ export function PostCreateForm({
     event.preventDefault();
     setMessage("");
     setMessageType("error");
+
+    if (needsDuplicateCheck) {
+      setMessage(
+        "게시글 등록 전에 중복 글 확인을 먼저 진행해주세요. 비슷한 글이 없으면 바로 등록할 수 있습니다.",
+      );
+      return;
+    }
+
+    if (hasBlockingDuplicateRisk) {
+      setMessage(
+        "중복 가능성이 있는 기존 글을 먼저 확인해주세요. 확인 후에도 새 관점이 있다면 등록할 수 있습니다.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -274,13 +355,20 @@ export function PostCreateForm({
       const data = (await response.json()) as DraftSimilarPostsResponse;
 
       setDraftSimilarPosts(data);
+      setRagCheckedFingerprint(draftFingerprint);
+      setAcknowledgedDuplicateFingerprint("");
     } catch {
       setDraftSimilarPosts({
         status: "unavailable",
         message: "초안과 유사한 게시글을 찾지 못했습니다.",
         summary: null,
         similarPosts: [],
+        duplicateRisk: "none",
+        duplicateWarning: null,
+        topSimilarity: null,
       });
+      setRagCheckedFingerprint(draftFingerprint);
+      setAcknowledgedDuplicateFingerprint("");
     } finally {
       setIsRagLoading(false);
     }
@@ -437,11 +525,11 @@ export function PostCreateForm({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-black text-[#071a3d]">
-                  관련 글 확인
+                  중복 글 확인
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
-                  작성 중인 제목, 본문, 태그를 기준으로 기존 게시글과 의미가
-                  가까운 글을 찾습니다.
+                  작성 중인 제목, 본문, 태그를 기준으로 이미 비슷한 이야기가
+                  올라왔는지 확인합니다.
                 </p>
               </div>
               <button
@@ -458,7 +546,7 @@ export function PostCreateForm({
                   ? "찾는 중"
                   : hasRequestedRag
                     ? "다시 찾기"
-                    : "관련 글 확인"}
+                    : "중복 글 확인"}
               </button>
             </div>
 
@@ -466,6 +554,13 @@ export function PostCreateForm({
               <p className="mt-3 text-sm text-[#64748b]">
                 게시글을 등록하기 전에 비슷한 주제가 이미 논의됐는지 확인할 수
                 있습니다.
+              </p>
+            ) : null}
+
+            {hasRequestedRag && !isDuplicateCheckCurrent ? (
+              <p className="mt-3 rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+                작성 내용이 바뀌었습니다. 현재 내용 기준으로 중복 글을 다시
+                확인해주세요.
               </p>
             ) : null}
 
@@ -479,6 +574,47 @@ export function PostCreateForm({
               <p className="mt-3 rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
                 {draftSimilarPosts.message}
               </p>
+            ) : null}
+
+            {!isRagLoading &&
+            isDuplicateCheckCurrent &&
+            draftSimilarPosts?.duplicateWarning ? (
+              <div
+                className={`mt-3 rounded-md border px-3 py-3 text-sm ${getDuplicateRiskClassName(
+                  draftSimilarPosts.duplicateRisk,
+                )}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-black">
+                    {getDuplicateRiskLabel(draftSimilarPosts.duplicateRisk)}
+                  </p>
+                  {draftSimilarPosts.topSimilarity !== null ? (
+                    <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black">
+                      최고 유사도{" "}
+                      {formatSimilarity(draftSimilarPosts.topSimilarity)}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-2 leading-6">
+                  {draftSimilarPosts.duplicateWarning}
+                </p>
+                {isBlockingDuplicateRisk(draftSimilarPosts.duplicateRisk) ? (
+                  <button
+                    className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-black text-[#071a3d] hover:bg-[#f8fafc]"
+                    onClick={() =>
+                      setAcknowledgedDuplicateFingerprint(draftFingerprint)
+                    }
+                    type="button"
+                  >
+                    확인하고 등록 진행
+                  </button>
+                ) : null}
+                {hasAcknowledgedDuplicateRisk ? (
+                  <p className="mt-2 text-xs font-bold">
+                    확인 완료. 새 관점이나 추가 정보가 있다면 등록할 수 있습니다.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
 
             {!isRagLoading && draftSimilarPosts?.summary ? (
@@ -555,6 +691,18 @@ export function PostCreateForm({
             </p>
           ) : null}
 
+          {needsDuplicateCheck ? (
+            <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+              게시글 등록 전 현재 내용 기준으로 중복 글 확인을 진행해주세요.
+            </p>
+          ) : null}
+
+          {hasBlockingDuplicateRisk ? (
+            <p className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+              중복 가능성이 있는 글을 확인한 뒤 확인하고 등록 진행을 눌러주세요.
+            </p>
+          ) : null}
+
           <div className="flex items-center justify-end gap-2">
             <Link
               className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
@@ -564,7 +712,7 @@ export function PostCreateForm({
             </Link>
             <button
               className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-              disabled={isSubmitting}
+              disabled={isSubmitting || hasBlockingDuplicateRisk}
               type="submit"
             >
               {isSubmitting ? "작성 중" : "게시글 등록"}
