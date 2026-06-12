@@ -29,7 +29,6 @@ export function PostListPage() {
 
   useEffect(() => {
     let isMounted = true
-    setState({ kind: 'loading' })
 
     // 현재 page와 검색 조건에 해당하는 게시글 목록을 백엔드에서 가져온다.
     getPosts(page, PAGE_SIZE, { q: query.q, tag: query.tag }, token)

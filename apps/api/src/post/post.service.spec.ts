@@ -10,7 +10,6 @@ const postWithRelations = {
   title: '오사카 3박 4일',
   content: '현지 맛집 중심 코스입니다.',
   city: '오사카',
-  country: '일본',
   duration: 4,
   authorId: 'user_1',
   createdAt,
@@ -27,7 +26,12 @@ const postWithRelations = {
       },
     },
   ],
+  places: [],
   comments: [],
+  _count: {
+    savedBy: 0,
+  },
+  savedBy: [],
 };
 
 describe('PostService', () => {
@@ -40,6 +44,17 @@ describe('PostService', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
+    };
+    tag: {
+      upsert: jest.Mock;
+    };
+    postTag: {
+      deleteMany: jest.Mock;
+      createMany: jest.Mock;
+    };
+    place: {
+      deleteMany: jest.Mock;
+      createMany: jest.Mock;
     };
     $transaction: jest.Mock;
   };
@@ -54,6 +69,17 @@ describe('PostService', () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
+      tag: {
+        upsert: jest.fn(),
+      },
+      postTag: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
+      place: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+      },
       $transaction: jest.fn((queries: Promise<unknown>[]) =>
         Promise.all(queries),
       ),
@@ -64,14 +90,16 @@ describe('PostService', () => {
 
   // 게시글 작성 시 로그인한 사용자의 id를 authorId로 저장해야 한다.
   it('creates a post for the current user', async () => {
-    prisma.post.create.mockResolvedValue(postWithRelations);
+    prisma.post.create.mockResolvedValue({ id: 'post_1' });
+    prisma.post.findUnique.mockResolvedValue(postWithRelations);
+    prisma.postTag.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.place.deleteMany.mockResolvedValue({ count: 0 });
 
     await expect(
       postService.create('user_1', {
         title: '오사카 3박 4일',
         content: '현지 맛집 중심 코스입니다.',
         city: '오사카',
-        country: '일본',
         duration: 4,
       }),
     ).resolves.toMatchObject({
@@ -85,7 +113,6 @@ describe('PostService', () => {
         data: expect.objectContaining({
           authorId: 'user_1',
           city: '오사카',
-          country: '일본',
         }),
       }),
     );
@@ -128,7 +155,6 @@ describe('PostService', () => {
         title: '수정 제목',
         content: '수정 내용',
         city: '파리',
-        country: '프랑스',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
