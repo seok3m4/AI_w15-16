@@ -30,6 +30,7 @@ type Post = {
   counts: {
     comments: number;
     tags: number;
+    views: number;
   };
 };
 
@@ -257,6 +258,8 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
           <span>{post.author.nickname}</span>
           <span>|</span>
           <span>{formatDate(post.createdAt)}</span>
+          <span>|</span>
+          <span>조회 {post.counts.views}</span>
           <span>|</span>
           <span>댓글 {post.counts.comments}개</span>
         </div>

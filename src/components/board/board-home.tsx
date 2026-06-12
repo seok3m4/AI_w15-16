@@ -5,11 +5,19 @@ import { useState } from "react";
 import { KboGamesPanel } from "@/components/ai/kbo-games-panel";
 import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
 import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
+import { HotPostsPanel } from "@/components/board/hot-posts-panel";
+import { TeamTabs } from "@/components/games/team-tabs";
+import { TodayGameHub } from "@/components/games/today-game-hub";
 import { PostList } from "@/components/posts/post-list";
 import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
 
-export function BoardHome() {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+type BoardHomeProps = {
+  initialTags?: string[];
+};
+
+export function BoardHome({ initialTags = [] }: BoardHomeProps) {
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
+  const [selectedTeam, setSelectedTeam] = useState("");
   const [page, setPage] = useState(1);
 
   function handleToggleTag(tagName: string) {
@@ -31,6 +39,17 @@ export function BoardHome() {
 
   function handleClearTags() {
     setSelectedTags([]);
+    setPage(1);
+  }
+
+  function handleClearFilters() {
+    setSelectedTags([]);
+    setSelectedTeam("");
+    setPage(1);
+  }
+
+  function handleSelectTeam(teamName: string) {
+    setSelectedTeam(teamName);
     setPage(1);
   }
 
@@ -58,14 +77,14 @@ export function BoardHome() {
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1 border-b border-[#d8deea] bg-white px-4 py-2 text-xs font-bold text-[#667085]">
-          <span className="rounded-sm bg-[#2f4f9f] px-2 py-1 text-white">
-            전체글
-          </span>
-          <span className="rounded-sm px-2 py-1">인기 태그</span>
-          <span className="rounded-sm px-2 py-1">경기 정보</span>
-          <span className="rounded-sm px-2 py-1">뉴스</span>
-        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <TeamTabs onSelectTeam={handleSelectTeam} selectedTeam={selectedTeam} />
+        <TodayGameHub
+          onSelectTeam={handleSelectTeam}
+          selectedTeam={selectedTeam}
+        />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
@@ -79,14 +98,18 @@ export function BoardHome() {
         </aside>
 
         <PostList
+          onClearFilters={handleClearFilters}
           onClearTags={handleClearTags}
           onPageChange={setPage}
+          onSelectTeam={handleSelectTeam}
           onToggleTag={handleToggleTag}
           page={page}
           selectedTags={selectedTags}
+          selectedTeam={selectedTeam}
         />
 
         <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+          <HotPostsPanel selectedTeam={selectedTeam} />
           <div className="rounded-sm border border-[#b9c3d7] bg-[#f6f8fc] px-3 py-2">
             <h2 className="text-sm font-black text-[#1f3470]">경기 정보</h2>
           </div>

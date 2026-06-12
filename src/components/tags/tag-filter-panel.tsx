@@ -94,7 +94,7 @@ export function TagFilterPanel({
   return (
     <section className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
       <div className="flex items-center justify-between border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
-        <h2 className="text-sm font-black text-[#1f3470]">말머리</h2>
+        <h2 className="text-sm font-black text-[#1f3470]">태그</h2>
         {selectedTags.length > 0 ? (
           <button
             className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline"

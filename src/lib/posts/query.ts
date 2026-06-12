@@ -20,6 +20,7 @@ type PostListQuery = {
   pagination: Pagination;
   searchQuery: string;
   tagNames: string[];
+  sort: "latest" | "views";
   where: Prisma.PostWhereInput;
 };
 
@@ -50,12 +51,17 @@ function normalizeTagNames(searchParams: URLSearchParams): string[] {
   return tagNames;
 }
 
+function normalizeSort(value: string | null): "latest" | "views" {
+  return value === "views" ? "views" : "latest";
+}
+
 export function parsePostListQuery(
   searchParams: URLSearchParams,
 ): ValidationResult<PostListQuery> {
   const pagination = parsePagination(searchParams);
   const searchQuery = normalizeSearchQuery(searchParams.get("q"));
   const tagNames = normalizeTagNames(searchParams);
+  const sort = normalizeSort(searchParams.get("sort"));
 
   if (searchQuery.length > SEARCH_QUERY_MAX_LENGTH) {
     return {
@@ -108,6 +114,7 @@ export function parsePostListQuery(
       pagination,
       searchQuery,
       tagNames,
+      sort,
       where: conditions.length > 0 ? { AND: conditions } : {},
     },
   };

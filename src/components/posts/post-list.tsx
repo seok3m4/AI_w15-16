@@ -24,6 +24,7 @@ type Post = {
   counts: {
     comments: number;
     tags: number;
+    views: number;
   };
 };
 
@@ -50,9 +51,12 @@ type AuthMeResponse = {
 type PostListProps = {
   page: number;
   selectedTags: string[];
+  selectedTeam?: string;
   onPageChange: (page: number) => void;
   onToggleTag: (tagName: string) => void;
   onClearTags: () => void;
+  onClearFilters?: () => void;
+  onSelectTeam?: (teamName: string) => void;
 };
 
 const PAGE_SIZE = 15;
@@ -73,9 +77,12 @@ function getPrimaryTag(tags: Tag[]): string {
 export function PostList({
   page,
   selectedTags,
+  selectedTeam = "",
   onPageChange,
   onToggleTag,
   onClearTags,
+  onClearFilters,
+  onSelectTeam,
 }: PostListProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -91,6 +98,24 @@ export function PostList({
   });
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [expandedTagPostIds, setExpandedTagPostIds] = useState<string[]>([]);
+
+  const effectiveTags = useMemo(() => {
+    const tagNames: string[] = [];
+    const tagKeys = new Set<string>();
+
+    [...selectedTags, selectedTeam].forEach((tagName) => {
+      const normalizedTagName = tagName.trim();
+      const tagKey = normalizedTagName.toLowerCase();
+
+      if (normalizedTagName && !tagKeys.has(tagKey)) {
+        tagNames.push(normalizedTagName);
+        tagKeys.add(tagKey);
+      }
+    });
+
+    return tagNames;
+  }, [selectedTags, selectedTeam]);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -102,12 +127,12 @@ export function PostList({
       params.set("q", searchQuery);
     }
 
-    selectedTags.forEach((tagName) => {
+    effectiveTags.forEach((tagName) => {
       params.append("tag", tagName);
     });
 
     return params.toString();
-  }, [page, searchQuery, selectedTags]);
+  }, [effectiveTags, page, searchQuery]);
 
   useEffect(() => {
     let isMounted = true;
@@ -193,7 +218,11 @@ export function PostList({
   function handleResetFilters() {
     setSearchInput("");
     setSearchQuery("");
-    onClearTags();
+    if (onClearFilters) {
+      onClearFilters();
+    } else {
+      onClearTags();
+    }
     onPageChange(1);
   }
 
@@ -202,7 +231,17 @@ export function PostList({
     onPageChange(1);
   }
 
-  const hasActiveFilter = Boolean(searchQuery || selectedTags.length > 0);
+  function handleTogglePostTags(postId: string) {
+    setExpandedTagPostIds((currentIds) =>
+      currentIds.includes(postId)
+        ? currentIds.filter((currentId) => currentId !== postId)
+        : [...currentIds, postId],
+    );
+  }
+
+  const hasActiveFilter = Boolean(
+    searchQuery || selectedTags.length > 0 || selectedTeam,
+  );
 
   return (
     <section className="space-y-2">
@@ -211,7 +250,7 @@ export function PostList({
           <div>
             <h2 className="text-base font-black text-[#1f3470]">전체글</h2>
             <p className="mt-0.5 text-xs text-[#667085]">
-              총 {pagination.total}개 글
+              {selectedTeam ? `${selectedTeam} 게시판` : `총 ${pagination.total}개 글`}
             </p>
           </div>
           {currentUser ? (
@@ -266,6 +305,15 @@ export function PostList({
                 검색어: {searchQuery}
               </span>
             ) : null}
+            {selectedTeam ? (
+              <button
+                className="rounded-sm border border-[#1f3470] bg-[#2f4f9f] px-2 py-1 font-bold text-white hover:bg-[#1f3470]"
+                onClick={() => onSelectTeam?.("")}
+                type="button"
+              >
+                팀: {selectedTeam}
+              </button>
+            ) : null}
             {selectedTags.map((tagName) => (
               <button
                 className="rounded-sm border border-[#b9c3d7] bg-white px-2 py-1 font-bold text-[#2f4f9f] hover:bg-[#eef3ff]"
@@ -311,13 +359,16 @@ export function PostList({
                   <th className="hidden w-12 px-2 py-2 text-center sm:table-cell">
                     번호
                   </th>
-                  <th className="w-20 px-2 py-2 text-center">말머리</th>
+                  <th className="w-28 px-2 py-2 text-center">태그</th>
                   <th className="px-2 py-2 text-left">제목</th>
                   <th className="hidden w-20 px-2 py-2 text-center md:table-cell">
                     글쓴이
                   </th>
                   <th className="hidden w-24 px-2 py-2 text-center md:table-cell">
                     작성일
+                  </th>
+                  <th className="hidden w-14 px-2 py-2 text-center md:table-cell">
+                    조회
                   </th>
                   <th className="w-12 px-2 py-2 text-center">댓글</th>
                 </tr>
@@ -335,14 +386,47 @@ export function PostList({
                       <td className="hidden px-2 py-2 text-center text-xs text-[#8a94a6] sm:table-cell">
                         {postNumber}
                       </td>
-                      <td className="px-2 py-2 text-center">
-                        <button
-                          className="max-w-full truncate rounded-sm border border-[#d8deea] bg-[#f6f8fc] px-2 py-1 text-xs font-bold text-[#2f4f9f] hover:border-[#2f4f9f] hover:bg-[#eef3ff]"
-                          onClick={() => handleSelectTag(getPrimaryTag(post.tags))}
-                          type="button"
-                        >
-                          {getPrimaryTag(post.tags)}
-                        </button>
+                      <td className="px-2 py-2">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex max-w-full items-center justify-center gap-1">
+                            <button
+                              className="max-w-[76px] truncate rounded-sm border border-[#d8deea] bg-[#f6f8fc] px-2 py-1 text-xs font-bold text-[#2f4f9f] hover:border-[#2f4f9f] hover:bg-[#eef3ff]"
+                              onClick={() =>
+                                handleSelectTag(getPrimaryTag(post.tags))
+                              }
+                              type="button"
+                            >
+                              {getPrimaryTag(post.tags)}
+                            </button>
+                            {post.tags.length > 1 ? (
+                              <button
+                                className="shrink-0 rounded-sm border border-[#2f4f9f] bg-white px-1.5 py-1 text-xs font-black text-[#2f4f9f] hover:bg-[#2f4f9f] hover:text-white"
+                                onClick={() => handleTogglePostTags(post.id)}
+                                type="button"
+                              >
+                                {expandedTagPostIds.includes(post.id)
+                                  ? "접기"
+                                  : `+${post.tags.length - 1}`}
+                              </button>
+                            ) : null}
+                          </div>
+
+                          {expandedTagPostIds.includes(post.id) &&
+                          post.tags.length > 1 ? (
+                            <div className="flex max-w-32 flex-wrap justify-center gap-1">
+                              {post.tags.slice(1).map((tag) => (
+                                <button
+                                  className="max-w-full truncate rounded-sm border border-[#d8deea] bg-white px-1.5 py-0.5 text-xs font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#2f4f9f]"
+                                  key={tag.id}
+                                  onClick={() => handleSelectTag(tag.name)}
+                                  type="button"
+                                >
+                                  {tag.name}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="min-w-0 px-2 py-2">
                         <div className="flex min-w-0 items-center gap-2">
@@ -372,6 +456,9 @@ export function PostList({
                       </td>
                       <td className="hidden px-2 py-2 text-center text-xs text-[#667085] md:table-cell">
                         {formatDate(post.createdAt)}
+                      </td>
+                      <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#4b5563] md:table-cell">
+                        {post.counts.views}
                       </td>
                       <td className="px-2 py-2 text-center text-xs font-bold text-[#d71920]">
                         {post.counts.comments}

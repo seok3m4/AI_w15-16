@@ -26,11 +26,14 @@ export async function GET(request: Request) {
     );
   }
 
-  const { pagination, searchQuery, tagNames, where } = parsedQuery.data;
+  const { pagination, searchQuery, sort, tagNames, where } = parsedQuery.data;
   const [posts, total] = await prisma.$transaction([
     prisma.post.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy:
+        sort === "views"
+          ? [{ viewCount: "desc" }, { createdAt: "desc" }]
+          : { createdAt: "desc" },
       skip: pagination.skip,
       take: pagination.take,
       select: postSelect,
@@ -44,6 +47,7 @@ export async function GET(request: Request) {
       pagination: toPaginationResponse(pagination, total),
       filters: {
         q: searchQuery,
+        sort,
         tag: tagNames[0] ?? "",
         tags: tagNames,
       },

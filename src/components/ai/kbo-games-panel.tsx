@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
+
+import { getGameRoomHref, getWriteReviewHref } from "@/lib/kbo/game";
 
 type KboGameStatus = "scheduled" | "completed" | "draw";
 
@@ -16,6 +19,7 @@ type KboGame = {
   stadium: string;
   tv: string;
   note: string;
+  gameId: string | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };
@@ -197,14 +201,32 @@ export function KboGamesPanel() {
                       {[game.tv, game.note].filter(Boolean).join(" · ")}
                     </p>
                   ) : null}
-                  <div className="mt-2 flex gap-3 text-xs font-black text-[#d71920]">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
+                    <Link
+                      className="rounded-sm bg-[#071a3d] px-2 py-1 text-white hover:bg-[#102a56]"
+                      href={getGameRoomHref(game)}
+                    >
+                      경기방
+                    </Link>
+                    <Link
+                      className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#071a3d] hover:border-[#d71920] hover:text-[#d71920]"
+                      href={getWriteReviewHref(game)}
+                    >
+                      리뷰 쓰기
+                    </Link>
                     {game.reviewUrl ? (
-                      <a href={game.reviewUrl} rel="noreferrer" target="_blank">
+                      <a
+                        className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#d71920] hover:bg-[#fff1f2]"
+                        href={game.reviewUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
                         리뷰
                       </a>
                     ) : null}
                     {game.highlightUrl ? (
                       <a
+                        className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#d71920] hover:bg-[#fff1f2]"
                         href={game.highlightUrl}
                         rel="noreferrer"
                         target="_blank"

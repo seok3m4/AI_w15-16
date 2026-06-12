@@ -7,6 +7,7 @@ export const postSelect = {
   id: true,
   title: true,
   content: true,
+  viewCount: true,
   authorId: true,
   createdAt: true,
   updatedAt: true,
@@ -48,6 +49,7 @@ export function toPostResponse(post: PostRecord) {
     counts: {
       comments: post._count.comments,
       tags: post._count.tags,
+      views: post.viewCount,
     },
   };
 }

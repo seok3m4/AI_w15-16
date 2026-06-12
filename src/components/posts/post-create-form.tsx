@@ -57,6 +57,12 @@ type DraftSimilarPostsResponse = {
   similarPosts: SimilarPost[];
 };
 
+type PostCreateFormProps = {
+  initialTitle?: string;
+  initialContent?: string;
+  initialTags?: string[];
+};
+
 function parseTags(value: string): string[] {
   return value
     .split(",")
@@ -78,13 +84,17 @@ function getPreview(content: string): string {
   return content.length > 96 ? `${content.slice(0, 96)}...` : content;
 }
 
-export function PostCreateForm() {
+export function PostCreateForm({
+  initialTitle = "",
+  initialContent = "",
+  initialTags = [],
+}: PostCreateFormProps) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [tags, setTags] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
+  const [tags, setTags] = useState(formatTags(initialTags));
   const [existingTags, setExistingTags] = useState<ExistingTag[]>([]);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
   const [tagMessage, setTagMessage] = useState("");
@@ -214,7 +224,7 @@ export function PostCreateForm() {
     setTitle(draft.title);
     setContent(draft.draft);
     setTags(draft.tags.join(", "));
-    setMessage("AI 초안을 작성 폼에 적용했습니다. 내용을 확인한 뒤 등록해주세요.");
+    setMessage("초안을 작성 폼에 적용했습니다. 내용을 확인한 뒤 등록해주세요.");
     setMessageType("success");
   }
 
