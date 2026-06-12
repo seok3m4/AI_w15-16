@@ -1,20 +1,33 @@
 # Concepts Overview
 
-이 폴더는 코드 작성 중 적용된 중요한 개념과 패턴을 따로 설명하기 위한 공간이다.
-
-작업 로그가 "무엇을 변경했는지"를 기록한다면, 개념 문서는 "어떤 개념이 왜 적용되었는지"를 정리한다. 예를 들어 Spring Security 필터 체인 분리, Swagger/OpenAPI 문서화, Vite 프록시, API 인증 응답 분리 같은 내용을 이곳에 정리한다.
+이 디렉터리는 코드 작성과 운영 설계에 적용한 주요 개념과 패턴을 정리하는 공간입니다. 작업 로그가 "무엇을 바꿨는지"를 기록한다면, 개념 문서는 "왜 이런 구조를 썼는지"와 "어떻게 검증하거나 운영하는지"를 설명합니다.
 
 ## 작성 기준
 
-중요한 코드 작성 또는 변경이 있을 때 다음 기준 중 하나라도 해당하면 개념 문서를 추가하거나 갱신한다.
+중요한 코드 작성, 배포 자동화, 보안 설정, 백엔드/프론트엔드 통합처럼 다른 팀원이 다시 이해해야 하는 결정이 있으면 개념 문서를 추가하거나 갱신합니다.
 
-- 보안, 인증, 권한, 외부 API 연동처럼 실수하면 영향이 큰 개념
-- 백엔드와 프론트엔드가 함께 이해해야 하는 계약 또는 통신 구조
-- 라이브러리나 프레임워크의 핵심 사용 방식
-- 과제 발표나 회고에서 설명해야 할 기술 선택
-- 이후 팀원이 같은 패턴을 재사용해야 하는 코드 구조
+개념 문서에는 다음 내용을 포함합니다.
 
-## 문서 형식
+- 적용된 개념 또는 패턴
+- 이 프로젝트에서 그 개념을 사용한 이유
+- 관련 파일
+- 검증하거나 동작을 관찰하는 방법
+- 흔한 실수와 후속 개선점
+
+## 현재 개념 문서
+
+- `security-filter-chain.md`
+  - Spring Security 웹 페이지용 체인과 API용 체인 분리
+- `swagger-openapi.md`
+  - Springdoc OpenAPI와 Swagger UI 구성
+- `iam-tag-based-sandbox-policies.md`
+  - AWS IAM 태그 기반 샌드박스 정책 설계
+- `iam-cost-bomb-guardrail-policies.md`
+  - 비용 폭탄 방지를 위한 완화형 IAM guardrail 설계
+- `cicd-ecs-deployment.md`
+  - GitHub Actions, OIDC, ECR, ECS 배포 흐름
+
+## 문서 템플릿
 
 ```markdown
 # Concept Name
@@ -25,24 +38,17 @@
 
 ## What Was Applied
 
-- 프로젝트 코드에 적용된 핵심 개념을 설명한다.
+- Explain the core concept in project-specific terms.
 
 ## Why It Matters
 
-- 이 개념을 사용한 이유와 대안을 설명한다.
+- Explain why this implementation uses the concept.
 
 ## Verification
 
-- `command`: 결과
+- `command`: outcome
 
 ## Pitfalls And Follow-Ups
 
-- 주의사항과 후속 개선점을 정리한다.
+- Note risks, limitations, or next steps.
 ```
-
-## 현재 작성 대상 후보
-
-- Spring Security API/Web 필터 체인 분리
-- Swagger/OpenAPI 문서화
-- Vite 개발 서버 API 프록시
-- 프롬프트 기록과 작업 로그 분리
