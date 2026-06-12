@@ -23,6 +23,32 @@ type KboNewsResponse = {
   };
 };
 
+type Source = {
+  title: string;
+  url: string;
+  source?: string;
+  publishedAt?: string | null;
+};
+
+type UrlBriefing = {
+  mode: "keyword" | "url";
+  briefing: string;
+  sources: Source[];
+  toolName: string;
+};
+
+type BriefingResponse = {
+  status: "ready" | "unavailable";
+  message?: string;
+  briefing?: UrlBriefing;
+};
+
+type NewsBriefingState = {
+  isLoading: boolean;
+  message: string;
+  briefing?: UrlBriefing;
+};
+
 function formatFetchedAt(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {
     month: "2-digit",
@@ -40,23 +66,6 @@ function getBackgroundStyle(imageUrl: string | null): CSSProperties | undefined 
   return {
     backgroundImage: `url("${imageUrl.replaceAll('"', "%22")}")`,
   };
-}
-
-async function copyToClipboard(value: string): Promise<void> {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-
-  const textArea = document.createElement("textarea");
-  textArea.value = value;
-  textArea.setAttribute("readonly", "");
-  textArea.style.position = "fixed";
-  textArea.style.left = "-9999px";
-  document.body.appendChild(textArea);
-  textArea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textArea);
 }
 
 async function requestKboNews(refresh = false): Promise<KboNewsResponse> {
@@ -86,7 +95,9 @@ async function requestKboNews(refresh = false): Promise<KboNewsResponse> {
 export function KboNewsPage() {
   const [data, setData] = useState<KboNewsResponse["result"] | null>(null);
   const [message, setMessage] = useState("");
-  const [copiedUrl, setCopiedUrl] = useState("");
+  const [briefingStates, setBriefingStates] = useState<
+    Record<string, NewsBriefingState>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
 
   async function loadNews(refresh = false) {
@@ -113,13 +124,57 @@ export function KboNewsPage() {
     }
   }
 
-  async function handleCopy(url: string) {
+  async function handleCreateBriefing(article: KboNewsArticle) {
+    setBriefingStates((currentStates) => ({
+      ...currentStates,
+      [article.id]: {
+        isLoading: true,
+        message: "",
+      },
+    }));
+
     try {
-      await copyToClipboard(url);
-      setCopiedUrl(url);
-      window.setTimeout(() => setCopiedUrl(""), 1800);
+      const response = await fetch("/api/ai/mcp/briefing", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          mode: "url",
+          input: article.url,
+        }),
+      });
+      const responseData = (await response.json()) as BriefingResponse;
+
+      if (!response.ok || !responseData.briefing) {
+        setBriefingStates((currentStates) => ({
+          ...currentStates,
+          [article.id]: {
+            isLoading: false,
+            message:
+              responseData.message ?? "URL 브리핑을 생성하지 못했습니다.",
+          },
+        }));
+        return;
+      }
+
+      setBriefingStates((currentStates) => ({
+        ...currentStates,
+        [article.id]: {
+          isLoading: false,
+          message: "",
+          briefing: responseData.briefing,
+        },
+      }));
     } catch {
-      setMessage("URL 복사에 실패했습니다.");
+      setBriefingStates((currentStates) => ({
+        ...currentStates,
+        [article.id]: {
+          isLoading: false,
+          message: "네트워크 연결을 확인해주세요.",
+        },
+      }));
     }
   }
 
@@ -287,11 +342,16 @@ export function KboNewsPage() {
 
                 <div className="mt-auto flex flex-wrap gap-2">
                   <button
-                    className="h-9 rounded-sm border border-[#c8d3df] bg-[#f6f8fc] px-3 text-sm font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470]"
-                    onClick={() => void handleCopy(article.url)}
+                    className="h-9 rounded-sm bg-[#2f4f9f] px-3 text-sm font-bold text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                    disabled={briefingStates[article.id]?.isLoading}
+                    onClick={() => void handleCreateBriefing(article)}
                     type="button"
                   >
-                    {copiedUrl === article.url ? "복사 완료" : "URL 복사"}
+                    {briefingStates[article.id]?.isLoading
+                      ? "브리핑 중"
+                      : briefingStates[article.id]?.briefing
+                        ? "다시 브리핑"
+                        : "URL 브리핑"}
                   </button>
                   <a
                     className="inline-flex h-9 items-center rounded-sm border border-[#c8d3df] bg-white px-3 text-sm font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470]"
@@ -302,6 +362,45 @@ export function KboNewsPage() {
                     원문 보기
                   </a>
                 </div>
+
+                {briefingStates[article.id]?.message ? (
+                  <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+                    {briefingStates[article.id]?.message}
+                  </p>
+                ) : null}
+
+                {briefingStates[article.id]?.briefing ? (
+                  <div className="rounded-sm border border-[#d8deea] bg-[#f6f8fc] p-3">
+                    <p className="text-xs font-black text-[#667085]">
+                      URL 브리핑
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#202632]">
+                      {briefingStates[article.id]?.briefing?.briefing}
+                    </p>
+                    {briefingStates[article.id]?.briefing?.sources.length ? (
+                      <div className="mt-3 border-t border-[#d8deea] pt-3">
+                        <p className="text-xs font-black text-[#667085]">
+                          참고 링크
+                        </p>
+                        <div className="mt-2 grid gap-1.5">
+                          {briefingStates[article.id]?.briefing?.sources.map(
+                            (source) => (
+                              <a
+                                className="text-sm font-bold text-[#2f4f9f] hover:underline"
+                                href={source.url}
+                                key={source.url}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                {source.title}
+                              </a>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
