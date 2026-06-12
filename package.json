@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "seed:demo-posts": "node scripts/seed-demo-posts.mjs"
   },
   "overrides": {
     "postcss": "8.5.15"
