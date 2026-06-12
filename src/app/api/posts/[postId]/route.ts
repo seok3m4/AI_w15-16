@@ -30,27 +30,18 @@ async function findPostOwner(postId: string): Promise<string | null> {
 
 export async function GET(_request: Request, context: RouteContext) {
   const { postId } = await context.params;
-  const existingPost = await prisma.post.findUnique({
+  const currentUser = await getCurrentUser();
+  const post = await prisma.post.findUnique({
     where: { id: postId },
-    select: { id: true },
-  });
-
-  if (!existingPost) {
-    return NextResponse.json({ message: "Post not found." }, { status: 404 });
-  }
-
-  const post = await prisma.post.update({
-    where: { id: postId },
-    data: {
-      viewCount: {
-        increment: 1,
-      },
-    },
     select: postSelect,
   });
 
+  if (!post) {
+    return NextResponse.json({ message: "Post not found." }, { status: 404 });
+  }
+
   return NextResponse.json(
-    { post: toPostResponse(post) },
+    { post: toPostResponse(post, currentUser?.id) },
     { headers: NO_STORE_HEADERS },
   );
 }

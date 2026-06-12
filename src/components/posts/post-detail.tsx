@@ -31,7 +31,11 @@ type Post = {
     comments: number;
     tags: number;
     views: number;
+    upVotes: number;
+    downVotes: number;
+    voteScore: number;
   };
+  viewerVote: VoteType | null;
 };
 
 type PostResponse = {
@@ -41,6 +45,23 @@ type PostResponse = {
 
 type AuthMeResponse = {
   user?: CurrentUser;
+};
+
+type VoteType = "UP" | "DOWN";
+
+type VoteResponse = {
+  vote?: {
+    upVotes: number;
+    downVotes: number;
+    voteScore: number;
+    viewerVote: VoteType | null;
+  };
+  message?: string;
+};
+
+type ViewResponse = {
+  views?: number;
+  message?: string;
 };
 
 type PostDetailProps = {
@@ -58,12 +79,17 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function getViewSessionKey(postId: string): string {
+  return `post-viewed:${postId}`;
+}
+
 export function PostDetail({ postId, revision = "" }: PostDetailProps) {
   const router = useRouter();
   const [post, setPost] = useState<Post | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -96,7 +122,42 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
           return;
         }
 
-        setPost(postData.post);
+        const loadedPost = postData.post;
+
+        setPost(loadedPost);
+
+        const viewSessionKey = getViewSessionKey(loadedPost.id);
+
+        if (!window.sessionStorage.getItem(viewSessionKey)) {
+          window.sessionStorage.setItem(viewSessionKey, "true");
+
+          void fetch(`/api/posts/${loadedPost.id}/views`, {
+            method: "POST",
+            credentials: "include",
+          })
+            .then(async (viewResponse) => {
+              const viewData = (await viewResponse.json()) as ViewResponse;
+
+              if (!viewResponse.ok || typeof viewData.views !== "number") {
+                return;
+              }
+
+              const nextViews = viewData.views;
+
+              setPost((currentPost) =>
+                currentPost?.id === loadedPost.id
+                  ? {
+                      ...currentPost,
+                      counts: {
+                        ...currentPost.counts,
+                        views: nextViews,
+                      },
+                    }
+                  : currentPost,
+              );
+            })
+            .catch(() => undefined);
+        }
 
         if (userResponse.ok) {
           const userData = (await userResponse.json()) as AuthMeResponse;
@@ -149,6 +210,62 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
       setMessage("네트워크 연결을 확인해주세요.");
     } finally {
       setIsDeleting(false);
+    }
+  }
+
+  async function handleVote(type: VoteType) {
+    if (!post) {
+      return;
+    }
+
+    if (!currentUser) {
+      setMessage("추천/비추천은 로그인 후 사용할 수 있습니다.");
+      return;
+    }
+
+    setIsVoting(true);
+    setMessage("");
+
+    const nextType = post.viewerVote === type ? null : type;
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/votes`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          type: nextType,
+        }),
+      });
+      const data = (await response.json()) as VoteResponse;
+
+      if (!response.ok || !data.vote) {
+        setMessage(data.message ?? "추천 정보를 저장하지 못했습니다.");
+        return;
+      }
+
+      const nextVote = data.vote;
+
+      setPost((currentPost) =>
+        currentPost
+          ? {
+              ...currentPost,
+              viewerVote: nextVote.viewerVote,
+              counts: {
+                ...currentPost.counts,
+                upVotes: nextVote.upVotes,
+                downVotes: nextVote.downVotes,
+                voteScore: nextVote.voteScore,
+              },
+            }
+          : currentPost,
+      );
+    } catch {
+      setMessage("네트워크 연결을 확인해주세요.");
+    } finally {
+      setIsVoting(false);
     }
   }
 
@@ -261,11 +378,44 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
           <span>|</span>
           <span>조회 {post.counts.views}</span>
           <span>|</span>
+          <span>추천 {post.counts.voteScore}</span>
+          <span>|</span>
           <span>댓글 {post.counts.comments}개</span>
         </div>
 
         <div className="mt-6 whitespace-pre-wrap border-t border-[#d9e2ec] pt-6 text-sm leading-7 text-[#172033]">
           {post.content}
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-3 border-t border-[#d9e2ec] pt-5 sm:flex-row sm:justify-center">
+          <button
+            className={
+              post.viewerVote === "UP"
+                ? "inline-flex h-10 min-w-28 items-center justify-center rounded-sm bg-[#2f4f9f] px-4 text-sm font-black text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:opacity-60"
+                : "inline-flex h-10 min-w-28 items-center justify-center rounded-sm border border-[#b9c3d7] bg-white px-4 text-sm font-black text-[#2f4f9f] hover:border-[#2f4f9f] hover:bg-[#eef3ff] disabled:cursor-not-allowed disabled:opacity-60"
+            }
+            disabled={isVoting}
+            onClick={() => void handleVote("UP")}
+            type="button"
+          >
+            추천 {post.counts.upVotes}
+          </button>
+          <div className="rounded-sm border border-[#d8deea] bg-[#f6f8fc] px-3 py-2 text-sm font-black text-[#1f3470]">
+            {post.counts.voteScore >= 0 ? "+" : ""}
+            {post.counts.voteScore}
+          </div>
+          <button
+            className={
+              post.viewerVote === "DOWN"
+                ? "inline-flex h-10 min-w-28 items-center justify-center rounded-sm bg-[#b91c1c] px-4 text-sm font-black text-white hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
+                : "inline-flex h-10 min-w-28 items-center justify-center rounded-sm border border-[#fecaca] bg-white px-4 text-sm font-black text-[#b91c1c] hover:bg-[#fff1f2] disabled:cursor-not-allowed disabled:opacity-60"
+            }
+            disabled={isVoting}
+            onClick={() => void handleVote("DOWN")}
+            type="button"
+          >
+            비추천 {post.counts.downVotes}
+          </button>
         </div>
       </article>
       <SimilarPostsPanel postId={post.id} />

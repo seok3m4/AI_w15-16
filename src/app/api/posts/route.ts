@@ -17,6 +17,7 @@ const NO_STORE_HEADERS = {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const currentUser = await getCurrentUser();
   const parsedQuery = parsePostListQuery(searchParams);
 
   if (!parsedQuery.ok) {
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     {
-      posts: posts.map(toPostResponse),
+      posts: posts.map((post) => toPostResponse(post, currentUser?.id)),
       pagination: toPaginationResponse(pagination, total),
       filters: {
         q: searchQuery,

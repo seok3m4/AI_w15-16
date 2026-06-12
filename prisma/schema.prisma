@@ -16,8 +16,14 @@ model User {
   updatedAt    DateTime  @updatedAt
   posts        Post[]
   comments     Comment[]
+  votes        PostVote[]
 
   @@index([createdAt])
+}
+
+enum PostVoteType {
+  UP
+  DOWN
 }
 
 model Post {
@@ -31,12 +37,29 @@ model Post {
   author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   tags      PostTag[]
+  votes     PostVote[]
   embedding PostEmbedding?
 
   @@index([authorId])
   @@index([createdAt])
   @@index([title])
   @@index([viewCount])
+}
+
+model PostVote {
+  id        String       @id @default(cuid())
+  postId    String
+  userId    String
+  type      PostVoteType
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([type])
 }
 
 model PostEmbedding {

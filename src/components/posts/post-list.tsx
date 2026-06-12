@@ -25,6 +25,7 @@ type Post = {
     comments: number;
     tags: number;
     views: number;
+    voteScore: number;
   };
 };
 
@@ -370,6 +371,9 @@ export function PostList({
                   <th className="hidden w-14 px-2 py-2 text-center md:table-cell">
                     조회
                   </th>
+                  <th className="hidden w-14 px-2 py-2 text-center md:table-cell">
+                    추천
+                  </th>
                   <th className="w-12 px-2 py-2 text-center">댓글</th>
                 </tr>
               </thead>
@@ -459,6 +463,9 @@ export function PostList({
                       </td>
                       <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#4b5563] md:table-cell">
                         {post.counts.views}
+                      </td>
+                      <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#2f4f9f] md:table-cell">
+                        {post.counts.voteScore}
                       </td>
                       <td className="px-2 py-2 text-center text-xs font-bold text-[#d71920]">
                         {post.counts.comments}

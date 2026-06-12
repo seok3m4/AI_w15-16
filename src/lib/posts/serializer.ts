@@ -24,6 +24,12 @@ export const postSelect = {
       },
     },
   },
+  votes: {
+    select: {
+      type: true,
+      userId: true,
+    },
+  },
   _count: {
     select: {
       comments: true,
@@ -36,7 +42,12 @@ type PostRecord = Prisma.PostGetPayload<{
   select: typeof postSelect;
 }>;
 
-export function toPostResponse(post: PostRecord) {
+export function toPostResponse(post: PostRecord, viewerId?: string | null) {
+  const upVotes = post.votes.filter((vote) => vote.type === "UP").length;
+  const downVotes = post.votes.filter((vote) => vote.type === "DOWN").length;
+  const viewerVote =
+    viewerId && post.votes.find((vote) => vote.userId === viewerId)?.type;
+
   return {
     id: post.id,
     title: post.title,
@@ -50,6 +61,10 @@ export function toPostResponse(post: PostRecord) {
       comments: post._count.comments,
       tags: post._count.tags,
       views: post.viewCount,
+      upVotes,
+      downVotes,
+      voteScore: upVotes - downVotes,
     },
+    viewerVote: viewerVote ?? null,
   };
 }
