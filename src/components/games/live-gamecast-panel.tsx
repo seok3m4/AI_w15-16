@@ -36,6 +36,7 @@ type RelayResponse = {
   message?: string;
   result?: {
     gameId: string;
+    selectedInning: number | null;
     source: string;
     groups: RelayGroup[];
   };
@@ -49,6 +50,8 @@ type RelayState = {
 type LiveGamecastPanelProps = {
   game: KboGame;
 };
+
+const INNING_OPTIONS = Array.from({ length: 9 }, (_, index) => index + 1);
 
 function formatTime(value: Date): string {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -206,18 +209,23 @@ function BaseIndicator({
 }
 
 export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
+  const [selectedInning, setSelectedInning] = useState<number | null>(null);
   const [relayState, setRelayState] = useState<RelayState | null>(null);
-  const requestKey = `${game.gameId ?? ""}:${game.gameDate}`;
+  const requestKey = `${game.gameId ?? ""}:${game.gameDate}:${
+    selectedInning ?? "all"
+  }`;
   const items = buildGamecastItems(game);
   const liveState = game.liveState;
+  const hasRelayResponse = relayState?.requestKey === requestKey;
   const relayGroups =
-    relayState?.requestKey === requestKey
+    hasRelayResponse
       ? relayState.response.result?.groups ?? []
       : [];
   const relaySource =
-    relayState?.requestKey === requestKey
+    hasRelayResponse
       ? relayState.response.result?.source
       : null;
+  const relayMessage = hasRelayResponse ? relayState.response.message : "";
 
   useEffect(() => {
     if (!game.gameId) {
@@ -231,8 +239,13 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
         const params = new URLSearchParams({
           gameId: game.gameId ?? "",
           date: game.gameDate,
-          limit: "8",
+          limit: selectedInning === null ? "8" : "20",
         });
+
+        if (selectedInning !== null) {
+          params.set("inning", String(selectedInning));
+        }
+
         const response = await fetch(`/api/kbo/relay?${params}`, {
           cache: "no-store",
           credentials: "include",
@@ -271,7 +284,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
         window.clearInterval(intervalId);
       }
     };
-  }, [game.gameDate, game.gameId, game.status, requestKey]);
+  }, [game.gameDate, game.gameId, game.status, requestKey, selectedInning]);
 
   return (
     <section className="mt-4 overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
@@ -344,9 +357,43 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
           </div>
         </div>
 
-        <div className="divide-y divide-[#edf1f7]">
-          {relayGroups.length > 0
-            ? relayGroups.map((group) => (
+        <div>
+          <div className="border-b border-[#edf1f7] bg-[#fbfcff] px-3 py-3">
+            <p className="text-xs font-black text-[#667085]">이닝 선택</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button
+                className={[
+                  "h-8 rounded-sm border px-2.5 text-xs font-black",
+                  selectedInning === null
+                    ? "border-[#2f4f9f] bg-[#2f4f9f] text-white"
+                    : "border-[#c8d3df] bg-white text-[#344054] hover:border-[#2f4f9f]",
+                ].join(" ")}
+                onClick={() => setSelectedInning(null)}
+                type="button"
+              >
+                전체
+              </button>
+              {INNING_OPTIONS.map((inning) => (
+                <button
+                  className={[
+                    "h-8 rounded-sm border px-2.5 text-xs font-black",
+                    selectedInning === inning
+                      ? "border-[#2f4f9f] bg-[#2f4f9f] text-white"
+                      : "border-[#c8d3df] bg-white text-[#344054] hover:border-[#2f4f9f]",
+                  ].join(" ")}
+                  key={inning}
+                  onClick={() => setSelectedInning(inning)}
+                  type="button"
+                >
+                  {inning}회
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="divide-y divide-[#edf1f7]">
+            {relayGroups.length > 0 ? (
+              relayGroups.map((group) => (
                 <div className="px-3 py-3" key={group.id}>
                   <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-3">
                     <span className="text-xs font-black text-[#d71920]">
@@ -383,7 +430,15 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
                   </div>
                 </div>
               ))
-            : items.map((item) => (
+            ) : hasRelayResponse ? (
+              <div className="px-3 py-6 text-center text-sm font-bold text-[#667085]">
+                {relayMessage ||
+                  (selectedInning === null
+                    ? "문자중계 내역이 아직 없습니다."
+                    : `${selectedInning}회 문자중계 내역이 없습니다.`)}
+              </div>
+            ) : (
+              items.map((item) => (
                 <div
                   className="grid grid-cols-[64px_minmax(0,1fr)] gap-3 px-3 py-3"
                   key={item.key}
@@ -402,7 +457,9 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
                     ) : null}
                   </div>
                 </div>
-              ))}
+              ))
+            )}
+          </div>
         </div>
       </div>
     </section>

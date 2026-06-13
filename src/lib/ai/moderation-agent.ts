@@ -133,6 +133,11 @@ export async function runModerationAgent(
   input: ModerationInput,
 ): Promise<ModerationResult> {
   const fallback = runRuleBasedModeration(input);
+
+  if (fallback.verdict === "allow") {
+    return fallback;
+  }
+
   const refined = await refineWithModel(input, fallback);
 
   if (!refined) {
@@ -140,14 +145,17 @@ export async function runModerationAgent(
   }
 
   return {
-    ...refined,
+    ...fallback,
+    message: refined.message || fallback.message,
     categories:
-      refined.categories.length > 0 ? refined.categories : fallback.categories,
-    reasons: refined.reasons.length > 0 ? refined.reasons : fallback.reasons,
+      fallback.categories.length > 0 ? fallback.categories : refined.categories,
+    reasons: fallback.reasons.length > 0 ? fallback.reasons : refined.reasons,
     suggestions:
       refined.suggestions.length > 0
         ? refined.suggestions
         : fallback.suggestions,
+    modelUsed: true,
+    toolTrace: fallback.toolTrace,
   };
 }
 

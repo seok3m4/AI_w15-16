@@ -82,6 +82,16 @@ function getBoundedLimit(value: string | null): number {
   return Math.min(Math.max(Math.floor(limit), 1), 20);
 }
 
+function getInningParam(value: string | null): number | null {
+  const inning = Number(value);
+
+  if (!Number.isInteger(inning) || inning < 1 || inning > 9) {
+    return null;
+  }
+
+  return inning;
+}
+
 function toNaverGameId(gameId: string, gameDate: string): string {
   const trimmedGameId = gameId.trim().toUpperCase();
 
@@ -194,9 +204,20 @@ function toRelayGroup(group: NaverRelayGroup): RelayGroup | null {
   };
 }
 
-async function fetchNaverRelay(gameId: string): Promise<NaverRelayResponse> {
-  const response = await fetch(
+async function fetchNaverRelay(
+  gameId: string,
+  inning: number | null,
+): Promise<NaverRelayResponse> {
+  const relayUrl = new URL(
     `${NAVER_SPORTS_API_BASE_URL}/schedule/games/${gameId}/relay`,
+  );
+
+  if (inning !== null) {
+    relayUrl.searchParams.set("inning", String(inning));
+  }
+
+  const response = await fetch(
+    relayUrl,
     {
       headers: {
         Accept: "application/json,text/plain,*/*",
@@ -221,6 +242,7 @@ export async function GET(request: Request) {
   const gameId = getStringParam(searchParams.get("gameId"));
   const gameDate = getStringParam(searchParams.get("date"));
   const limit = getBoundedLimit(searchParams.get("limit"));
+  const selectedInning = getInningParam(searchParams.get("inning"));
 
   if (!gameId) {
     return NextResponse.json(
@@ -234,16 +256,21 @@ export async function GET(request: Request) {
 
   try {
     const naverGameId = toNaverGameId(gameId, gameDate);
-    const data = await fetchNaverRelay(naverGameId);
-    const groups = (data.result?.textRelayData?.textRelays ?? [])
+    const data = await fetchNaverRelay(naverGameId, selectedInning);
+    const relayGroups = (data.result?.textRelayData?.textRelays ?? [])
       .map(toRelayGroup)
-      .filter((group): group is RelayGroup => Boolean(group))
+      .filter((group): group is RelayGroup => Boolean(group));
+    const groups = relayGroups
+      .filter((group) =>
+        selectedInning === null ? true : group.inning === selectedInning,
+      )
       .slice(0, limit);
 
     return NextResponse.json({
       status: "ready",
       result: {
         gameId: naverGameId,
+        selectedInning,
         source: `https://m.sports.naver.com/game/${naverGameId}/relay`,
         groups,
       },
