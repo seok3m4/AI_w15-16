@@ -75,8 +75,9 @@ export function TagFilterPanel({
     };
   }, []);
 
-  const hasHiddenTags = tags.length > DEFAULT_VISIBLE_TAG_COUNT;
-  const selectedHiddenTags = tags.filter(
+  const activeTags = tags.filter((tag) => tag.counts.posts > 0);
+  const hasHiddenTags = activeTags.length > DEFAULT_VISIBLE_TAG_COUNT;
+  const selectedHiddenTags = activeTags.filter(
     (tag, index) =>
       selectedTags.some(
         (selectedTag) =>
@@ -84,10 +85,13 @@ export function TagFilterPanel({
       ) && index >= DEFAULT_VISIBLE_TAG_COUNT,
   );
   const visibleTags = isExpanded
-    ? tags
-    : [...tags.slice(0, DEFAULT_VISIBLE_TAG_COUNT), ...selectedHiddenTags];
+    ? activeTags
+    : [
+        ...activeTags.slice(0, DEFAULT_VISIBLE_TAG_COUNT),
+        ...selectedHiddenTags,
+      ];
   const hiddenTagCount = Math.max(
-    tags.length - DEFAULT_VISIBLE_TAG_COUNT - selectedHiddenTags.length,
+    activeTags.length - DEFAULT_VISIBLE_TAG_COUNT - selectedHiddenTags.length,
     0,
   );
 
@@ -117,7 +121,7 @@ export function TagFilterPanel({
           <p className="px-1 py-2 text-xs text-[#b91c1c]">{message}</p>
         ) : null}
 
-        {!isLoading && tags.length === 0 ? (
+        {!isLoading && activeTags.length === 0 ? (
           <p className="px-1 py-2 text-xs leading-5 text-[#667085]">
             아직 등록된 태그가 없습니다.
           </p>
