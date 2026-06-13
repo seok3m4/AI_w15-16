@@ -41,6 +41,19 @@ type AuthMeResponse = {
   user?: CurrentUser;
 };
 
+type ModerationResult = {
+  verdict: "allow" | "warn" | "block";
+  message: string;
+  reasons: string[];
+  suggestions: string[];
+};
+
+type ModerationResponse = {
+  status: "ready" | "unavailable";
+  message?: string;
+  result?: ModerationResult;
+};
+
 type CommentSectionProps = {
   postId: string;
   onCommentCountChange?: (nextCount: number) => void;
@@ -55,6 +68,13 @@ function formatDate(value: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getModerationMessage(result: ModerationResult): string {
+  const reason = result.reasons[0] ? ` ${result.reasons[0]}` : "";
+  const suggestion = result.suggestions[0] ? ` ${result.suggestions[0]}` : "";
+
+  return `${result.message}${reason}${suggestion}`;
 }
 
 export function CommentSection({
@@ -182,12 +202,53 @@ export function CommentSection({
     };
   }, [onCommentCountChange, postId]);
 
+  async function runCommentModeration(
+    nextContent: string,
+  ): Promise<boolean> {
+    try {
+      const response = await fetch("/api/ai/agent/moderation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          targetType: "comment",
+          content: nextContent,
+        }),
+      });
+      const data = (await response.json()) as ModerationResponse;
+
+      if (!response.ok || !data.result) {
+        setMessage(data.message ?? "댓글 운영 정책 점검을 실행하지 못했습니다.");
+        return false;
+      }
+
+      if (data.result.verdict !== "allow") {
+        setMessage(getModerationMessage(data.result));
+        return false;
+      }
+
+      return true;
+    } catch {
+      setMessage("댓글 운영 정책 점검 중 네트워크 오류가 발생했습니다.");
+
+      return false;
+    }
+  }
+
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     setIsSubmitting(true);
 
     try {
+      const moderationPassed = await runCommentModeration(content);
+
+      if (!moderationPassed) {
+        return;
+      }
+
       const response = await fetch(`/api/posts/${postId}/comments`, {
         method: "POST",
         headers: {
@@ -217,6 +278,12 @@ export function CommentSection({
     setIsSubmitting(true);
 
     try {
+      const moderationPassed = await runCommentModeration(editingContent);
+
+      if (!moderationPassed) {
+        return;
+      }
+
       const response = await fetch(`/api/comments/${commentId}`, {
         method: "PATCH",
         headers: {

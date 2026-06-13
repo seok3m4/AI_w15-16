@@ -62,6 +62,25 @@ type DraftSimilarPostsResponse = {
   topSimilarity: number | null;
 };
 
+type ModerationVerdict = "allow" | "warn" | "block";
+
+type ModerationResult = {
+  verdict: ModerationVerdict;
+  severity: "safe" | "caution" | "unsafe";
+  message: string;
+  categories: string[];
+  reasons: string[];
+  suggestions: string[];
+  modelUsed: boolean;
+  toolTrace: string[];
+};
+
+type ModerationResponse = {
+  status: "ready" | "unavailable";
+  message?: string;
+  result?: ModerationResult;
+};
+
 type PostCreateFormProps = {
   initialTitle?: string;
   initialContent?: string;
@@ -121,6 +140,18 @@ function getDuplicateRiskClassName(risk: DuplicateRisk): string {
   return "border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]";
 }
 
+function getModerationClassName(verdict: ModerationVerdict): string {
+  if (verdict === "block") {
+    return "border-[#fecaca] bg-[#fff1f2] text-[#991b1b]";
+  }
+
+  if (verdict === "warn") {
+    return "border-[#fde68a] bg-[#fffbeb] text-[#92400e]";
+  }
+
+  return "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]";
+}
+
 export function PostCreateForm({
   initialTitle = "",
   initialContent = "",
@@ -147,6 +178,15 @@ export function PostCreateForm({
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success">("error");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [moderationResult, setModerationResult] =
+    useState<ModerationResult | null>(null);
+  const [isModerating, setIsModerating] = useState(false);
+  const [moderationCheckedFingerprint, setModerationCheckedFingerprint] =
+    useState("");
+  const [
+    acknowledgedModerationFingerprint,
+    setAcknowledgedModerationFingerprint,
+  ] = useState("");
 
   const selectedTagNames = useMemo(() => parseTags(tags), [tags]);
   const draftFingerprint = useMemo(
@@ -160,8 +200,18 @@ export function PostCreateForm({
       }),
     [content, selectedTagNames, title],
   );
+  const moderationFingerprint = useMemo(
+    () =>
+      JSON.stringify({
+        title: title.trim(),
+        content: content.trim(),
+      }),
+    [content, title],
+  );
   const isDuplicateCheckCurrent =
     hasRequestedRag && ragCheckedFingerprint === draftFingerprint;
+  const isModerationCheckCurrent =
+    moderationCheckedFingerprint === moderationFingerprint;
   const duplicateRisk = isDuplicateCheckCurrent
     ? draftSimilarPosts?.duplicateRisk ?? "none"
     : "none";
@@ -169,6 +219,12 @@ export function PostCreateForm({
     acknowledgedDuplicateFingerprint === draftFingerprint;
   const hasBlockingDuplicateRisk =
     isBlockingDuplicateRisk(duplicateRisk) && !hasAcknowledgedDuplicateRisk;
+  const hasModerationWarning =
+    isModerationCheckCurrent &&
+    moderationResult?.verdict === "warn" &&
+    acknowledgedModerationFingerprint !== moderationFingerprint;
+  const hasModerationBlock =
+    isModerationCheckCurrent && moderationResult?.verdict === "block";
   const canRunDuplicateCheck =
     title.trim().length >= 2 && content.trim().length >= 10;
   const needsDuplicateCheck =
@@ -270,6 +326,27 @@ export function PostCreateForm({
       return;
     }
 
+    const moderation = await runModerationCheck();
+
+    if (!moderation) {
+      return;
+    }
+
+    if (moderation.verdict === "block") {
+      setMessage(moderation.message);
+      return;
+    }
+
+    if (
+      moderation.verdict === "warn" &&
+      acknowledgedModerationFingerprint !== moderationFingerprint
+    ) {
+      setMessage(
+        "운영 정책 점검에서 주의가 필요하다고 판단했습니다. 안내를 확인한 뒤 계속 진행할 수 있습니다.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -332,6 +409,48 @@ export function PostCreateForm({
         ),
       ),
     );
+  }
+
+  async function runModerationCheck(): Promise<ModerationResult | null> {
+    if (isModerationCheckCurrent && moderationResult) {
+      return moderationResult;
+    }
+
+    setIsModerating(true);
+    setModerationResult(null);
+
+    try {
+      const response = await fetch("/api/ai/agent/moderation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          targetType: "post",
+          title,
+          content,
+        }),
+      });
+      const data = (await response.json()) as ModerationResponse;
+
+      if (!response.ok || !data.result) {
+        setMessage(data.message ?? "운영 정책 점검을 실행하지 못했습니다.");
+        return null;
+      }
+
+      setModerationResult(data.result);
+      setModerationCheckedFingerprint(moderationFingerprint);
+      setAcknowledgedModerationFingerprint("");
+
+      return data.result;
+    } catch {
+      setMessage("운영 정책 점검 중 네트워크 오류가 발생했습니다.");
+
+      return null;
+    } finally {
+      setIsModerating(false);
+    }
   }
 
   async function handleFindSimilarDraftPosts() {
@@ -679,6 +798,66 @@ export function PostCreateForm({
             ) : null}
           </section>
 
+          {isModerating ? (
+            <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+              운영 정책을 점검하는 중입니다.
+            </p>
+          ) : null}
+
+          {isModerationCheckCurrent && moderationResult ? (
+            <section
+              className={`rounded-md border px-3 py-3 text-sm ${getModerationClassName(
+                moderationResult.verdict,
+              )}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-black">운영 정책 점검</p>
+                <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black">
+                  {moderationResult.verdict === "allow"
+                    ? "통과"
+                    : moderationResult.verdict === "warn"
+                      ? "주의"
+                      : "등록 제한"}
+                </span>
+              </div>
+              <p className="mt-2 leading-6">{moderationResult.message}</p>
+              {moderationResult.reasons.length > 0 ? (
+                <ul className="mt-2 grid gap-1 leading-6">
+                  {moderationResult.reasons.map((reason) => (
+                    <li key={reason}>- {reason}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {moderationResult.suggestions.length > 0 ? (
+                <div className="mt-2 border-t border-current/20 pt-2">
+                  <p className="font-black">수정 제안</p>
+                  <ul className="mt-1 grid gap-1 leading-6">
+                    {moderationResult.suggestions.map((suggestion) => (
+                      <li key={suggestion}>- {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {moderationResult.verdict === "warn" ? (
+                <button
+                  className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-black text-[#071a3d] hover:bg-[#f8fafc]"
+                  onClick={() =>
+                    setAcknowledgedModerationFingerprint(moderationFingerprint)
+                  }
+                  type="button"
+                >
+                  확인하고 등록 진행
+                </button>
+              ) : null}
+              {acknowledgedModerationFingerprint === moderationFingerprint &&
+              moderationResult.verdict === "warn" ? (
+                <p className="mt-2 text-xs font-bold">
+                  확인 완료. 현재 표현으로 등록을 계속 진행할 수 있습니다.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {message ? (
             <p
               className={`rounded-md border px-3 py-2 text-sm ${
@@ -703,6 +882,12 @@ export function PostCreateForm({
             </p>
           ) : null}
 
+          {hasModerationWarning ? (
+            <p className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+              운영 정책 점검 안내를 확인한 뒤 확인하고 등록 진행을 눌러주세요.
+            </p>
+          ) : null}
+
           <div className="flex items-center justify-end gap-2">
             <Link
               className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
@@ -712,10 +897,16 @@ export function PostCreateForm({
             </Link>
             <button
               className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-              disabled={isSubmitting || hasBlockingDuplicateRisk}
+              disabled={
+                isSubmitting ||
+                isModerating ||
+                hasBlockingDuplicateRisk ||
+                hasModerationWarning ||
+                hasModerationBlock
+              }
               type="submit"
             >
-              {isSubmitting ? "작성 중" : "게시글 등록"}
+              {isSubmitting || isModerating ? "처리 중" : "게시글 등록"}
             </button>
           </div>
         </form>

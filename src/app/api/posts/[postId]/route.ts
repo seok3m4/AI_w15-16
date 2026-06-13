@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  getModerationBlockMessage,
+  runModerationAgent,
+} from "@/lib/ai/moderation-agent";
 import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { getCurrentUser } from "@/lib/auth/session";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
@@ -88,6 +92,24 @@ export async function PATCH(request: Request, context: RouteContext) {
       { message: validation.message },
       { status: 400 },
     );
+  }
+
+  if (validation.data.title || validation.data.content) {
+    const moderation = await runModerationAgent({
+      targetType: "post",
+      title: validation.data.title,
+      content: validation.data.content ?? "",
+    });
+
+    if (moderation.verdict === "block") {
+      return NextResponse.json(
+        {
+          message: getModerationBlockMessage(moderation),
+          moderation,
+        },
+        { status: 422 },
+      );
+    }
   }
 
   const post = await prisma.$transaction(async (tx) => {

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  getModerationBlockMessage,
+  runModerationAgent,
+} from "@/lib/ai/moderation-agent";
 import { getCurrentUser } from "@/lib/auth/session";
 import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { toPaginationResponse } from "@/lib/pagination";
@@ -84,6 +88,22 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { message: validation.message },
       { status: 400 },
+    );
+  }
+
+  const moderation = await runModerationAgent({
+    targetType: "post",
+    title: validation.data.title,
+    content: validation.data.content,
+  });
+
+  if (moderation.verdict === "block") {
+    return NextResponse.json(
+      {
+        message: getModerationBlockMessage(moderation),
+        moderation,
+      },
+      { status: 422 },
     );
   }
 

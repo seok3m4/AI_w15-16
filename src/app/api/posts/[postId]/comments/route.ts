@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  getModerationBlockMessage,
+  runModerationAgent,
+} from "@/lib/ai/moderation-agent";
 import { getCurrentUser } from "@/lib/auth/session";
 import { commentSelect, toCommentResponse } from "@/lib/comments/serializer";
 import { validateCommentInput } from "@/lib/comments/validation";
@@ -84,6 +88,21 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(
       { message: validation.message },
       { status: 400 },
+    );
+  }
+
+  const moderation = await runModerationAgent({
+    targetType: "comment",
+    content: validation.data.content,
+  });
+
+  if (moderation.verdict === "block") {
+    return NextResponse.json(
+      {
+        message: getModerationBlockMessage(moderation),
+        moderation,
+      },
+      { status: 422 },
     );
   }
 
