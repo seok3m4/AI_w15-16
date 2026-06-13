@@ -65,6 +65,21 @@ function buildPostDetailInclude(userId?: string): Prisma.PostInclude {
             name: true,
           },
         },
+        // 댓글별 좋아요 수 계산용
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
+        // 로그인한 경우에만 내가 누른 댓글 좋아요 여부를 확인한다.
+        ...(userId
+          ? {
+              likes: {
+                where: { userId },
+                select: { userId: true },
+              },
+            }
+          : {}),
       },
     },
   };
@@ -82,6 +97,7 @@ export class PostService {
         content: dto.content,
         city: dto.city,
         duration: dto.duration ?? null,
+        thumbnailUrl: dto.thumbnailUrl ?? null,
         authorId,
       },
       select: { id: true },
@@ -157,6 +173,17 @@ export class PostService {
     return saved.map((entry) => this.serializePost(entry.post));
   }
 
+  // 마이페이지에서 보여줄 내가 작성한 게시글 목록을 최신순으로 가져온다.
+  async findAuthoredByUser(userId: string) {
+    const posts = await this.prisma.post.findMany({
+      where: { authorId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: buildPostInclude(userId),
+    });
+
+    return posts.map((post) => this.serializePost(post));
+  }
+
   // 게시글을 사용자의 저장 목록에 추가한다. (이미 저장돼 있으면 그대로 둔다)
   async savePost(userId: string, postId: string) {
     await this.assertPostExists(postId);
@@ -192,6 +219,7 @@ export class PostService {
         content: dto.content,
         city: dto.city,
         duration: dto.duration ?? null,
+        thumbnailUrl: dto.thumbnailUrl ?? null,
       },
       select: { id: true },
     });
@@ -348,8 +376,25 @@ export class PostService {
     return {
       ...rest,
       tags: post.tags.map((postTag) => postTag.tag),
+      ...(Array.isArray(post.comments)
+        ? {
+            comments: post.comments.map((comment) =>
+              this.serializeComment(comment),
+            ),
+          }
+        : {}),
       saveCount: _count?.savedBy ?? 0,
       isSaved: Array.isArray(savedBy) && savedBy.length > 0,
+    };
+  }
+
+  // 댓글 응답에 좋아요 수와 현재 사용자의 좋아요 여부를 덧붙인다.
+  private serializeComment(comment) {
+    const { _count, likes, ...rest } = comment;
+    return {
+      ...rest,
+      likeCount: _count?.likes ?? 0,
+      isLiked: Array.isArray(likes) && likes.length > 0,
     };
   }
 }

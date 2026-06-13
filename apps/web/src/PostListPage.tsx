@@ -136,28 +136,39 @@ export function PostListPage() {
               {state.data.items.map((post) => (
                 <article className="post-card" key={post.id}>
                   <Link to={`/posts/${post.id}`}>
-                    <p className="post-location">{post.city}</p>
-                    <h2>{post.title}</h2>
-                    <p className="post-meta">
-                      작성자 {post.author.name}
-                      {post.duration ? ` · ${post.duration}일 코스` : ''}
-                      {post.saveCount > 0 && (
-                        <span className="post-save-count">
-                          {' '}
-                          · 🔖 {post.saveCount}
-                        </span>
-                      )}
-                    </p>
-                    <p className="post-excerpt">{post.content}</p>
-                    {post.tags.length > 0 && (
-                      <div className="tag-row">
-                        {post.tags.map((tag) => (
-                          <span className="tag-chip" key={tag.id}>
-                            {tag.name}
-                          </span>
-                        ))}
+                    {post.thumbnailUrl ? (
+                      <div className="post-card-thumb">
+                        <img src={post.thumbnailUrl} alt="" loading="lazy" />
+                      </div>
+                    ) : (
+                      <div className="post-card-thumb placeholder">
+                        <span>{post.city}</span>
                       </div>
                     )}
+                    <div className="post-card-body">
+                      <p className="post-location">{post.city}</p>
+                      <h2>{post.title}</h2>
+                      <p className="post-meta">
+                        작성자 {post.author.name}
+                        {post.duration ? ` · ${post.duration}일 코스` : ''}
+                        {post.saveCount > 0 && (
+                          <span className="post-save-count">
+                            {' '}
+                            · 🔖 {post.saveCount}
+                          </span>
+                        )}
+                      </p>
+                      <p className="post-excerpt">{post.content}</p>
+                      {post.tags.length > 0 && (
+                        <div className="tag-row">
+                          {post.tags.map((tag) => (
+                            <span className="tag-chip" key={tag.id}>
+                              {tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </Link>
                 </article>
               ))}

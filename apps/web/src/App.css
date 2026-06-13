@@ -204,6 +204,12 @@
   flex-wrap: wrap;
 }
 
+.detail-panel > .action-row {
+  margin-top: 34px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-soft);
+}
+
 .dashboard-copy,
 .status-text {
   margin: 12px 0 0;
@@ -246,7 +252,8 @@
 
 .post-grid {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
   margin-top: 28px;
 }
 
@@ -255,6 +262,7 @@
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+  overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -264,11 +272,51 @@
 }
 
 .post-card a {
-  display: grid;
-  gap: 8px;
-  padding: 26px;
+  display: flex;
+  flex-direction: column;
   color: inherit;
   text-decoration: none;
+}
+
+/* 카드 상단 썸네일 (16:9) */
+.post-card-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--border-soft);
+}
+
+.post-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.post-card:hover .post-card-thumb img {
+  transform: scale(1.04);
+}
+
+/* 사진이 없을 때: 도시명을 보여주는 그라데이션 배너 */
+.post-card-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0071e3 0%, #00c2ff 100%);
+}
+
+.post-card-thumb.placeholder span {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.post-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
 }
 
 .post-card h2 {
@@ -411,6 +459,40 @@
   color: var(--text-muted);
 }
 
+.my-page-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 24px;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 980px;
+  background: var(--field);
+}
+
+.my-page-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 980px;
+  padding: 0 18px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.my-page-tabs button:hover {
+  color: var(--text-strong);
+}
+
+.my-page-tabs button.active {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+}
+
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -434,6 +516,7 @@
   box-shadow: var(--shadow);
   padding: 36px;
   text-align: left;
+  overflow: hidden;
 }
 
 .detail-header {
@@ -503,16 +586,59 @@
   line-height: 1.55;
 }
 
+/* 작성 폼: 카드 컨테이너 대신 섹션 카드들을 세로로 쌓는다 */
 .post-form {
   display: grid;
   gap: 18px;
   margin-top: 22px;
+  text-align: left;
+}
+
+/* 단계별 섹션 카드 (기본 정보 / 코스 경유지 / 태그) */
+.form-section {
+  display: grid;
+  gap: 16px;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
-  padding: 36px;
-  text-align: left;
+  padding: 28px;
+}
+
+/* 섹션 헤더: 번호 배지 + 제목 + 설명 */
+.form-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.form-section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-section-head h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.form-section-head p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .post-form label {
@@ -521,6 +647,27 @@
   color: var(--text-strong);
   font-size: 14px;
   font-weight: 600;
+}
+
+/* 라벨 없이 단독으로 쓰는 입력(태그 등) */
+.post-form .block-input {
+  width: 100%;
+}
+
+/* 하단 액션 바: 취소 + 저장 */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.form-actions .secondary-link-button {
+  padding: 0 24px;
+}
+
+.form-actions button {
+  min-width: 130px;
 }
 
 .post-form input,
@@ -548,10 +695,12 @@
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
-.post-form button {
+/* 저장 버튼은 하단 액션 바로 한정한다. (PlaceEditor의 버튼에 영향 주지 않도록) */
+.form-actions button {
   min-height: 46px;
   border: 0;
   border-radius: 980px;
+  padding: 0 22px;
   background: var(--accent);
   color: #fff;
   font: inherit;
@@ -560,15 +709,15 @@
   transition: background 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
 }
 
-.post-form button:hover:not(:disabled) {
+.form-actions button:hover:not(:disabled) {
   background: var(--accent-hover);
 }
 
-.post-form button:active:not(:disabled) {
+.form-actions button:active:not(:disabled) {
   transform: scale(0.98);
 }
 
-.post-form button:disabled {
+.form-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -577,6 +726,116 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+/* ===== 대표 사진 업로더 ===== */
+.thumb-uploader {
+  display: block;
+}
+
+/* 사진 없을 때: 클릭 가능한 점선 영역 */
+.thumb-uploader .thumb-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 28px 18px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.thumb-uploader .thumb-dropzone:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.thumb-dropzone-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.thumb-dropzone-text {
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.thumb-dropzone-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* 사진 있을 때: 미리보기 + 변경/제거 */
+.thumb-preview {
+  position: relative;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--border-soft);
+}
+
+.thumb-preview img {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+}
+
+.thumb-preview-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.thumb-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 980px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.thumb-button:hover {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.thumb-button-remove {
+  background: rgba(255, 59, 48, 0.85);
+}
+
+.thumb-button-remove:hover {
+  background: var(--danger);
+}
+
+/* 상세 화면 대표 사진 */
+.detail-thumb {
+  margin: -36px -36px 24px;
+  background: var(--border-soft);
+  max-height: 360px;
+  overflow: hidden;
+}
+
+.detail-thumb img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
 }
 
 /* 목록 화면 검색/태그 필터 바 */
@@ -638,6 +897,54 @@
 
 .comment-delete:hover {
   text-decoration: underline;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.comment-like,
+.comment-like-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 980px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.comment-like {
+  border: 1px solid var(--border);
+  background: var(--field);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.comment-like:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.comment-like.is-liked {
+  border-color: var(--danger);
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
+}
+
+.comment-like:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.comment-like-count {
+  background: var(--field);
+  color: var(--text-muted);
 }
 
 .comment-form {
@@ -1382,5 +1689,96 @@
   .footer-bottom {
     flex-direction: column;
     gap: 6px;
+  }
+}
+
+/* ===== 화면 전환 / 등장 애니메이션 ===== */
+/* 페이지 콘텐츠가 살짝 아래에서 페이드인 (라우트 변경 시 재마운트되며 재생) */
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 카드가 아래에서 떠오르며 등장 */
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* backwards: 시작 전엔 from 상태(딜레이 동안 숨김), 끝난 뒤엔 원래 스타일로 복귀해
+   카드 hover transform 등과 충돌하지 않는다. */
+.app-page,
+.auth-page {
+  animation: pageIn 0.4s ease backwards;
+}
+
+/* 목록/홈/폼의 카드들이 순차적으로(stagger) 떠오른다 */
+.post-grid .post-card,
+.feature-grid .feature-card,
+.post-form .form-section {
+  animation: cardIn 0.45s ease backwards;
+}
+
+.post-grid .post-card:nth-child(1),
+.feature-grid .feature-card:nth-child(1),
+.post-form .form-section:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.post-grid .post-card:nth-child(2),
+.feature-grid .feature-card:nth-child(2),
+.post-form .form-section:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.post-grid .post-card:nth-child(3),
+.feature-grid .feature-card:nth-child(3),
+.post-form .form-section:nth-child(3) {
+  animation-delay: 0.19s;
+}
+.post-grid .post-card:nth-child(4),
+.feature-grid .feature-card:nth-child(4) {
+  animation-delay: 0.26s;
+}
+.post-grid .post-card:nth-child(5) {
+  animation-delay: 0.33s;
+}
+.post-grid .post-card:nth-child(n + 6) {
+  animation-delay: 0.4s;
+}
+
+/* 코스 경로 목록의 장소들도 가볍게 stagger */
+.course-list--links li {
+  animation: cardIn 0.4s ease backwards;
+}
+.course-list--links li:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.course-list--links li:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.course-list--links li:nth-child(n + 4) {
+  animation-delay: 0.18s;
+}
+
+/* 접근성: 모션 최소화 설정 시 애니메이션 비활성화 */
+@media (prefers-reduced-motion: reduce) {
+  .app-page,
+  .auth-page,
+  .post-grid .post-card,
+  .feature-grid .feature-card,
+  .post-form .form-section,
+  .course-list--links li {
+    animation: none;
   }
 }

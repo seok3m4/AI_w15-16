@@ -19,6 +19,11 @@ const commentSelect = {
       name: true,
     },
   },
+  _count: {
+    select: {
+      likes: true,
+    },
+  },
 };
 
 @Injectable()
@@ -29,7 +34,7 @@ export class CommentService {
   async create(postId: string, authorId: string, dto: CreateCommentDto) {
     await this.assertPostExists(postId);
 
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         content: dto.content,
         postId,
@@ -37,6 +42,40 @@ export class CommentService {
       },
       select: commentSelect,
     });
+
+    return this.serializeComment(comment);
+  }
+
+  // 로그인한 사용자가 댓글에 좋아요를 누른다. 이미 눌렀으면 중복 생성하지 않는다.
+  async like(postId: string, commentId: string, userId: string) {
+    await this.assertCommentInPost(postId, commentId);
+
+    await this.prisma.commentLike.upsert({
+      where: { userId_commentId: { userId, commentId } },
+      update: {},
+      create: { userId, commentId },
+    });
+
+    const likeCount = await this.prisma.commentLike.count({
+      where: { commentId },
+    });
+
+    return { liked: true, likeCount };
+  }
+
+  // 로그인한 사용자가 댓글 좋아요를 취소한다.
+  async unlike(postId: string, commentId: string, userId: string) {
+    await this.assertCommentInPost(postId, commentId);
+
+    await this.prisma.commentLike.deleteMany({
+      where: { userId, commentId },
+    });
+
+    const likeCount = await this.prisma.commentLike.count({
+      where: { commentId },
+    });
+
+    return { liked: false, likeCount };
   }
 
   // 댓글 작성자 본인인지 확인한 뒤 댓글을 삭제한다.
@@ -74,5 +113,27 @@ export class CommentService {
     if (!post) {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
+  }
+
+  // 좋아요/취소 전에 댓글이 해당 게시글에 실제로 속해 있는지 확인한다.
+  private async assertCommentInPost(postId: string, commentId: string) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { postId: true },
+    });
+
+    if (!comment || comment.postId !== postId) {
+      throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    }
+  }
+
+  // 댓글 생성 직후에도 상세 조회와 같은 응답 모양을 맞춘다.
+  private serializeComment(comment) {
+    const { _count, ...rest } = comment;
+    return {
+      ...rest,
+      likeCount: _count?.likes ?? 0,
+      isLiked: false,
+    };
   }
 }

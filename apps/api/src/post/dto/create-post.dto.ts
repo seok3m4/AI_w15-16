@@ -25,6 +25,11 @@ export class CreatePostDto {
   @IsNotEmpty()
   city: string;
 
+  // 대표 사진 (리사이즈된 base64 data URL). 선택값.
+  @IsOptional()
+  @IsString()
+  thumbnailUrl?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()

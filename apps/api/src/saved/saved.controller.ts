@@ -49,4 +49,11 @@ export class SavedController {
   mySaved(@Request() req: AuthenticatedRequest) {
     return this.postService.findSavedByUser(req.user.userId);
   }
+
+  // 마이페이지에서 보여줄 내가 직접 작성한 게시글 목록을 조회한다.
+  @UseGuards(JwtAuthGuard)
+  @Get('me/posts')
+  myPosts(@Request() req: AuthenticatedRequest) {
+    return this.postService.findAuthoredByUser(req.user.userId);
+  }
 }

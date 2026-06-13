@@ -35,6 +35,28 @@ export class CommentController {
     return this.commentService.create(postId, req.user.userId, dto);
   }
 
+  // 로그인한 사용자가 특정 댓글에 좋아요를 누른다.
+  @UseGuards(JwtAuthGuard)
+  @Post(':commentId/like')
+  like(
+    @Param('postId') postId: string,
+    @Param('commentId') commentId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.commentService.like(postId, commentId, req.user.userId);
+  }
+
+  // 로그인한 사용자가 특정 댓글 좋아요를 취소한다.
+  @UseGuards(JwtAuthGuard)
+  @Delete(':commentId/like')
+  unlike(
+    @Param('postId') postId: string,
+    @Param('commentId') commentId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.commentService.unlike(postId, commentId, req.user.userId);
+  }
+
   // 댓글 작성자 본인만 자신의 댓글을 삭제할 수 있다.
   @UseGuards(JwtAuthGuard)
   @Delete(':commentId')

@@ -6,7 +6,9 @@ import {
   deleteComment,
   deletePost,
   getPost,
+  likeComment,
   savePost,
+  unlikeComment,
   unsavePost,
   type TravelPostDetail,
 } from './api'
@@ -43,6 +45,7 @@ export function PostDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [savePending, setSavePending] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [likePendingId, setLikePendingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -164,6 +167,45 @@ export function PostDetailPage() {
     }
   }
 
+  // 댓글 좋아요 토글: 현재 상태에 따라 좋아요/취소 API를 호출하고 해당 댓글만 갱신한다.
+  async function handleCommentLike(commentId: string) {
+    if (!token || !post) return
+
+    const target = post.comments.find((comment) => comment.id === commentId)
+    if (!target) return
+
+    setCommentError('')
+    setLikePendingId(commentId)
+
+    try {
+      const result = target.isLiked
+        ? await unlikeComment(token, post.id, commentId)
+        : await likeComment(token, post.id, commentId)
+
+      setState({
+        kind: 'ready',
+        post: {
+          ...post,
+          comments: post.comments.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  isLiked: result.liked,
+                  likeCount: result.likeCount,
+                }
+              : comment,
+          ),
+        },
+      })
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : '댓글 좋아요 처리에 실패했습니다.',
+      )
+    } finally {
+      setLikePendingId(null)
+    }
+  }
+
   return (
     <main className="app-page">
       <section className="content-shell">
@@ -179,6 +221,11 @@ export function PostDetailPage() {
         )}
         {post && (
           <article className="detail-panel">
+            {post.thumbnailUrl && (
+              <div className="detail-thumb">
+                <img src={post.thumbnailUrl} alt="" />
+              </div>
+            )}
             <header className="detail-header">
               <p className="post-location">{post.city}</p>
               <h1>{post.title}</h1>
@@ -289,6 +336,26 @@ export function PostDetailPage() {
                       )}
                     </div>
                     <p>{comment.content}</p>
+                    <div className="comment-actions">
+                      {token ? (
+                        <button
+                          type="button"
+                          className={
+                            comment.isLiked
+                              ? 'comment-like is-liked'
+                              : 'comment-like'
+                          }
+                          onClick={() => handleCommentLike(comment.id)}
+                          disabled={likePendingId === comment.id}
+                        >
+                          ♥ 좋아요 {comment.likeCount}
+                        </button>
+                      ) : (
+                        <span className="comment-like-count">
+                          ♥ 좋아요 {comment.likeCount}
+                        </span>
+                      )}
+                    </div>
                   </article>
                 )
               })}

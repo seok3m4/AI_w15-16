@@ -23,6 +23,8 @@ export type PostComment = {
   content: string
   createdAt: string
   updatedAt: string
+  likeCount: number
+  isLiked: boolean
   author: {
     id: string
     name: string
@@ -45,6 +47,7 @@ export type TravelPost = {
   content: string
   city: string
   duration: number | null
+  thumbnailUrl: string | null
   authorId: string
   createdAt: string
   updatedAt: string
@@ -84,6 +87,7 @@ export type PostPayload = {
   title: string
   content: string
   city: string
+  thumbnailUrl?: string | null
   duration?: number
   tags?: string[]
   places?: PlaceInput[]
@@ -218,6 +222,13 @@ export function getSavedPosts(token: string) {
   })
 }
 
+// 마이페이지에서 보여줄 내가 직접 작성한 게시글 목록을 조회한다.
+export function getMyPosts(token: string) {
+  return request<TravelPost[]>('/me/posts', {
+    headers: authHeaders(token),
+  })
+}
+
 // 로그인한 사용자의 JWT로 새 여행 코스 게시글을 작성한다.
 export function createPost(token: string, payload: PostPayload) {
   return request<TravelPostDetail>('/posts', {
@@ -278,3 +289,32 @@ export function deleteComment(
   )
 }
 
+// 로그인한 사용자가 특정 댓글에 좋아요를 누른다.
+export function likeComment(token: string, postId: string, commentId: string) {
+  return request<{ liked: boolean; likeCount: number }>(
+    `/posts/${postId}/comments/${commentId}/like`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+}
+
+// 로그인한 사용자가 특정 댓글 좋아요를 취소한다.
+export function unlikeComment(
+  token: string,
+  postId: string,
+  commentId: string,
+) {
+  return request<{ liked: boolean; likeCount: number }>(
+    `/posts/${postId}/comments/${commentId}/like`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+}

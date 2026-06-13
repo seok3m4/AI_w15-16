@@ -2,6 +2,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { createPost, getPost, updatePost, type PostPayload } from './api'
+import { fileToResizedDataUrl } from './image'
 import { PlaceEditor, type PlaceDraft } from './PlaceEditor'
 import { useAuth } from './useAuth'
 
@@ -11,6 +12,8 @@ type FormState = {
   city: string
   duration: string
   tags: string
+  // 대표 사진 (리사이즈된 base64 data URL). 없으면 빈 문자열.
+  thumbnailUrl: string
 }
 
 const emptyForm: FormState = {
@@ -19,6 +22,7 @@ const emptyForm: FormState = {
   city: '',
   duration: '',
   tags: '',
+  thumbnailUrl: '',
 }
 
 // 쉼표로 구분된 태그 문자열을 배열로 바꾼다. (공백/중복 제거)
@@ -46,6 +50,7 @@ export function PostFormPage() {
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [thumbnailBusy, setThumbnailBusy] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -62,6 +67,7 @@ export function PostFormPage() {
           city: post.city,
           duration: post.duration ? String(post.duration) : '',
           tags: post.tags.map((tag) => tag.name).join(', '),
+          thumbnailUrl: post.thumbnailUrl ?? '',
         })
         setPlaces(
           post.places.map((place) => ({
@@ -101,12 +107,40 @@ export function PostFormPage() {
     }))
   }
 
+  // 파일 선택 시 브라우저에서 리사이즈해 base64로 폼에 담는다.
+  async function handleThumbnailChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0]
+    event.target.value = '' // 같은 파일을 다시 골라도 onChange가 동작하도록 초기화
+    if (!file) return
+
+    setError('')
+    setThumbnailBusy(true)
+    try {
+      const dataUrl = await fileToResizedDataUrl(file)
+      updateField('thumbnailUrl', dataUrl)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : '사진을 처리하지 못했습니다.',
+      )
+    } finally {
+      setThumbnailBusy(false)
+    }
+  }
+
+  function removeThumbnail() {
+    updateField('thumbnailUrl', '')
+  }
+
   // duration/tags/places는 선택값이므로 정리해서 payload를 만든다.
   function buildPayload(): PostPayload {
     const payload: PostPayload = {
       title: form.title,
       content: form.content,
       city: form.city,
+      // 빈 문자열이면 null로 보내 사진을 비운다.
+      thumbnailUrl: form.thumbnailUrl || null,
       tags: parseTags(form.tags),
       // 화면에 보이는 순서를 그대로 코스 순서(order)로 저장한다.
       places: places.map((place, index) => ({
@@ -161,67 +195,150 @@ export function PostFormPage() {
         {isLoading && <p className="status-text">폼을 불러오는 중...</p>}
         {!isLoading && (
           <form className="post-form" onSubmit={handleSubmit}>
-            <label>
-              제목
-              <input
-                type="text"
-                value={form.title}
-                onChange={(event) => updateField('title', event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              본문
-              <textarea
-                value={form.content}
-                onChange={(event) => updateField('content', event.target.value)}
-                rows={10}
-                required
-              />
-            </label>
-            <div className="form-grid">
+            <section className="form-section">
+              <div className="form-section-head">
+                <span className="form-section-num">1</span>
+                <div>
+                  <h2>기본 정보</h2>
+                  <p>어떤 여행이었는지 제목과 소개로 알려주세요.</p>
+                </div>
+              </div>
+
+              <div className="thumb-uploader">
+                {form.thumbnailUrl ? (
+                  <div className="thumb-preview">
+                    <img src={form.thumbnailUrl} alt="대표 사진 미리보기" />
+                    <div className="thumb-preview-actions">
+                      <label className="thumb-button">
+                        사진 변경
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailChange}
+                          hidden
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="thumb-button thumb-button-remove"
+                        onClick={removeThumbnail}
+                      >
+                        제거
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="thumb-dropzone">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailChange}
+                      hidden
+                    />
+                    <span className="thumb-dropzone-icon" aria-hidden>
+                      🖼️
+                    </span>
+                    <span className="thumb-dropzone-text">
+                      {thumbnailBusy ? '사진 처리 중...' : '대표 사진 추가'}
+                    </span>
+                    <span className="thumb-dropzone-hint">
+                      클릭해서 내 파일에서 이미지를 선택하세요 (선택)
+                    </span>
+                  </label>
+                )}
+              </div>
+
               <label>
-                도시
+                제목
                 <input
                   type="text"
-                  value={form.city}
-                  onChange={(event) => updateField('city', event.target.value)}
-                  placeholder="예: 부산, 강릉, 제주"
+                  value={form.title}
+                  onChange={(event) => updateField('title', event.target.value)}
+                  placeholder="예: 부산 2박 3일 바다와 골목 맛집 코스"
                   required
                 />
               </label>
               <label>
-                여행 기간
-                <input
-                  type="number"
-                  min="1"
-                  value={form.duration}
+                소개
+                <textarea
+                  value={form.content}
                   onChange={(event) =>
-                    updateField('duration', event.target.value)
+                    updateField('content', event.target.value)
                   }
-                  placeholder="예: 3"
+                  rows={8}
+                  placeholder="코스를 어떻게 다녔는지, 어떤 점이 좋았는지 자유롭게 적어주세요."
+                  required
                 />
               </label>
-            </div>
+              <div className="form-grid">
+                <label>
+                  도시
+                  <input
+                    type="text"
+                    value={form.city}
+                    onChange={(event) =>
+                      updateField('city', event.target.value)
+                    }
+                    placeholder="예: 부산, 강릉, 제주"
+                    required
+                  />
+                </label>
+                <label>
+                  여행 기간 (일)
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.duration}
+                    onChange={(event) =>
+                      updateField('duration', event.target.value)
+                    }
+                    placeholder="예: 3"
+                  />
+                </label>
+              </div>
+            </section>
 
-            <div className="form-field-block">
-              <span className="field-label">코스 경유지</span>
+            <section className="form-section">
+              <div className="form-section-head">
+                <span className="form-section-num">2</span>
+                <div>
+                  <h2>코스 경유지</h2>
+                  <p>장소를 검색해 순서대로 추가하면 지도에 코스로 표시돼요.</p>
+                </div>
+              </div>
               <PlaceEditor places={places} onChange={setPlaces} />
-            </div>
+            </section>
 
-            <label>
-              태그
+            <section className="form-section">
+              <div className="form-section-head">
+                <span className="form-section-num">3</span>
+                <div>
+                  <h2>태그</h2>
+                  <p>쉼표로 구분해 입력하면 검색·분류에 쓰여요. (선택)</p>
+                </div>
+              </div>
               <input
+                className="block-input"
                 type="text"
                 value={form.tags}
                 onChange={(event) => updateField('tags', event.target.value)}
-                placeholder="쉼표로 구분 (예: 단풍, 료칸, 가족여행)"
+                placeholder="예: 맛집, 바다, 가족여행"
               />
-            </label>
+            </section>
+
             {error && <p className="error-message">{error}</p>}
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? '저장 중...' : '저장'}
-            </button>
+
+            <div className="form-actions">
+              <Link
+                className="secondary-link-button"
+                to={id ? `/posts/${id}` : '/posts'}
+              >
+                취소
+              </Link>
+              <button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? '저장 중...' : isEditMode ? '수정 완료' : '코스 게시'}
+              </button>
+            </div>
           </form>
         )}
       </section>
