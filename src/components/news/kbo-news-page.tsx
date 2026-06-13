@@ -217,22 +217,90 @@ export function KboNewsPage() {
     };
   }, []);
 
+  function renderArticleActions(article: KboNewsArticle) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          className="h-9 rounded-sm bg-[#d71920] px-3 text-sm font-bold text-white hover:bg-[#a91118] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+          disabled={briefingStates[article.id]?.isLoading}
+          onClick={() => void handleCreateBriefing(article)}
+          type="button"
+        >
+          {briefingStates[article.id]?.isLoading
+            ? "브리핑 중"
+            : briefingStates[article.id]?.briefing
+              ? "다시 브리핑"
+              : "URL 브리핑"}
+        </button>
+        <a
+          className="inline-flex h-9 items-center rounded-sm border border-[#c8d3df] bg-white px-3 text-sm font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470]"
+          href={article.url}
+          rel="noreferrer"
+          target="_blank"
+        >
+          원문 보기
+        </a>
+      </div>
+    );
+  }
+
+  function renderBriefingBlock(article: KboNewsArticle) {
+    const state = briefingStates[article.id];
+
+    return (
+      <>
+        {state?.message ? (
+          <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+            {state.message}
+          </p>
+        ) : null}
+
+        {state?.briefing ? (
+          <div className="rounded-sm border border-[#d8deea] bg-[#f6f8fc] p-3">
+            <p className="text-xs font-black text-[#667085]">URL 브리핑</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#202632]">
+              {state.briefing.briefing}
+            </p>
+            {state.briefing.sources.length ? (
+              <div className="mt-3 border-t border-[#d8deea] pt-3">
+                <p className="text-xs font-black text-[#667085]">참고 링크</p>
+                <div className="mt-2 grid gap-1.5">
+                  {state.briefing.sources.map((source) => (
+                    <a
+                      className="text-sm font-bold text-[#2f4f9f] hover:underline"
+                      href={source.url}
+                      key={source.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {source.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-5">
-      <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-        <div className="flex flex-col gap-3 border-b border-[#d8deea] bg-[#f6f8fc] px-5 py-5 md:flex-row md:items-end md:justify-between">
+      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
+        <div className="flex flex-col gap-3 border-b border-[#172554] bg-[#071a3d] px-5 py-5 text-white md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-[#1f3470]">
-              KBO 뉴스
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667085]">
-              KBO 공식 홈페이지의 최신 뉴스를 모아보고, 필요한 원문 URL을 바로
-              복사할 수 있습니다.
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#f87171]">
+              News
+            </p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight">KBO 뉴스</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">
+              KBO 공식 홈페이지의 최신 소식을 모아보고 원문과 브리핑을 함께 확인합니다.
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <button
-              className="h-10 rounded-sm border border-[#b9c3d7] bg-white px-4 text-sm font-bold text-[#1f3470] hover:bg-[#eef3ff] disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-10 rounded-sm border border-white/20 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading}
               onClick={() => void loadNews(true)}
               type="button"
@@ -240,7 +308,7 @@ export function KboNewsPage() {
               {isLoading ? "불러오는 중" : "새로고침"}
             </button>
             <a
-              className="inline-flex h-10 items-center rounded-sm bg-[#2f4f9f] px-4 text-sm font-bold text-white hover:bg-[#1f3470]"
+              className="inline-flex h-10 items-center rounded-sm bg-[#d71920] px-4 text-sm font-bold text-white hover:bg-[#a91118]"
               href={
                 data?.source ??
                 "https://www.koreabaseball.com/MediaNews/News/BreakingNews/List.aspx"
@@ -294,7 +362,7 @@ export function KboNewsPage() {
             >
               <div
                 aria-hidden="true"
-                className="relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-[#2f4f9f] text-base font-black text-white md:h-auto md:w-64 lg:w-72"
+                className="relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-[#071a3d] text-base font-black text-white md:h-auto md:w-64 lg:w-72"
               >
                 {article.imageUrl ? (
                   <>
@@ -340,67 +408,10 @@ export function KboNewsPage() {
                   ) : null}
                 </div>
 
-                <div className="mt-auto flex flex-wrap gap-2">
-                  <button
-                    className="h-9 rounded-sm bg-[#2f4f9f] px-3 text-sm font-bold text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-                    disabled={briefingStates[article.id]?.isLoading}
-                    onClick={() => void handleCreateBriefing(article)}
-                    type="button"
-                  >
-                    {briefingStates[article.id]?.isLoading
-                      ? "브리핑 중"
-                      : briefingStates[article.id]?.briefing
-                        ? "다시 브리핑"
-                        : "URL 브리핑"}
-                  </button>
-                  <a
-                    className="inline-flex h-9 items-center rounded-sm border border-[#c8d3df] bg-white px-3 text-sm font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470]"
-                    href={article.url}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    원문 보기
-                  </a>
+                <div className="mt-auto">
+                  {renderArticleActions(article)}
                 </div>
-
-                {briefingStates[article.id]?.message ? (
-                  <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
-                    {briefingStates[article.id]?.message}
-                  </p>
-                ) : null}
-
-                {briefingStates[article.id]?.briefing ? (
-                  <div className="rounded-sm border border-[#d8deea] bg-[#f6f8fc] p-3">
-                    <p className="text-xs font-black text-[#667085]">
-                      URL 브리핑
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#202632]">
-                      {briefingStates[article.id]?.briefing?.briefing}
-                    </p>
-                    {briefingStates[article.id]?.briefing?.sources.length ? (
-                      <div className="mt-3 border-t border-[#d8deea] pt-3">
-                        <p className="text-xs font-black text-[#667085]">
-                          참고 링크
-                        </p>
-                        <div className="mt-2 grid gap-1.5">
-                          {briefingStates[article.id]?.briefing?.sources.map(
-                            (source) => (
-                              <a
-                                className="text-sm font-bold text-[#2f4f9f] hover:underline"
-                                href={source.url}
-                                key={source.url}
-                                rel="noreferrer"
-                                target="_blank"
-                              >
-                                {source.title}
-                              </a>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                {renderBriefingBlock(article)}
               </div>
             </article>
           ))}

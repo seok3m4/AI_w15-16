@@ -246,24 +246,24 @@ export function PostList({
 
   return (
     <section className="space-y-2">
-      <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-        <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
+        <div className="flex flex-col gap-2 border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-black text-[#1f3470]">전체글</h2>
-            <p className="mt-0.5 text-xs text-[#667085]">
+            <h2 className="text-base font-black">전체글</h2>
+            <p className="mt-0.5 text-xs text-white/65">
               {selectedTeam ? `${selectedTeam} 게시판` : `총 ${pagination.total}개 글`}
             </p>
           </div>
           {currentUser ? (
             <Link
-              className="inline-flex h-9 items-center justify-center rounded-sm bg-[#2f4f9f] px-4 text-sm font-bold text-white hover:bg-[#1f3470]"
+              className="inline-flex h-9 items-center justify-center rounded-sm bg-[#d71920] px-4 text-sm font-bold text-white hover:bg-[#a91118]"
               href="/posts/new"
             >
               글쓰기
             </Link>
           ) : (
             <Link
-              className="inline-flex h-9 items-center justify-center rounded-sm border border-[#b9c3d7] bg-white px-4 text-sm font-bold text-[#1f3470] hover:bg-[#eef3ff]"
+              className="inline-flex h-9 items-center justify-center rounded-sm border border-white/20 bg-white px-4 text-sm font-bold text-[#071a3d] hover:bg-[#eef3ff]"
               href="/login"
             >
               로그인 후 글쓰기

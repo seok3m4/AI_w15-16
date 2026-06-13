@@ -96,9 +96,12 @@ export function HotPostsPanel({ selectedTeam }: HotPostsPanelProps) {
   }, [queryString]);
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
-        <h2 className="text-sm font-black text-[#1f3470]">
+    <section className="overflow-hidden rounded-sm border border-[#172554] bg-white">
+      <div className="border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#f87171]">
+          Hot
+        </p>
+        <h2 className="text-sm font-black">
           {selectedTeam ? `${selectedTeam} 인기글` : "인기글"}
         </h2>
       </div>
@@ -128,13 +131,13 @@ export function HotPostsPanel({ selectedTeam }: HotPostsPanelProps) {
               key={post.id}
             >
               <div className="flex items-center gap-2">
-                <span className="w-5 shrink-0 text-center text-xs font-black text-[#d71920]">
+                <span className="w-5 shrink-0 text-center text-xs font-black text-[#2f4f9f]">
                   {index + 1}
                 </span>
                 <p className="min-w-0 flex-1 truncate text-sm font-bold text-[#202632]">
                   {post.title}
                 </p>
-                <span className="shrink-0 text-xs font-black text-[#d71920]">
+                <span className="shrink-0 text-xs font-black text-[#2f4f9f]">
                   {post.counts.views}
                 </span>
               </div>

@@ -55,14 +55,14 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-5">
-      <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-4 py-3">
+      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
+        <div className="border-b border-[#172554] bg-[#071a3d] px-4 py-3 text-white">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-[#1f3470]">
+            <h1 className="text-2xl font-black tracking-tight">
               KBO Talk
             </h1>
-            <p className="mt-1 text-sm text-[#667085]">
-              경기 리뷰, 선수 분석, 팀 소식, 뉴스 링크를 자유롭게 공유하는 게시판
+            <p className="mt-1 text-sm text-white/75">
+              경기 결과와 팀 이슈를 모아 보는 야구 커뮤니티
             </p>
           </div>
         </div>
@@ -76,8 +76,8 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
         />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_300px]">
-        <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)_320px]">
+        <aside className="order-2 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
           <TagFilterPanel
             onClearTags={handleClearTags}
             onToggleTag={handleToggleTag}
@@ -86,21 +86,26 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
           <KboStandingsPanel />
         </aside>
 
-        <PostList
-          onClearFilters={handleClearFilters}
-          onClearTags={handleClearTags}
-          onPageChange={setPage}
-          onSelectTeam={handleSelectTeam}
-          onToggleTag={handleToggleTag}
-          page={page}
-          selectedTags={selectedTags}
-          selectedTeam={selectedTeam}
-        />
+        <div className="order-1 lg:order-none">
+          <PostList
+            onClearFilters={handleClearFilters}
+            onClearTags={handleClearTags}
+            onPageChange={setPage}
+            onSelectTeam={handleSelectTeam}
+            onToggleTag={handleToggleTag}
+            page={page}
+            selectedTags={selectedTags}
+            selectedTeam={selectedTeam}
+          />
+        </div>
 
-        <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+        <aside className="order-3 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
           <HotPostsPanel selectedTeam={selectedTeam} />
-          <div className="rounded-sm border border-[#b9c3d7] bg-[#f6f8fc] px-3 py-2">
-            <h2 className="text-sm font-black text-[#1f3470]">경기 정보</h2>
+          <div className="rounded-sm border border-[#b9c3d7] bg-[#071a3d] px-3 py-2">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
+              Game Center
+            </p>
+            <h2 className="text-sm font-black text-white">경기 정보</h2>
           </div>
           <div className="grid gap-3">
             <KboGamesPanel />
