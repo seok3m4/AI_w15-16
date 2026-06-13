@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { GamePredictionPanel } from "@/components/ai/game-prediction-panel";
 import { KboRecordBriefingPanel } from "@/components/ai/kbo-record-briefing-panel";
 import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-panel";
+import { KboLineupPanel } from "@/components/games/kbo-lineup-panel";
 import { LiveGamecastPanel } from "@/components/games/live-gamecast-panel";
 import {
   type KboGame,
@@ -425,6 +426,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
             </div>
 
             <LiveGamecastPanel game={game} />
+
+            <KboLineupPanel game={game} />
 
             {canPredictGame(game) ? <GamePredictionPanel game={game} /> : null}
 

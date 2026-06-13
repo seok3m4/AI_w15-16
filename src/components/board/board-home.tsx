@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 
-import { KboGamesPanel } from "@/components/ai/kbo-games-panel";
 import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
-import { McpBriefingPanel } from "@/components/ai/mcp-briefing-panel";
 import { HotPostsPanel } from "@/components/board/hot-posts-panel";
 import { TeamTabs } from "@/components/games/team-tabs";
 import { TodayGameHub } from "@/components/games/today-game-hub";
@@ -101,16 +99,6 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
 
         <aside className="order-3 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
           <HotPostsPanel selectedTeam={selectedTeam} />
-          <div className="rounded-sm border border-[#b9c3d7] bg-[#071a3d] px-3 py-2">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/55">
-              Game Center
-            </p>
-            <h2 className="text-sm font-black text-white">경기 정보</h2>
-          </div>
-          <div className="grid gap-3">
-            <KboGamesPanel />
-            <McpBriefingPanel />
-          </div>
         </aside>
       </div>
     </section>
