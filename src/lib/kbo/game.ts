@@ -1,5 +1,12 @@
 export type KboGameStatus = "scheduled" | "completed" | "draw";
 
+export type KboPitcher = {
+  id: string | null;
+  name: string;
+};
+
+export type KboStartingPitcher = KboPitcher;
+
 export type KboGame = {
   gameDate: string;
   displayDate: string;
@@ -13,6 +20,11 @@ export type KboGame = {
   tv: string;
   note: string;
   gameId: string | null;
+  awayStartingPitcher: KboStartingPitcher | null;
+  homeStartingPitcher: KboStartingPitcher | null;
+  winningPitcher: KboPitcher | null;
+  losingPitcher: KboPitcher | null;
+  savePitcher: KboPitcher | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };

@@ -27,6 +27,33 @@ type TodayGameHubProps = {
   onSelectTeam: (teamName: string) => void;
 };
 
+function getStartingPitcherText(game: KboGame): string {
+  return [
+    game.awayStartingPitcher
+      ? `${game.awayTeam} ${game.awayStartingPitcher.name}`
+      : "",
+    game.homeStartingPitcher
+      ? `${game.homeTeam} ${game.homeStartingPitcher.name}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" vs ");
+}
+
+function getDecisionPitcherText(game: KboGame): string {
+  if (game.status === "scheduled") {
+    return "";
+  }
+
+  return [
+    game.winningPitcher ? `승 ${game.winningPitcher.name}` : "",
+    game.losingPitcher ? `패 ${game.losingPitcher.name}` : "",
+    game.savePitcher ? `세 ${game.savePitcher.name}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function TodayGameHub({
   selectedTeam,
   onSelectTeam,
@@ -144,54 +171,73 @@ export function TodayGameHub({
 
       {!isLoading && games.length > 0 ? (
         <div className="grid gap-2 p-3 md:grid-cols-2 xl:grid-cols-3">
-          {games.map((game) => (
-            <article
-              className="rounded-sm border border-[#d8deea] bg-white p-3 hover:border-[#2f4f9f]"
-              key={`${game.gameDate}-${game.awayTeam}-${game.homeTeam}`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-sm bg-[#eef3ff] px-2 py-1 text-xs font-black text-[#2f4f9f]">
-                  {getStatusLabel(game.status)}
-                </span>
-                <span className="text-xs font-bold text-[#667085]">
-                  {game.time || "시간 미정"}
-                </span>
-              </div>
+          {games.map((game) => {
+            const startingPitcherText = getStartingPitcherText(game);
+            const decisionPitcherText = getDecisionPitcherText(game);
 
-              <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                <button
-                  className="truncate text-left text-sm font-black text-[#1f3470] hover:underline"
-                  onClick={() => onSelectTeam(game.awayTeam)}
-                  type="button"
-                >
-                  {game.awayTeam}
-                </button>
-                <span className="rounded-sm bg-[#202632] px-2 py-1 text-sm font-black text-white">
-                  {getScoreText(game)}
-                </span>
-                <button
-                  className="truncate text-right text-sm font-black text-[#1f3470] hover:underline"
-                  onClick={() => onSelectTeam(game.homeTeam)}
-                  type="button"
-                >
-                  {game.homeTeam}
-                </button>
-              </div>
+            return (
+              <article
+                className="rounded-sm border border-[#d8deea] bg-white p-3 hover:border-[#2f4f9f]"
+                key={`${game.gameDate}-${game.awayTeam}-${game.homeTeam}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-sm bg-[#eef3ff] px-2 py-1 text-xs font-black text-[#2f4f9f]">
+                    {getStatusLabel(game.status)}
+                  </span>
+                  <span className="text-xs font-bold text-[#667085]">
+                    {game.time || "시간 미정"}
+                  </span>
+                </div>
 
-              <p className="mt-2 truncate text-xs text-[#667085]">
-                {[game.stadium, game.tv, game.note].filter(Boolean).join(" · ")}
-              </p>
+                <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                  <button
+                    className="truncate text-left text-sm font-black text-[#1f3470] hover:underline"
+                    onClick={() => onSelectTeam(game.awayTeam)}
+                    type="button"
+                  >
+                    {game.awayTeam}
+                  </button>
+                  <span className="rounded-sm bg-[#202632] px-2 py-1 text-sm font-black text-white">
+                    {getScoreText(game)}
+                  </span>
+                  <button
+                    className="truncate text-right text-sm font-black text-[#1f3470] hover:underline"
+                    onClick={() => onSelectTeam(game.homeTeam)}
+                    type="button"
+                  >
+                    {game.homeTeam}
+                  </button>
+                </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link
-                  className="inline-flex h-8 items-center rounded-sm bg-[#2f4f9f] px-3 text-xs font-black text-white hover:bg-[#1f3470]"
-                  href={getGameRoomHref(game)}
-                >
-                  경기방
-                </Link>
-              </div>
-            </article>
-          ))}
+                <p className="mt-2 truncate text-xs text-[#667085]">
+                  {[game.stadium, game.tv, game.note]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+
+                {startingPitcherText ? (
+                  <p className="mt-1 truncate text-xs font-bold text-[#202632]">
+                    선발 {startingPitcherText}
+                  </p>
+                ) : null}
+
+                {decisionPitcherText ? (
+                  <p className="mt-1 truncate text-xs font-bold text-[#d71920]">
+                    {decisionPitcherText}
+                  </p>
+                ) : null}
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    className="inline-flex h-8 items-center rounded-sm bg-[#2f4f9f] px-3 text-xs font-black text-white hover:bg-[#1f3470]"
+                    href={getGameRoomHref(game)}
+                  >
+                    경기방
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       ) : null}
     </section>

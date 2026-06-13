@@ -37,6 +37,13 @@ export type UrlBriefingResult = {
 
 export type KboGameStatus = "scheduled" | "completed" | "draw";
 
+export type KboPitcher = {
+  id: string | null;
+  name: string;
+};
+
+export type KboStartingPitcher = KboPitcher;
+
 export type KboGame = {
   gameDate: string;
   displayDate: string;
@@ -50,6 +57,11 @@ export type KboGame = {
   tv: string;
   note: string;
   gameId: string | null;
+  awayStartingPitcher: KboStartingPitcher | null;
+  homeStartingPitcher: KboStartingPitcher | null;
+  winningPitcher: KboPitcher | null;
+  losingPitcher: KboPitcher | null;
+  savePitcher: KboPitcher | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };
@@ -84,6 +96,7 @@ const GOOGLE_NEWS_RSS_URL = "https://news.google.com/rss/search";
 const KBO_BASE_URL = "https://www.koreabaseball.com";
 const KBO_SCHEDULE_URL = `${KBO_BASE_URL}/Schedule/Schedule.aspx`;
 const KBO_SCHEDULE_LIST_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetScheduleList`;
+const KBO_GAME_LIST_URL = `${KBO_BASE_URL}/ws/Main.asmx/GetKboGameList`;
 const KBO_SCOREBOARD_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetScoreBoardScroll`;
 const KBO_BOXSCORE_URL = `${KBO_BASE_URL}/ws/Schedule.asmx/GetBoxScoreScroll`;
 const KBO_REGULAR_SEASON_IDS = "0,9,6";
@@ -526,6 +539,30 @@ function normalizeOptionalString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeOptionalId(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  return String(value).trim() || null;
+}
+
+function normalizePitcher(
+  id: unknown,
+  name: unknown,
+): KboPitcher | null {
+  const pitcherName = normalizeOptionalString(name);
+
+  if (!pitcherName) {
+    return null;
+  }
+
+  return {
+    id: normalizeOptionalId(id),
+    name: pitcherName,
+  };
+}
+
 function normalizeNullableScore(value: unknown): number | null {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -769,6 +806,26 @@ type KboScheduleRow = {
 
 type KboScheduleResponse = {
   rows?: KboScheduleRow[];
+};
+
+type KboGameCenterGame = {
+  G_ID?: string | null;
+  AWAY_NM?: string | null;
+  HOME_NM?: string | null;
+  T_PIT_P_ID?: number | string | null;
+  T_PIT_P_NM?: string | null;
+  B_PIT_P_ID?: number | string | null;
+  B_PIT_P_NM?: string | null;
+  W_PIT_P_ID?: number | string | null;
+  W_PIT_P_NM?: string | null;
+  L_PIT_P_ID?: number | string | null;
+  L_PIT_P_NM?: string | null;
+  SV_PIT_P_ID?: number | string | null;
+  SV_PIT_P_NM?: string | null;
+};
+
+type KboGameCenterResponse = {
+  game?: KboGameCenterGame[];
 };
 
 type KboGridTable = {
@@ -1187,6 +1244,11 @@ function parseKboScheduleRows(
       tv: getCellText(cells[offset + 4]),
       note: getCellText(cells[offset + 7]),
       gameId: extractKboGameId(reviewUrl ?? highlightUrl),
+      awayStartingPitcher: null,
+      homeStartingPitcher: null,
+      winningPitcher: null,
+      losingPitcher: null,
+      savePitcher: null,
       reviewUrl,
       highlightUrl,
     });
@@ -1220,6 +1282,107 @@ async function fetchKboMonthlyGames(
   return parseKboScheduleRows(data.rows ?? [], seasonId);
 }
 
+async function fetchKboGameCenterGames(
+  compactDate: string,
+): Promise<KboGameCenterGame[]> {
+  const body = new URLSearchParams({
+    leId: "1",
+    srId: "0,1,3,4,5,6,7,8,9",
+    date: compactDate,
+  });
+  const text = await fetchText(KBO_GAME_LIST_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      Referer: `${KBO_BASE_URL}/Schedule/GameCenter/Main.aspx?gameDate=${compactDate}`,
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body,
+  });
+  const data = JSON.parse(text) as KboGameCenterResponse;
+
+  return data.game ?? [];
+}
+
+function getKboGameMatchKey(game: Pick<KboGame, "gameDate" | "awayTeam" | "homeTeam">): string {
+  return `${game.gameDate.replace(/-/g, "")}:${game.awayTeam}:${game.homeTeam}`.toLowerCase();
+}
+
+function getKboGameCenterMatchKey(game: KboGameCenterGame): string {
+  return `${String(game.G_ID ?? "").slice(0, 8)}:${normalizeOptionalString(game.AWAY_NM)}:${normalizeOptionalString(game.HOME_NM)}`.toLowerCase();
+}
+
+function enrichKboGamesWithStartingPitchers(
+  games: KboGame[],
+  gameCenterGames: KboGameCenterGame[],
+): KboGame[] {
+  const gameCenterById = new Map(
+    gameCenterGames
+      .filter((game) => game.G_ID)
+      .map((game) => [String(game.G_ID), game]),
+  );
+  const gameCenterByMatchKey = new Map(
+    gameCenterGames.map((game) => [getKboGameCenterMatchKey(game), game]),
+  );
+
+  return games.map((game) => {
+    const gameCenterGame =
+      (game.gameId ? gameCenterById.get(game.gameId) : undefined) ??
+      gameCenterByMatchKey.get(getKboGameMatchKey(game));
+
+    if (!gameCenterGame) {
+      return game;
+    }
+
+    return {
+      ...game,
+      awayStartingPitcher: normalizePitcher(
+        gameCenterGame.T_PIT_P_ID,
+        gameCenterGame.T_PIT_P_NM,
+      ),
+      homeStartingPitcher: normalizePitcher(
+        gameCenterGame.B_PIT_P_ID,
+        gameCenterGame.B_PIT_P_NM,
+      ),
+      winningPitcher: normalizePitcher(
+        gameCenterGame.W_PIT_P_ID,
+        gameCenterGame.W_PIT_P_NM,
+      ),
+      losingPitcher: normalizePitcher(
+        gameCenterGame.L_PIT_P_ID,
+        gameCenterGame.L_PIT_P_NM,
+      ),
+      savePitcher: normalizePitcher(
+        gameCenterGame.SV_PIT_P_ID,
+        gameCenterGame.SV_PIT_P_NM,
+      ),
+    };
+  });
+}
+
+function getStartingPitcherText(game: KboGame): string {
+  const pitchers = [
+    game.awayStartingPitcher
+      ? `${game.awayTeam} ${game.awayStartingPitcher.name}`
+      : "",
+    game.homeStartingPitcher
+      ? `${game.homeTeam} ${game.homeStartingPitcher.name}`
+      : "",
+  ].filter(Boolean);
+
+  return pitchers.length > 0 ? ` / 선발 ${pitchers.join(" vs ")}` : "";
+}
+
+function getDecisionPitcherText(game: KboGame): string {
+  const pitchers = [
+    game.winningPitcher ? `승 ${game.winningPitcher.name}` : "",
+    game.losingPitcher ? `패 ${game.losingPitcher.name}` : "",
+    game.savePitcher ? `세 ${game.savePitcher.name}` : "",
+  ].filter(Boolean);
+
+  return pitchers.length > 0 ? ` / ${pitchers.join(" · ")}` : "";
+}
+
 function formatKboGame(game: KboGame): string {
   const score =
     game.awayScore === null || game.homeScore === null
@@ -1232,8 +1395,10 @@ function formatKboGame(game: KboGame): string {
         ? "무승부"
         : "종료";
   const stadium = game.stadium ? ` / ${game.stadium}` : "";
+  const startingPitchers = getStartingPitcherText(game);
+  const decisionPitchers = getDecisionPitcherText(game);
 
-  return `${game.time} ${game.awayTeam} vs ${game.homeTeam} (${score}, ${status}${stadium})`;
+  return `${game.time} ${game.awayTeam} vs ${game.homeTeam} (${score}, ${status}${stadium}${startingPitchers}${decisionPitchers})`;
 }
 
 function formatKboGamesText(result: KboGamesResult): string {
@@ -1323,7 +1488,13 @@ export async function getKboGames(
     targetDate.year,
     targetDate.month,
   );
-  const games = monthlyGames
+  const gameCenterGames = await fetchKboGameCenterGames(
+    targetDate.compactDate,
+  ).catch(() => []);
+  const games = enrichKboGamesWithStartingPitchers(
+    monthlyGames,
+    gameCenterGames,
+  )
     .filter((game) => game.gameDate === targetDate.date)
     .filter(
       (game) =>

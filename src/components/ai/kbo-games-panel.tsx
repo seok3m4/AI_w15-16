@@ -7,6 +7,13 @@ import { getGameRoomHref, getWriteReviewHref } from "@/lib/kbo/game";
 
 type KboGameStatus = "scheduled" | "completed" | "draw";
 
+type KboPitcher = {
+  id: string | null;
+  name: string;
+};
+
+type KboStartingPitcher = KboPitcher;
+
 type KboGame = {
   gameDate: string;
   displayDate: string;
@@ -20,6 +27,11 @@ type KboGame = {
   tv: string;
   note: string;
   gameId: string | null;
+  awayStartingPitcher: KboStartingPitcher | null;
+  homeStartingPitcher: KboStartingPitcher | null;
+  winningPitcher: KboPitcher | null;
+  losingPitcher: KboPitcher | null;
+  savePitcher: KboPitcher | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };
@@ -64,6 +76,33 @@ function getScoreText(game: KboGame): string {
   }
 
   return `${game.awayScore} : ${game.homeScore}`;
+}
+
+function getStartingPitcherText(game: KboGame): string {
+  return [
+    game.awayStartingPitcher
+      ? `${game.awayTeam} ${game.awayStartingPitcher.name}`
+      : "",
+    game.homeStartingPitcher
+      ? `${game.homeTeam} ${game.homeStartingPitcher.name}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" vs ");
+}
+
+function getDecisionPitcherText(game: KboGame): string {
+  if (game.status === "scheduled") {
+    return "";
+  }
+
+  return [
+    game.winningPitcher ? `승 ${game.winningPitcher.name}` : "",
+    game.losingPitcher ? `패 ${game.losingPitcher.name}` : "",
+    game.savePitcher ? `세 ${game.savePitcher.name}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function KboGamesPanel() {
@@ -199,6 +238,16 @@ export function KboGamesPanel() {
                   {game.tv || game.note ? (
                     <p className="mt-1 text-xs text-[#64748b]">
                       {[game.tv, game.note].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
+                  {getStartingPitcherText(game) ? (
+                    <p className="mt-1 text-xs font-bold text-[#071a3d]">
+                      선발 {getStartingPitcherText(game)}
+                    </p>
+                  ) : null}
+                  {getDecisionPitcherText(game) ? (
+                    <p className="mt-1 text-xs font-bold text-[#d71920]">
+                      {getDecisionPitcherText(game)}
                     </p>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
