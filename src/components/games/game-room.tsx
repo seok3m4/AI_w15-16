@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { GamePredictionPanel } from "@/components/ai/game-prediction-panel";
 import { KboRecordBriefingPanel } from "@/components/ai/kbo-record-briefing-panel";
 import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-panel";
 import { LiveGamecastPanel } from "@/components/games/live-gamecast-panel";
@@ -74,6 +75,27 @@ function formatDateTime(value: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getPitcherName(pitcher: KboGame["awayStartingPitcher"]): string {
+  return pitcher?.name || "미정";
+}
+
+function getStartingPitcherText(game: KboGame): string {
+  return [
+    game.awayStartingPitcher
+      ? `${game.awayTeam} ${game.awayStartingPitcher.name}`
+      : "",
+    game.homeStartingPitcher
+      ? `${game.homeTeam} ${game.homeStartingPitcher.name}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" vs ");
+}
+
+function canPredictGame(game: KboGame): boolean {
+  return game.status === "scheduled" || game.status === "live";
 }
 
 export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
@@ -279,6 +301,11 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
+                  {getStartingPitcherText(candidate) ? (
+                    <p className="mt-1 truncate text-xs font-bold text-[#202632]">
+                      선발 {getStartingPitcherText(candidate)}
+                    </p>
+                  ) : null}
                 </Link>
               ))}
             </div>
@@ -345,6 +372,9 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 <p className="text-xl font-black text-[#1f3470]">
                   {game.awayTeam}
                 </p>
+                <p className="mt-1 text-xs font-bold text-[#667085]">
+                  선발 {getPitcherName(game.awayStartingPitcher)}
+                </p>
                 <p className="mt-2 text-4xl font-black text-[#202632]">
                   {game.awayScore ?? "-"}
                 </p>
@@ -363,6 +393,9 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               <div className="px-4 py-5 text-center">
                 <p className="text-xl font-black text-[#1f3470]">
                   {game.homeTeam}
+                </p>
+                <p className="mt-1 text-xs font-bold text-[#667085]">
+                  선발 {getPitcherName(game.homeStartingPitcher)}
                 </p>
                 <p className="mt-2 text-4xl font-black text-[#202632]">
                   {game.homeScore ?? "-"}
@@ -392,6 +425,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
             </div>
 
             <LiveGamecastPanel game={game} />
+
+            {canPredictGame(game) ? <GamePredictionPanel game={game} /> : null}
 
             <KboRecordBriefingPanel game={game} />
 
