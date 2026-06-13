@@ -357,12 +357,12 @@ export function KboNewsPage() {
         <div className="mt-4 grid gap-3">
           {data.articles.map((article) => (
             <article
-              className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white transition hover:border-[#2f4f9f] hover:bg-[#fbfcff] md:flex md:min-h-48"
+              className="grid overflow-hidden rounded-sm border border-[#b9c3d7] bg-white transition hover:border-[#2f4f9f] hover:bg-[#fbfcff] md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]"
               key={article.id}
             >
               <div
                 aria-hidden="true"
-                className="relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-[#071a3d] text-base font-black text-white md:h-auto md:w-64 lg:w-72"
+                className="relative flex h-44 items-center justify-center overflow-hidden bg-[#071a3d] text-base font-black text-white sm:h-48 md:h-48"
               >
                 {article.imageUrl ? (
                   <>
@@ -380,7 +380,7 @@ export function KboNewsPage() {
                 )}
               </div>
 
-              <div className="flex min-w-0 flex-col gap-3 p-5">
+              <div className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold text-[#667085]">
                     <span>{article.source}</span>
@@ -391,7 +391,7 @@ export function KboNewsPage() {
                       </>
                     ) : null}
                   </div>
-                  <h2 className="text-xl font-black leading-7 text-[#202632]">
+                  <h2 className="line-clamp-2 text-lg font-black leading-7 text-[#202632] sm:text-xl">
                     <a
                       className="hover:text-[#2f4f9f] hover:underline"
                       href={article.url}
@@ -402,7 +402,7 @@ export function KboNewsPage() {
                     </a>
                   </h2>
                   {article.summary ? (
-                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#667085]">
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#667085]">
                       {article.summary}
                     </p>
                   ) : null}

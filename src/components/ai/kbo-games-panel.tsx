@@ -3,38 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
-import { getGameRoomHref, getWriteReviewHref } from "@/lib/kbo/game";
-
-type KboGameStatus = "scheduled" | "completed" | "draw";
-
-type KboPitcher = {
-  id: string | null;
-  name: string;
-};
-
-type KboStartingPitcher = KboPitcher;
-
-type KboGame = {
-  gameDate: string;
-  displayDate: string;
-  time: string;
-  awayTeam: string;
-  homeTeam: string;
-  awayScore: number | null;
-  homeScore: number | null;
-  status: KboGameStatus;
-  stadium: string;
-  tv: string;
-  note: string;
-  gameId: string | null;
-  awayStartingPitcher: KboStartingPitcher | null;
-  homeStartingPitcher: KboStartingPitcher | null;
-  winningPitcher: KboPitcher | null;
-  losingPitcher: KboPitcher | null;
-  savePitcher: KboPitcher | null;
-  reviewUrl: string | null;
-  highlightUrl: string | null;
-};
+import {
+  type KboGame,
+  type KboGameStatus,
+  getGameRoomHref,
+  getWriteReviewHref,
+} from "@/lib/kbo/game";
 
 type KboGamesResponse = {
   status: "ready" | "unavailable";
@@ -61,6 +35,10 @@ function getTodayInputValue(): string {
 function getStatusLabel(status: KboGameStatus): string {
   if (status === "scheduled") {
     return "예정";
+  }
+
+  if (status === "live") {
+    return "진행중";
   }
 
   if (status === "draw") {
@@ -92,7 +70,7 @@ function getStartingPitcherText(game: KboGame): string {
 }
 
 function getDecisionPitcherText(game: KboGame): string {
-  if (game.status === "scheduled") {
+  if (game.status === "scheduled" || game.status === "live") {
     return "";
   }
 

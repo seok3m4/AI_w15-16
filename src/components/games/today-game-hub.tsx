@@ -41,7 +41,7 @@ function getStartingPitcherText(game: KboGame): string {
 }
 
 function getDecisionPitcherText(game: KboGame): string {
-  if (game.status === "scheduled") {
+  if (game.status === "scheduled" || game.status === "live") {
     return "";
   }
 
@@ -52,6 +52,44 @@ function getDecisionPitcherText(game: KboGame): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+function getRunnerText(game: KboGame): string {
+  const liveState = game.liveState;
+
+  if (!liveState) {
+    return "";
+  }
+
+  const bases = [
+    liveState.firstBaseOccupied ? "1루" : "",
+    liveState.secondBaseOccupied ? "2루" : "",
+    liveState.thirdBaseOccupied ? "3루" : "",
+  ].filter(Boolean);
+
+  return bases.length > 0 ? `주자 ${bases.join(", ")}` : "주자 없음";
+}
+
+function getLiveStateText(game: KboGame): string {
+  const liveState = game.liveState;
+
+  if (!liveState) {
+    return "";
+  }
+
+  const inning = liveState.inning
+    ? `${liveState.inning}회 ${liveState.inningHalf || ""}`.trim()
+    : "";
+  const count = [
+    liveState.balls !== null ? `B${liveState.balls}` : "",
+    liveState.strikes !== null ? `S${liveState.strikes}` : "",
+    liveState.outs !== null ? `O${liveState.outs}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const runnerText = getRunnerText(game);
+
+  return [inning, count, runnerText].filter(Boolean).join(" · ");
 }
 
 export function TodayGameHub({
@@ -75,8 +113,10 @@ export function TodayGameHub({
   useEffect(() => {
     let isMounted = true;
 
-    async function loadGames() {
-      setIsLoading(true);
+    async function loadGames(silent = false) {
+      if (!silent) {
+        setIsLoading(true);
+      }
 
       try {
         const response = await fetch(`/api/ai/mcp/kbo-games?${queryString}`, {
@@ -107,18 +147,26 @@ export function TodayGameHub({
           });
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && !silent) {
           setIsLoading(false);
         }
       }
     }
 
     void loadGames();
+    const shouldPollLiveScores = date === getTodayInputValue();
+    const intervalId = shouldPollLiveScores
+      ? window.setInterval(() => void loadGames(true), 15_000)
+      : null;
 
     return () => {
       isMounted = false;
+
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
     };
-  }, [queryString]);
+  }, [date, queryString]);
 
   const games = data?.result?.games ?? [];
 
@@ -213,6 +261,14 @@ export function TodayGameHub({
                     {game.homeTeam}
                   </button>
                 </div>
+
+                {game.status === "live" && getLiveStateText(game) ? (
+                  <div className="border-t border-[#edf1f7] bg-[#fff7ed] px-3 py-2">
+                    <p className="truncate text-xs font-black text-[#b45309]">
+                      {getLiveStateText(game)}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="space-y-1 border-t border-[#edf1f7] px-3 py-2">
                   {startingPitcherText ? (

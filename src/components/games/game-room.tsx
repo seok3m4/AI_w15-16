@@ -5,9 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { KboRecordBriefingPanel } from "@/components/ai/kbo-record-briefing-panel";
 import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-panel";
+import { LiveGamecastPanel } from "@/components/games/live-gamecast-panel";
 import {
   type KboGame,
   getGameKey,
+  getGameRoomHref,
   getReviewTags,
   getScoreText,
   getStatusLabel,
@@ -94,9 +96,11 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadGames() {
-      setIsGamesLoading(true);
-      setGamesData(null);
+    async function loadGames(silent = false) {
+      if (!silent) {
+        setIsGamesLoading(true);
+        setGamesData(null);
+      }
 
       try {
         const params = new URLSearchParams({ date });
@@ -128,16 +132,24 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
           });
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && !silent) {
           setIsGamesLoading(false);
         }
       }
     }
 
     void loadGames();
+    const shouldPollLiveScores = date === getTodayInputValue();
+    const intervalId = shouldPollLiveScores
+      ? window.setInterval(() => void loadGames(true), 15_000)
+      : null;
 
     return () => {
       isMounted = false;
+
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
     };
   }, [date]);
 
@@ -211,16 +223,22 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
     );
   }
 
+  const gamesForSelectedDate = gamesData?.result?.games ?? [];
+
   if (gamesData?.message || !game) {
     return (
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="rounded-sm border border-[#b9c3d7] bg-white p-5">
           <h1 className="text-xl font-black text-[#1f3470]">
-            경기 정보를 찾지 못했습니다.
+            {gamesData?.message
+              ? "경기 데이터를 불러오지 못했습니다."
+              : "선택한 날짜의 경기방을 선택해주세요."}
           </h1>
           <p className="mt-2 text-sm text-[#667085]">
             {gamesData?.message ??
-              "날짜를 바꾸거나 홈으로 돌아가 경기방을 다시 선택해주세요."}
+              (gamesForSelectedDate.length > 0
+                ? "현재 보고 있던 경기는 선택한 날짜에 없습니다. 아래 경기 중 하나를 선택하면 해당 경기방으로 이동합니다."
+                : "선택한 날짜의 경기 일정이 없습니다. 날짜를 다시 선택하거나 홈으로 돌아가세요.")}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <input
@@ -236,12 +254,49 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               홈으로
             </Link>
           </div>
+
+          {gamesForSelectedDate.length > 0 ? (
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {gamesForSelectedDate.map((candidate) => (
+                <Link
+                  className="block rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3 hover:border-[#2f4f9f] hover:bg-white"
+                  href={getGameRoomHref(candidate)}
+                  key={getGameKey(candidate)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-black text-[#202632]">
+                      {candidate.awayTeam} VS {candidate.homeTeam}
+                    </p>
+                    <span className="shrink-0 rounded-sm bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
+                      {getStatusLabel(candidate.status)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm font-black text-[#1f3470]">
+                    {getScoreText(candidate)}
+                  </p>
+                  <p className="mt-1 text-xs text-[#667085]">
+                    {[candidate.time || "시간 미정", candidate.stadium]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
     );
   }
 
   const winnerTeam = getWinnerTeam(game);
+  const resultText =
+    game.status === "live"
+      ? "경기 진행 중"
+      : winnerTeam
+        ? `${winnerTeam} 승`
+        : game.status === "draw"
+          ? "무승부"
+          : "승패 미정";
   const summaryTags = [game.awayTeam, game.homeTeam];
   const summaryTitle = `${game.gameDate} ${game.awayTeam} VS ${game.homeTeam} 관련 글`;
   const summaryDescription = [
@@ -319,7 +374,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
                 <p className="text-xs font-bold text-[#667085]">결과</p>
                 <p className="mt-1 text-sm font-black text-[#202632]">
-                  {winnerTeam ? `${winnerTeam} 승` : "승패 미정"}
+                  {resultText}
                 </p>
               </div>
               <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
@@ -335,6 +390,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 </p>
               </div>
             </div>
+
+            <LiveGamecastPanel game={game} />
 
             <KboRecordBriefingPanel game={game} />
 

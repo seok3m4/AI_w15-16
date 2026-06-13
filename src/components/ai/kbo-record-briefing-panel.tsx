@@ -12,7 +12,7 @@ type KboRecordBriefing = {
   homeTeam: string;
   awayScore: number | null;
   homeScore: number | null;
-  status: "scheduled" | "completed" | "draw";
+  status: "scheduled" | "live" | "completed" | "draw";
   stadium: string;
   sourceUrl: string | null;
   sourceType: "review" | "highlight" | "schedule";

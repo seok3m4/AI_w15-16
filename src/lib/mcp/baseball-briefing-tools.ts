@@ -35,7 +35,7 @@ export type UrlBriefingResult = {
   excerpt: string;
 };
 
-export type KboGameStatus = "scheduled" | "completed" | "draw";
+export type KboGameStatus = "scheduled" | "live" | "completed" | "draw";
 
 export type KboPitcher = {
   id: string | null;
@@ -43,6 +43,19 @@ export type KboPitcher = {
 };
 
 export type KboStartingPitcher = KboPitcher;
+
+export type KboLiveState = {
+  inning: number | null;
+  inningHalf: string;
+  balls: number | null;
+  strikes: number | null;
+  outs: number | null;
+  firstBaseOccupied: boolean;
+  secondBaseOccupied: boolean;
+  thirdBaseOccupied: boolean;
+  awayCurrentPlayer: KboPitcher | null;
+  homeCurrentPlayer: KboPitcher | null;
+};
 
 export type KboGame = {
   gameDate: string;
@@ -62,6 +75,7 @@ export type KboGame = {
   winningPitcher: KboPitcher | null;
   losingPitcher: KboPitcher | null;
   savePitcher: KboPitcher | null;
+  liveState: KboLiveState | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };
@@ -131,7 +145,7 @@ const kboScheduleCache = new Map<
     result: KboGamesResult;
   }
 >();
-const KBO_CACHE_TTL_MS = 60_000;
+const KBO_CACHE_TTL_MS = 10_000;
 
 const tools: ToolDefinition[] = [
   {
@@ -215,7 +229,7 @@ const tools: ToolDefinition[] = [
         },
         status: {
           type: "string",
-          description: "scheduled, completed, draw 중 하나",
+          description: "scheduled, live, completed, draw 중 하나",
         },
         stadium: {
           type: "string",
@@ -573,8 +587,23 @@ function normalizeNullableScore(value: unknown): number | null {
   return Number.isFinite(score) ? score : null;
 }
 
+function normalizeNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
 function normalizeKboGameStatus(value: unknown): KboGameStatus {
-  if (value === "scheduled" || value === "completed" || value === "draw") {
+  if (
+    value === "scheduled" ||
+    value === "live" ||
+    value === "completed" ||
+    value === "draw"
+  ) {
     return value;
   }
 
@@ -728,9 +757,11 @@ function getScoreSummary(input: {
   const statusLabel =
     input.status === "scheduled"
       ? "경기 전"
-      : input.status === "draw"
-        ? "무승부"
-        : "경기 종료";
+      : input.status === "live"
+        ? "경기 중"
+        : input.status === "draw"
+          ? "무승부"
+          : "경기 종료";
   const scoreText =
     input.awayScore === null || input.homeScore === null
       ? "스코어 미정"
@@ -812,6 +843,23 @@ type KboGameCenterGame = {
   G_ID?: string | null;
   AWAY_NM?: string | null;
   HOME_NM?: string | null;
+  GAME_STATE_SC?: number | string | null;
+  GAME_INN_NO?: number | string | null;
+  GAME_TB_SC?: number | string | null;
+  GAME_TB_SC_NM?: string | null;
+  GAME_RESULT_CK?: number | string | null;
+  T_SCORE_CN?: number | string | null;
+  B_SCORE_CN?: number | string | null;
+  BALL_CN?: number | string | null;
+  STRIKE_CN?: number | string | null;
+  OUT_CN?: number | string | null;
+  B1_BAT_ORDER_NO?: number | string | null;
+  B2_BAT_ORDER_NO?: number | string | null;
+  B3_BAT_ORDER_NO?: number | string | null;
+  T_P_ID?: number | string | null;
+  T_P_NM?: string | null;
+  B_P_ID?: number | string | null;
+  B_P_NM?: string | null;
   T_PIT_P_ID?: number | string | null;
   T_PIT_P_NM?: string | null;
   B_PIT_P_ID?: number | string | null;
@@ -1249,6 +1297,7 @@ function parseKboScheduleRows(
       winningPitcher: null,
       losingPitcher: null,
       savePitcher: null,
+      liveState: null,
       reviewUrl,
       highlightUrl,
     });
@@ -1312,7 +1361,66 @@ function getKboGameCenterMatchKey(game: KboGameCenterGame): string {
   return `${String(game.G_ID ?? "").slice(0, 8)}:${normalizeOptionalString(game.AWAY_NM)}:${normalizeOptionalString(game.HOME_NM)}`.toLowerCase();
 }
 
-function enrichKboGamesWithStartingPitchers(
+function getKboGameCenterStatus(
+  gameCenterGame: KboGameCenterGame,
+  fallback: KboGameStatus,
+): KboGameStatus {
+  const gameStateCode = String(gameCenterGame.GAME_STATE_SC ?? "").trim();
+  const awayScore = normalizeNullableScore(gameCenterGame.T_SCORE_CN);
+  const homeScore = normalizeNullableScore(gameCenterGame.B_SCORE_CN);
+
+  if (gameStateCode === "2" || gameStateCode === "5") {
+    return "live";
+  }
+
+  if (gameStateCode === "3") {
+    return awayScore !== null && homeScore !== null && awayScore === homeScore
+      ? "draw"
+      : "completed";
+  }
+
+  if (gameStateCode === "1") {
+    return "scheduled";
+  }
+
+  return fallback;
+}
+
+function hasRunner(value: unknown): boolean {
+  const order = normalizeNullableNumber(value);
+
+  return order !== null && order > 0;
+}
+
+function buildKboLiveState(
+  gameCenterGame: KboGameCenterGame,
+  status: KboGameStatus,
+): KboLiveState | null {
+  if (status !== "live") {
+    return null;
+  }
+
+  return {
+    inning: normalizeNullableNumber(gameCenterGame.GAME_INN_NO),
+    inningHalf: normalizeOptionalString(gameCenterGame.GAME_TB_SC_NM),
+    balls: normalizeNullableNumber(gameCenterGame.BALL_CN),
+    strikes: normalizeNullableNumber(gameCenterGame.STRIKE_CN),
+    outs: normalizeNullableNumber(gameCenterGame.OUT_CN),
+    firstBaseOccupied: hasRunner(gameCenterGame.B1_BAT_ORDER_NO),
+    secondBaseOccupied: hasRunner(gameCenterGame.B2_BAT_ORDER_NO),
+    thirdBaseOccupied: hasRunner(gameCenterGame.B3_BAT_ORDER_NO),
+    awayCurrentPlayer: normalizePitcher(
+      gameCenterGame.T_P_ID,
+      gameCenterGame.T_P_NM,
+    ),
+    homeCurrentPlayer: normalizePitcher(
+      gameCenterGame.B_P_ID,
+      gameCenterGame.B_P_NM,
+    ),
+  };
+}
+
+function enrichKboGamesWithGameCenterData(
   games: KboGame[],
   gameCenterGames: KboGameCenterGame[],
 ): KboGame[] {
@@ -1334,8 +1442,24 @@ function enrichKboGamesWithStartingPitchers(
       return game;
     }
 
+    const status = getKboGameCenterStatus(gameCenterGame, game.status);
+    const gameCenterAwayScore = normalizeNullableScore(gameCenterGame.T_SCORE_CN);
+    const gameCenterHomeScore = normalizeNullableScore(gameCenterGame.B_SCORE_CN);
+    const shouldUseGameCenterScore =
+      status !== "scheduled" &&
+      gameCenterAwayScore !== null &&
+      gameCenterHomeScore !== null;
+
     return {
       ...game,
+      gameId: normalizeOptionalId(gameCenterGame.G_ID) ?? game.gameId,
+      awayScore: shouldUseGameCenterScore
+        ? gameCenterAwayScore
+        : game.awayScore,
+      homeScore: shouldUseGameCenterScore
+        ? gameCenterHomeScore
+        : game.homeScore,
+      status,
       awayStartingPitcher: normalizePitcher(
         gameCenterGame.T_PIT_P_ID,
         gameCenterGame.T_PIT_P_NM,
@@ -1356,6 +1480,7 @@ function enrichKboGamesWithStartingPitchers(
         gameCenterGame.SV_PIT_P_ID,
         gameCenterGame.SV_PIT_P_NM,
       ),
+      liveState: buildKboLiveState(gameCenterGame, status),
     };
   });
 }
@@ -1383,6 +1508,37 @@ function getDecisionPitcherText(game: KboGame): string {
   return pitchers.length > 0 ? ` / ${pitchers.join(" · ")}` : "";
 }
 
+function getLiveStateText(game: KboGame): string {
+  if (!game.liveState) {
+    return "";
+  }
+
+  const inning = game.liveState.inning
+    ? `${game.liveState.inning}회 ${game.liveState.inningHalf}`
+    : "";
+  const count = [
+    game.liveState.balls !== null ? `B${game.liveState.balls}` : "",
+    game.liveState.strikes !== null ? `S${game.liveState.strikes}` : "",
+    game.liveState.outs !== null ? `O${game.liveState.outs}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const bases = [
+    game.liveState.firstBaseOccupied ? "1루" : "",
+    game.liveState.secondBaseOccupied ? "2루" : "",
+    game.liveState.thirdBaseOccupied ? "3루" : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const parts = [
+    inning,
+    count,
+    `주자 ${bases || "없음"}`,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? ` / ${parts.join(" · ")}` : "";
+}
+
 function formatKboGame(game: KboGame): string {
   const score =
     game.awayScore === null || game.homeScore === null
@@ -1391,14 +1547,17 @@ function formatKboGame(game: KboGame): string {
   const status =
     game.status === "scheduled"
       ? "예정"
-      : game.status === "draw"
-        ? "무승부"
-        : "종료";
+      : game.status === "live"
+        ? "진행중"
+        : game.status === "draw"
+          ? "무승부"
+          : "종료";
   const stadium = game.stadium ? ` / ${game.stadium}` : "";
   const startingPitchers = getStartingPitcherText(game);
   const decisionPitchers = getDecisionPitcherText(game);
+  const liveState = getLiveStateText(game);
 
-  return `${game.time} ${game.awayTeam} vs ${game.homeTeam} (${score}, ${status}${stadium}${startingPitchers}${decisionPitchers})`;
+  return `${game.time} ${game.awayTeam} vs ${game.homeTeam} (${score}, ${status}${stadium}${startingPitchers}${decisionPitchers}${liveState})`;
 }
 
 function formatKboGamesText(result: KboGamesResult): string {
@@ -1491,7 +1650,7 @@ export async function getKboGames(
   const gameCenterGames = await fetchKboGameCenterGames(
     targetDate.compactDate,
   ).catch(() => []);
-  const games = enrichKboGamesWithStartingPitchers(
+  const games = enrichKboGamesWithGameCenterData(
     monthlyGames,
     gameCenterGames,
   )

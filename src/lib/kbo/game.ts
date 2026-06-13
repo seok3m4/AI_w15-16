@@ -1,4 +1,4 @@
-export type KboGameStatus = "scheduled" | "completed" | "draw";
+export type KboGameStatus = "scheduled" | "live" | "completed" | "draw";
 
 export type KboPitcher = {
   id: string | null;
@@ -6,6 +6,19 @@ export type KboPitcher = {
 };
 
 export type KboStartingPitcher = KboPitcher;
+
+export type KboLiveState = {
+  inning: number | null;
+  inningHalf: string;
+  balls: number | null;
+  strikes: number | null;
+  outs: number | null;
+  firstBaseOccupied: boolean;
+  secondBaseOccupied: boolean;
+  thirdBaseOccupied: boolean;
+  awayCurrentPlayer: KboPitcher | null;
+  homeCurrentPlayer: KboPitcher | null;
+};
 
 export type KboGame = {
   gameDate: string;
@@ -25,6 +38,7 @@ export type KboGame = {
   winningPitcher: KboPitcher | null;
   losingPitcher: KboPitcher | null;
   savePitcher: KboPitcher | null;
+  liveState: KboLiveState | null;
   reviewUrl: string | null;
   highlightUrl: string | null;
 };
@@ -65,6 +79,10 @@ export function getStatusLabel(status: KboGameStatus): string {
     return "예정";
   }
 
+  if (status === "live") {
+    return "진행중";
+  }
+
   if (status === "draw") {
     return "무승부";
   }
@@ -81,6 +99,10 @@ export function getScoreText(game: KboGame): string {
 }
 
 export function getWinnerTeam(game: KboGame): string | null {
+  if (game.status === "scheduled" || game.status === "live") {
+    return null;
+  }
+
   if (game.awayScore === null || game.homeScore === null) {
     return null;
   }
