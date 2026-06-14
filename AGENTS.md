@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Project Direction
+
+AI가 읽는 미국경제 대시보드
+
 ## Prompt Logging And Work Summary Rule
 
 Apply this rule on every user prompt in this repository.

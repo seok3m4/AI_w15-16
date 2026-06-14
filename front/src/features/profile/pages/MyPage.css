@@ -1,0 +1,262 @@
+.mypage-shell {
+  min-height: 100%;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 22px;
+  color: var(--app-text);
+  background: var(--app-bg);
+}
+
+.mypage-header,
+.mypage-grid,
+.mypage-profile,
+.mypage-settings,
+.mypage-card,
+.mypage-card__title,
+.mypage-check,
+.mypage-save {
+  min-width: 0;
+}
+
+.mypage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mypage-header__actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.mypage-header__title {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+
+.mypage-header strong {
+  color: var(--app-heading);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.mypage-header span,
+.mypage-profile span,
+.mypage-card__title span {
+  color: var(--app-muted);
+  font-size: 0.82rem;
+}
+
+.mypage-login-panel,
+.mypage-profile,
+.mypage-card {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+}
+
+.mypage-login-panel {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+}
+
+.mypage-login-panel h1 {
+  margin: 0;
+  color: var(--app-heading);
+  font-size: 1.8rem;
+}
+
+.mypage-login-panel p {
+  margin: 0;
+  color: var(--app-body);
+  line-height: 1.55;
+}
+
+.mypage-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.mypage-profile {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 18px;
+}
+
+.mypage-profile img,
+.mypage-profile div {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+}
+
+.mypage-profile img {
+  object-fit: cover;
+}
+
+.mypage-profile div {
+  display: grid;
+  place-items: center;
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.mypage-profile strong {
+  color: var(--app-heading);
+  font-size: 1.08rem;
+}
+
+.mypage-profile p {
+  margin: 0;
+  color: var(--app-accent);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.mypage-profile__field {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+}
+
+.mypage-profile__field input {
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-text);
+  background: var(--app-input-bg);
+  font: inherit;
+}
+
+.mypage-settings {
+  display: grid;
+  gap: 14px;
+}
+
+.mypage-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.mypage-card__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mypage-card__title strong {
+  color: var(--app-heading);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.mypage-toggle-list,
+.mypage-option-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.mypage-option-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mypage-check {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  color: var(--app-text);
+  background: var(--app-surface-muted);
+}
+
+.mypage-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--app-accent);
+  flex: 0 0 auto;
+}
+
+.mypage-check span {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.mypage-save {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mypage-save:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+@media (max-width: 920px) {
+  .mypage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mypage-profile {
+    position: static;
+  }
+
+  .mypage-option-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .mypage-shell {
+    padding: 14px;
+  }
+
+  .mypage-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mypage-header__actions,
+  .mypage-header__title {
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .mypage-option-grid {
+    grid-template-columns: 1fr;
+  }
+}

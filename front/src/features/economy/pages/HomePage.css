@@ -1,0 +1,1255 @@
+.econ-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  color: var(--app-text);
+  background: var(--app-bg);
+}
+
+.econ-shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.econ-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 100vh;
+  max-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 22px;
+  padding: 22px 18px;
+  border-right: 1px solid var(--app-border);
+  background: var(--app-sidebar-bg);
+  overflow-y: auto;
+}
+
+.econ-brand,
+.econ-nav__item,
+.econ-watch,
+.econ-topbar,
+.econ-topbar__actions,
+.econ-section-title,
+.econ-event,
+.econ-trace .econ-section-title strong {
+  display: flex;
+  align-items: center;
+}
+
+.econ-brand {
+  min-width: 0;
+  gap: 12px;
+}
+
+.econ-brand__mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--app-accent);
+  border-radius: 8px;
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.econ-brand strong,
+.econ-section-title strong {
+  display: block;
+  font-size: 0.96rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.econ-brand span,
+.econ-section-title span,
+.econ-watch span,
+.econ-metric span,
+.econ-metric footer,
+.econ-event__date span,
+.econ-signal span,
+.econ-impact span,
+.econ-report span,
+.econ-trace span,
+.econ-freshness {
+  color: var(--app-muted);
+}
+
+.econ-brand span,
+.econ-section-title span,
+.econ-watch span {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.78rem;
+}
+
+.econ-nav {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.econ-nav__item,
+.econ-metric__button,
+.econ-icon-button,
+.econ-login-button,
+.econ-admin-button,
+.econ-profile-button,
+.econ-logout-button {
+  border: 0;
+  color: var(--app-text);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.econ-nav__item {
+  position: relative;
+  min-height: 42px;
+  gap: 11px;
+  padding: 0 12px;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.econ-nav__item ion-icon,
+.econ-icon-button ion-icon,
+.econ-trace ion-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.econ-nav__item.is-active {
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+  font-weight: 900;
+}
+
+.econ-nav__badge,
+.econ-icon-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: var(--app-on-accent);
+  background: var(--app-danger);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.econ-nav__badge {
+  margin-left: auto;
+}
+
+.econ-watchlist,
+.econ-brief__copy,
+.econ-brief__signal,
+.econ-metric,
+.econ-panel,
+.econ-trace {
+  min-width: 0;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+}
+
+.econ-watchlist {
+  display: grid;
+  gap: 10px;
+  align-self: end;
+  max-height: min(48vh, 520px);
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.econ-watch {
+  min-height: 44px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-border-soft);
+}
+
+.econ-watch strong,
+.econ-metric strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--app-heading);
+  font-size: 1.08rem;
+  letter-spacing: 0;
+}
+
+.econ-watch small,
+.econ-metric small {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.econ-main {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 22px;
+}
+
+.econ-topbar {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.econ-search {
+  min-height: 44px;
+  width: min(100%, 480px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-muted);
+  background: var(--app-input-bg);
+}
+
+.econ-search ion-icon {
+  flex: 0 0 auto;
+}
+
+.econ-topbar__actions {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.econ-icon-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+}
+
+.econ-icon-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+.econ-login-button,
+.econ-admin-button,
+.econ-profile-button,
+.econ-logout-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.econ-login-button {
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+}
+
+.econ-admin-button {
+  color: var(--app-on-accent);
+  background: #325dff;
+}
+
+.econ-profile-button {
+  max-width: 220px;
+  color: var(--app-text);
+}
+
+.econ-logout-button {
+  color: var(--app-danger);
+}
+
+.econ-profile-button img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.econ-profile-button span,
+.econ-login-button span,
+.econ-admin-button span,
+.econ-logout-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.econ-freshness {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.econ-state,
+.econ-sync-status,
+.econ-empty {
+  min-width: 0;
+}
+
+.econ-state {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  color: var(--app-text);
+  background: var(--app-surface);
+}
+
+.econ-state ion-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.econ-state strong,
+.econ-state span {
+  overflow-wrap: anywhere;
+}
+
+.econ-state.is-error {
+  border-color: var(--app-danger);
+  color: var(--app-danger);
+}
+
+.econ-sync-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.econ-sync-status span,
+.econ-empty {
+  color: var(--app-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.econ-sync-status span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--app-chip-bg);
+  font-weight: 800;
+}
+
+.econ-empty {
+  margin: 0;
+}
+
+.econ-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr);
+  gap: 16px;
+}
+
+.econ-brief__copy,
+.econ-brief__signal {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+}
+
+.econ-status {
+  width: max-content;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--app-accent-tint) 55%, transparent);
+  border-radius: 999px;
+  color: var(--app-accent);
+  background: var(--app-accent-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.econ-brief h1,
+.econ-event h2,
+.econ-impact h2,
+.econ-report h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--app-heading);
+  letter-spacing: 0;
+}
+
+.econ-brief h1 {
+  font-size: 2.35rem;
+  line-height: 1.14;
+}
+
+.econ-brief p,
+.econ-metric p,
+.econ-event p,
+.econ-signal p,
+.econ-impact p,
+.econ-report p,
+.econ-trace p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--app-body);
+  line-height: 1.55;
+}
+
+.econ-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.econ-evidence a,
+.econ-impact div span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  color: var(--app-text);
+  background: var(--app-chip-bg);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.econ-brief__signal {
+  background:
+    linear-gradient(140deg, var(--app-accent-soft), transparent 48%),
+    var(--app-surface);
+}
+
+.econ-pulse {
+  height: 136px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  background: var(--app-surface-muted);
+}
+
+.econ-pulse span {
+  display: block;
+  min-height: 26px;
+  border-radius: 999px 999px 4px 4px;
+  background: var(--app-accent);
+}
+
+.econ-pulse span:nth-child(1) {
+  height: 42%;
+  background: var(--app-warning);
+}
+
+.econ-pulse span:nth-child(2) {
+  height: 66%;
+}
+
+.econ-pulse span:nth-child(3) {
+  height: 52%;
+  background: var(--app-info);
+}
+
+.econ-pulse span:nth-child(4) {
+  height: 78%;
+}
+
+.econ-pulse span:nth-child(5) {
+  height: 60%;
+  background: var(--app-danger);
+}
+
+.econ-brief__signal strong {
+  color: var(--app-accent-tint);
+  font-size: 1.1rem;
+  letter-spacing: 0;
+}
+
+.econ-exchange-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+}
+
+.econ-exchange-panel__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.econ-exchange-selector {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.econ-exchange-selector button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  color: var(--app-text);
+  background: var(--app-chip-bg);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.econ-exchange-selector button.is-active {
+  border-color: var(--app-accent-tint);
+  color: var(--app-surface);
+  background: var(--app-accent-tint);
+}
+
+.econ-exchange-rate {
+  display: grid;
+  grid-template-columns: minmax(145px, 1fr) auto minmax(220px, 0.8fr);
+  gap: 8px 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 6px;
+  background: var(--app-surface-muted);
+}
+
+.econ-exchange-rate > div:first-child {
+  min-width: 0;
+}
+
+.econ-exchange-rate > div:first-child span {
+  display: block;
+  overflow: hidden;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.econ-exchange-rate h2 {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: var(--app-heading);
+  font-size: 0.98rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.econ-exchange-rate strong {
+  text-align: right;
+  color: var(--app-heading);
+  font-size: 1.46rem;
+  line-height: 1.1;
+}
+
+.econ-exchange-rate small {
+  display: block;
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 0.68rem;
+}
+
+.econ-exchange-rate dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.econ-exchange-rate dl div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 6px;
+}
+
+.econ-exchange-rate dt {
+  color: var(--app-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.econ-exchange-rate dd {
+  margin: 0;
+  color: var(--app-text);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.econ-exchange-rate footer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: space-between;
+  color: var(--app-muted);
+  font-size: 0.74rem;
+}
+
+.econ-exchange-rate footer a {
+  color: var(--app-accent);
+  font-weight: 800;
+}
+
+.econ-exchange-rate__notice {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.econ-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(165px, 1fr));
+  gap: 12px;
+}
+
+.econ-metric {
+  display: grid;
+  gap: 10px;
+  min-height: 196px;
+  padding: 16px;
+}
+
+.econ-metric.is-expanded {
+  grid-column: span 2;
+}
+
+.econ-metric__button {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  text-align: left;
+}
+
+.econ-metric h2 {
+  margin: 4px 0 0;
+  color: var(--app-heading);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.econ-metric strong {
+  font-size: 1.65rem;
+}
+
+.econ-metric footer {
+  display: grid;
+  gap: 6px;
+  align-self: end;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.econ-history-panel {
+  display: grid;
+  gap: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--app-border-soft);
+}
+
+.econ-history-panel__header,
+.econ-chart__legend,
+.econ-source-comparison__list a {
+  display: flex;
+  align-items: center;
+}
+
+.econ-history-panel__header {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.econ-history-panel__header strong,
+.econ-source-comparison > strong {
+  display: block;
+  color: var(--app-heading);
+  font-size: 0.9rem;
+}
+
+.econ-history-panel__header span {
+  display: block;
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 0.76rem;
+}
+
+.econ-range-control {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-input-bg);
+}
+
+.econ-range-control button {
+  min-width: 42px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--app-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.econ-range-control button.is-active {
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+}
+
+.econ-chart {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.econ-chart svg {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-chart__axis {
+  stroke: var(--app-border);
+  stroke-width: 1.2;
+}
+
+.econ-chart__line {
+  stroke: var(--app-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.econ-chart__dot {
+  fill: var(--app-warning);
+  stroke: var(--app-surface);
+  stroke-width: 1.5;
+}
+
+.econ-chart__legend {
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--app-muted);
+  font-size: 0.76rem;
+}
+
+.econ-chart__legend strong {
+  color: var(--app-heading);
+}
+
+.econ-source-comparison {
+  display: grid;
+  gap: 10px;
+}
+
+.econ-asset-impact,
+.econ-data-sources,
+.econ-related-events {
+  display: grid;
+  gap: 10px;
+}
+
+.econ-asset-impact > strong,
+.econ-data-sources > strong,
+.econ-related-events > strong {
+  color: var(--app-heading);
+  font-size: 0.9rem;
+}
+
+.econ-asset-impact dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.econ-asset-impact dl div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-input-bg);
+}
+
+.econ-asset-impact dt {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.econ-asset-impact dd {
+  margin: 4px 0 0;
+  color: var(--app-body);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.econ-asset-impact p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.econ-source-comparison__list {
+  display: grid;
+  gap: 8px;
+}
+
+.econ-data-sources__list,
+.econ-related-events__list {
+  display: grid;
+  gap: 8px;
+}
+
+.econ-source-comparison__list a {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) 1fr;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-input-bg);
+}
+
+.econ-data-sources__list a,
+.econ-related-events__list a {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) 1fr;
+  min-width: 0;
+  gap: 8px 10px;
+  padding: 10px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-input-bg);
+}
+
+.econ-source-comparison__list a span,
+.econ-source-comparison__list a small,
+.econ-data-sources__list a span,
+.econ-data-sources__list a small,
+.econ-related-events__list a span,
+.econ-related-events__list a small {
+  min-width: 0;
+  color: var(--app-muted);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.econ-source-comparison__list a strong,
+.econ-data-sources__list a strong,
+.econ-related-events__list a strong {
+  color: var(--app-heading);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.econ-data-sources__list a small,
+.econ-related-events__list a small {
+  grid-column: 1 / -1;
+}
+
+.econ-source-comparison__list a em {
+  grid-column: 1 / -1;
+  color: var(--app-muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.econ-related-events__list a em {
+  grid-column: 1 / -1;
+  color: var(--app-muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.econ-workspace-panel {
+  min-height: calc(100vh - 116px);
+}
+
+.econ-metrics--watchlist {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+.econ-metric footer span {
+  color: var(--app-accent);
+  font-weight: 900;
+}
+
+.econ-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.econ-grid--wide {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.econ-panel,
+.econ-trace {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.econ-section-title {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.econ-event-list,
+.econ-signal-list,
+.econ-impact-list,
+.econ-report-list,
+.econ-trace__steps {
+  display: grid;
+  gap: 10px;
+}
+
+.econ-event {
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-event__date {
+  width: 112px;
+  flex: 0 0 auto;
+}
+
+.econ-event__date span {
+  width: max-content;
+  max-width: 100%;
+  display: block;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--app-on-accent);
+  background: var(--app-warning);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.econ-event__date strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--app-heading);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.econ-event h2,
+.econ-impact h2,
+.econ-report h2 {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.econ-event a,
+.econ-report a {
+  display: inline-flex;
+  margin-top: 8px;
+  color: var(--app-accent);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.econ-event__forecast-note {
+  margin-top: 6px;
+  color: var(--app-muted);
+  font-size: 0.76rem;
+}
+
+.econ-signal {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+  padding: 14px;
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-signal strong {
+  color: var(--app-heading);
+  font-size: 1.24rem;
+  letter-spacing: 0;
+}
+
+.econ-signal small {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.econ-signal.is-watch,
+.econ-impact.is-watch {
+  border-left-color: var(--app-warning);
+}
+
+.econ-signal.is-neutral,
+.econ-impact.is-neutral {
+  border-left-color: var(--app-info);
+}
+
+.econ-signal.is-calm,
+.econ-impact.is-calm {
+  border-left-color: var(--app-accent);
+}
+
+.econ-impact {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--app-border-soft);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-impact div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.econ-report {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-report span {
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--app-on-accent);
+  background: var(--app-info-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.econ-trace .econ-section-title strong {
+  gap: 8px;
+}
+
+.econ-trace__steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.econ-trace__steps article {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  background: var(--app-surface-muted);
+}
+
+.econ-trace__steps strong {
+  color: var(--app-heading);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+@media (max-width: 1320px) {
+  .econ-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .econ-metrics--watchlist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1040px) {
+  .econ-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-sidebar {
+    position: static;
+    min-height: auto;
+    max-height: none;
+    grid-template-rows: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--app-border);
+    overflow: visible;
+  }
+
+  .econ-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+  }
+
+  .econ-watchlist {
+    display: none;
+  }
+
+  .econ-brief,
+  .econ-exchange-panel__body,
+  .econ-grid,
+  .econ-grid--wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .econ-main,
+  .econ-sidebar {
+    padding: 14px;
+  }
+
+  .econ-topbar,
+  .econ-topbar__actions,
+  .econ-event {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .econ-search,
+  .econ-freshness {
+    width: 100%;
+  }
+
+  .econ-brief__copy,
+  .econ-brief__signal,
+  .econ-panel,
+  .econ-trace {
+    padding: 16px;
+  }
+
+  .econ-exchange-selector {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .econ-exchange-rate {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-exchange-rate strong {
+    text-align: left;
+  }
+
+  .econ-exchange-rate dl {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-brief h1 {
+    font-size: 1.9rem;
+  }
+
+  .econ-metrics,
+  .econ-metrics--watchlist,
+  .econ-trace__steps {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-metric.is-expanded {
+    grid-column: auto;
+  }
+
+  .econ-history-panel__header,
+  .econ-chart__legend,
+  .econ-source-comparison__list a,
+  .econ-data-sources__list a,
+  .econ-related-events__list a {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .econ-asset-impact dl {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-data-sources__list a,
+  .econ-related-events__list a {
+    grid-template-columns: 1fr;
+  }
+
+  .econ-event__date {
+    width: auto;
+  }
+}

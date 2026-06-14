@@ -12,6 +12,8 @@ docs/
 +-- concepts/
 |   +-- README.md
 |   +-- cicd-ecs-deployment.md
+|   +-- board-rag-postgresql.md
+|   +-- dashboard-board-ui.md
 |   +-- iam-cost-bomb-guardrail-policies.md
 |   +-- iam-tag-based-sandbox-policies.md
 |   +-- security-filter-chain.md
@@ -22,6 +24,7 @@ docs/
 +-- work-logs/
 |   +-- 2026-06-05-backend-frontend-integration.md
 |   +-- 2026-06-11-documentation-cicd-ecs.md
+|   +-- 2026-06-12-board-crud-rag-postgresql.md
 +-- superpowers/
     +-- plans/
     +-- specs/
@@ -40,6 +43,10 @@ docs/
   - README 정비와 CI/CD, ECS 배포 운영 문서화 작업 기록
   - deploy workflow의 ECR push, task definition render, ECS service update 흐름 정리
   - 문서 검증 명령과 결과 기록
+- `docs/work-logs/2026-06-12-board-crud-rag-postgresql.md`
+  - 게시글 CRUD, 댓글, 태그, 검색 화면 구현 기록
+  - PostgreSQL/RDS datasource와 pgvector RAG schema 설계 기록
+  - study markdown과 검증 결과 기록
 
 ### ECS 배포와 테스트
 
@@ -61,6 +68,10 @@ docs/
   - 비용 폭탄 방지를 위한 완화형 IAM guardrail 설계
 - `docs/concepts/cicd-ecs-deployment.md`
   - GitHub Actions, OIDC, ECR, ECS 배포 흐름
+- `docs/concepts/board-rag-postgresql.md`
+  - 게시판 CRUD, PostgreSQL/RDS 전환, pgvector 기반 RAG schema 설계
+- `docs/concepts/dashboard-board-ui.md`
+  - README `img.png` 기준의 흑백 대시보드형 게시판 UI 패턴
 
 ### 자동화와 프롬프트 기록 규칙
 
@@ -76,6 +87,10 @@ docs/
   - Ionic React + Capacitor 프론트엔드 초기 설계
 - `docs/superpowers/plans/2026-06-05-front-ionic-react-capacitor.md`
   - 프론트엔드 초기 구현 계획
+- `docs/superpowers/specs/2026-06-12-dashboard-board-ui-design.md`
+  - 게시판 화면을 README `img.png` 기준 대시보드 UI로 개편하는 설계
+- `docs/superpowers/plans/2026-06-12-dashboard-board-ui.md`
+  - 대시보드형 게시판 UI 구현 계획
 
 ## 문서 작성 원칙
 

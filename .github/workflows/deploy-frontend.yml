@@ -1,0 +1,60 @@
+name: Deploy Frontend To S3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [gyugo]
+    paths:
+      - "front/**"
+      - ".github/workflows/deploy-frontend.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_ACCOUNT_ID: "489535778783"
+  AWS_FRONTEND_DEPLOY_ROLE_ARN: arn:aws:iam::489535778783:role/NammanmuGithubOidcTrustPolicy
+  FRONTEND_BUCKET: nammamnu-front-dev-489535778783
+  CLOUDFRONT_DISTRIBUTION_ID: E28MTZRA3F0726
+  FRONTEND_BUILD_DIR: front/dist
+
+jobs:
+  deploy-front:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_FRONTEND_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: front
+        run: npm run build
+
+      - name: Upload frontend to S3
+        run: |
+          aws s3 sync "$FRONTEND_BUILD_DIR" "s3://$FRONTEND_BUCKET" --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*"

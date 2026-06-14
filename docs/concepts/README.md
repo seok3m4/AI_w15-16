@@ -26,6 +26,24 @@
   - 비용 폭탄 방지를 위한 완화형 IAM guardrail 설계
 - `cicd-ecs-deployment.md`
   - GitHub Actions, OIDC, ECR, ECS 배포 흐름
+- `board-rag-postgresql.md`
+  - 게시판 CRUD, PostgreSQL/RDS 전환, pgvector 기반 RAG schema 설계
+- `dashboard-board-ui.md`
+  - README `img.png` 기준의 흑백 대시보드형 게시판 UI 패턴
+- `us-economy-ai-dashboard-contract.md`
+  - 미국경제 AI 대시보드 MVP의 구조화된 샘플 데이터, API 계약, 첫 화면 렌더링 경로
+- `python-agent-workbench.md`
+  - Python Agents SDK worker, Spring Agent API, Agent 탭 워크벤치 통합 패턴
+- `browser-synced-theme.md`
+  - 브라우저 색상 설정을 따르는 시스템/라이트/다크 전역 테마 패턴
+- `frontend-i18n.md`
+  - 한국어/영어/중국어 간체/중국어 번체/일본어를 지원하는 프론트 전역 i18n Provider 패턴
+- `server-locale-i18n.md`
+  - 서버 locale 응답 기반 경제 대시보드/Agent 동적 콘텐츠 다국어 계약과 compact 표시 설정 패턴
+- `economic-discussion-feed.md`
+  - 경제 토론 피드의 카테고리, 닉네임, 좋아요, 대댓글, 신고, soft hide, 인앱 알림 패턴
+- `home-economy-history-tabs.md`
+  - 홈 탭 재구성, FRED 히스토리 캐시, 원천기관 비교값 API와 확장 그래프 UI 패턴
 
 ## 문서 템플릿
 

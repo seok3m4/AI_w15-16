@@ -8,6 +8,11 @@ node_modules/
 dist/
 build/
 target/
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
 **/dist/
 **/build/
 **/target/
@@ -24,9 +29,13 @@ front/ios/
 .env
 .env.*
 !.env.example
+!.env.local.example
+!.env.agents.example
+!.env.cicd.example
 
 # Logs
 *.log
+.local-logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
