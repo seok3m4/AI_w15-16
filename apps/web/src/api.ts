@@ -229,6 +229,67 @@ export function getMyPosts(token: string) {
   })
 }
 
+// RAG 유사 코스 추천/검색 결과 한 건. (백엔드 SimilarPost와 형태가 같다)
+export type SimilarPost = {
+  id: string
+  title: string
+  city: string
+  content: string
+  duration: number | null
+  thumbnailUrl: string | null
+  authorName: string
+  similarity: number
+}
+
+// 게시판 Q&A 응답. answer는 생성된 답변, sources는 근거로 쓰인 코스들.
+export type AskResponse = {
+  answer: string
+  sources: SimilarPost[]
+}
+
+// 특정 게시글과 의미가 비슷한 코스를 추천받는다. (pgvector 코사인 유사도)
+export function getSimilarPosts(id: string, limit = 4) {
+  return request<SimilarPost[]>(`/posts/${id}/similar?limit=${limit}`)
+}
+
+// 자유 텍스트로 의미가 가까운 코스를 시맨틱 검색한다.
+export function searchSemantic(query: string, limit = 4) {
+  const params = new URLSearchParams({ q: query, limit: String(limit) })
+  return request<SimilarPost[]>(`/rag/search?${params.toString()}`)
+}
+
+// 게시판 Q&A: 질문을 보내 기존 후기를 근거로 한 AI 답변을 받는다.
+export function askRag(question: string) {
+  return request<AskResponse>('/rag/ask', {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  })
+}
+
+// AI Agent가 생성한 여행 코스 초안. (작성 폼에 그대로 채울 수 있다)
+export type CourseDraft = {
+  title: string
+  city: string
+  duration: number | null
+  content: string
+  tags: string[]
+  places: {
+    name: string
+    address?: string
+    lat: number
+    lng: number
+  }[]
+}
+
+// AI Agent에게 자유 요청을 보내 여행 코스 초안을 생성받는다. (로그인 필요)
+export function draftCourse(token: string, request_: string) {
+  return request<CourseDraft>('/agent/draft', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ request: request_ }),
+  })
+}
+
 // 로그인한 사용자의 JWT로 새 여행 코스 게시글을 작성한다.
 export function createPost(token: string, payload: PostPayload) {
   return request<TravelPostDetail>('/posts', {

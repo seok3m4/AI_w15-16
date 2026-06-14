@@ -13,6 +13,7 @@ import {
   type TravelPostDetail,
 } from './api'
 import { CourseMap } from './CourseMap'
+import { SimilarPosts } from './SimilarPosts'
 import { useAuth } from './useAuth'
 
 type DetailState =
@@ -387,6 +388,8 @@ export function PostDetailPage() {
                 </p>
               )}
             </section>
+
+            <SimilarPosts postId={post.id} />
           </article>
         )}
       </section>

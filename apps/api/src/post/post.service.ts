@@ -2,10 +2,12 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RagService } from '../rag/rag.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PlaceInputDto } from './dto/place-input.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -87,7 +89,25 @@ function buildPostDetailInclude(userId?: string): Prisma.PostInclude {
 
 @Injectable()
 export class PostService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PostService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ragService: RagService,
+  ) {}
+
+  // 게시글 임베딩을 갱신한다. 실패해도 게시글 작성/수정 자체는 막지 않는다.
+  private async refreshEmbedding(postId: string) {
+    try {
+      await this.ragService.upsertEmbedding(postId);
+    } catch (err) {
+      this.logger.warn(
+        `게시글 ${postId} 임베딩 갱신 실패 (게시글 저장은 정상): ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
+  }
 
   // 로그인한 사용자를 작성자로 연결해 새 여행 코스 게시글을 만들고 태그를 붙인다.
   async create(authorId: string, dto: CreatePostDto) {
@@ -105,6 +125,7 @@ export class PostService {
 
     await this.syncTags(post.id, dto.tags ?? []);
     await this.syncPlaces(post.id, dto.places ?? []);
+    await this.refreshEmbedding(post.id);
 
     return this.findOne(post.id, authorId);
   }
@@ -233,6 +254,9 @@ export class PostService {
     if (dto.places !== undefined) {
       await this.syncPlaces(id, dto.places);
     }
+
+    // 제목·본문·태그·코스가 바뀌었을 수 있으니 임베딩을 다시 만든다.
+    await this.refreshEmbedding(id);
 
     return this.findOne(id, userId);
   }

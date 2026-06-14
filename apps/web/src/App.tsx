@@ -1,6 +1,7 @@
 // 📌 React 앱의 최상위 컴포넌트. 공통 Layout으로 헤더/푸터를 감싸고 페이지를 라우팅한다.
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { AskPage } from './AskPage'
 import { AuthProvider } from './AuthContext'
 import { Layout } from './Layout'
 import { LoginPage } from './LoginPage'
@@ -39,6 +40,7 @@ function App() {
             <Route path="/posts/new" element={<PostFormPage />} />
             <Route path="/posts/:id" element={<PostDetailPage />} />
             <Route path="/posts/:id/edit" element={<PostFormPage />} />
+            <Route path="/ask" element={<AskPage />} />
             <Route path="/me" element={<MyPage />} />
           </Route>
 

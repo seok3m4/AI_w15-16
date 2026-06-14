@@ -1,7 +1,13 @@
 // 📌 여행 코스 게시글 작성/수정에 함께 사용하는 폼 화면. 태그 입력과 코스 경유지(지도)를 포함한다.
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { createPost, getPost, updatePost, type PostPayload } from './api'
+import {
+  createPost,
+  draftCourse,
+  getPost,
+  updatePost,
+  type PostPayload,
+} from './api'
 import { fileToResizedDataUrl } from './image'
 import { PlaceEditor, type PlaceDraft } from './PlaceEditor'
 import { useAuth } from './useAuth'
@@ -51,6 +57,10 @@ export function PostFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [thumbnailBusy, setThumbnailBusy] = useState(false)
+  // AI 코스 초안 생성용 상태 (작성 모드에서만 사용)
+  const [aiRequest, setAiRequest] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiError, setAiError] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -133,6 +143,40 @@ export function PostFormPage() {
     updateField('thumbnailUrl', '')
   }
 
+  // AI Agent에게 코스 초안을 요청해 폼과 경유지를 자동으로 채운다.
+  async function handleAiDraft() {
+    const requestText = aiRequest.trim()
+    if (requestText.length < 2 || aiBusy) return
+
+    setAiError('')
+    setAiBusy(true)
+    try {
+      const draft = await draftCourse(authToken, requestText)
+      setForm((current) => ({
+        ...current,
+        title: draft.title,
+        content: draft.content,
+        city: draft.city,
+        duration: draft.duration ? String(draft.duration) : '',
+        tags: draft.tags.join(', '),
+      }))
+      setPlaces(
+        draft.places.map((place) => ({
+          name: place.name,
+          address: place.address,
+          lat: place.lat,
+          lng: place.lng,
+        })),
+      )
+    } catch (err) {
+      setAiError(
+        err instanceof Error ? err.message : 'AI 초안 생성에 실패했습니다.',
+      )
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
   // duration/tags/places는 선택값이므로 정리해서 payload를 만든다.
   function buildPayload(): PostPayload {
     const payload: PostPayload = {
@@ -193,6 +237,49 @@ export function PostFormPage() {
         </header>
 
         {isLoading && <p className="status-text">폼을 불러오는 중...</p>}
+
+        {/* AI 코스 초안: 작성 모드에서만 보여주고, 한 줄 요청으로 폼을 자동 완성한다. */}
+        {!isLoading && !isEditMode && (
+          <section className="ai-draft">
+            <div className="ai-draft-head">
+              <span className="ai-draft-badge">AI 코스 생성</span>
+              <p>
+                원하는 여행을 한 줄로 적으면 AI가 실제 장소를 찾아 코스 초안을
+                채워줘요.
+              </p>
+            </div>
+            <div className="ai-draft-input">
+              <input
+                type="text"
+                value={aiRequest}
+                onChange={(event) => setAiRequest(event.target.value)}
+                placeholder="예: 부산에서 2박 3일 바다랑 맛집 코스 만들어줘"
+                maxLength={500}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void handleAiDraft()
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAiDraft}
+                disabled={aiBusy || aiRequest.trim().length < 2}
+              >
+                {aiBusy ? '코스 짜는 중...' : '초안 만들기'}
+              </button>
+            </div>
+            {aiBusy && (
+              <p className="ai-draft-hint">
+                실제 장소를 검색하고 동선을 정리하고 있어요. 10초 정도 걸릴 수
+                있어요.
+              </p>
+            )}
+            {aiError && <p className="error-message">{aiError}</p>}
+          </section>
+        )}
+
         {!isLoading && (
           <form className="post-form" onSubmit={handleSubmit}>
             <section className="form-section">

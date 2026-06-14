@@ -35,6 +35,14 @@ export function Layout() {
             >
               게시판
             </NavLink>
+            <NavLink
+              to="/ask"
+              className={({ isActive }) =>
+                isActive ? 'nav-link active' : 'nav-link'
+              }
+            >
+              AI 질문
+            </NavLink>
             {token && (
               <NavLink
                 to="/posts/new"
