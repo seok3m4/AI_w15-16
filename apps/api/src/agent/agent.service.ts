@@ -32,7 +32,10 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           query: {
             type: 'string',
-            description: '찾고 싶은 여행 주제나 분위기 (예: 부산 바다 맛집, 혼자 힐링)',
+            description:
+              '검색어. 사용자의 질문을 거의 그대로, 충분히 구체적인 문장으로 넣어라. ' +
+              '두세 단어로 너무 짧게 줄이면 검색이 안 되니, 질문의 표현을 살려서 길게 검색해라. ' +
+              '(예: "혼자 조용히 힐링하기 좋은 여행 코스", "부산에서 바다와 맛집 즐기는 코스")',
           },
         },
         required: ['query'],
@@ -85,18 +88,19 @@ export class AgentService {
       {
         role: 'system',
         content:
-          '너는 국내 여행 코스 공유 게시판의 AI 도우미야. ' +
-          '사용자 질문에 답하기 위해 다음 도구를 활용해: ' +
-          'search_similar_posts(게시판의 비슷한 코스 후기 검색), ' +
+          '너는 "정글 여행" 게시판의 AI 도우미야. 이 게시판에 실제로 올라온 코스 후기를 근거로만 답하는 것이 가장 중요해. ' +
+          '사용 가능한 도구: ' +
+          'search_similar_posts(게시판에 올라온 여행 코스 후기 검색), ' +
           'place_search(실제 장소의 위치·주소·좌표 검색). ' +
-          '코스 추천 질문이면 search_similar_posts로 게시판 후기를 찾고, ' +
-          '특정 장소가 어디인지·어떤 곳인지 물으면 place_search로 실제 정보를 찾아 활용해. ' +
-          '두 도구를 함께 써도 좋아. ' +
-          '답변에서 특정 장소(해수욕장·시장·명소 등)를 언급하거나 추천할 때는, ' +
-          '그 장소를 place_search로 한 번씩 검색해 실제로 존재하는 정확한 이름으로 답해줘. ' +
-          '이렇게 하면 사용자가 그 장소를 카카오맵에서 바로 찾아볼 수 있어. ' +
-          '수집한 정보를 근거로 한국어로 친근하게 답하고, 게시판 코스를 참고했으면 자연스럽게 언급해. ' +
-          '도구로 찾은 장소의 주소 같은 정보도 답변에 녹여줘. 모르면 솔직히 모른다고 말해.',
+          '\n\n[답변 규칙]\n' +
+          '1. 코스나 여행을 묻는 질문이면 반드시 먼저 search_similar_posts를 호출해서 게시판 코스를 찾아라. ' +
+          '2. search_similar_posts가 코스를 하나라도 반환하면, 그 코스들이 질문과 관련 있다고 믿고 반드시 활용해라. 가장 잘 맞는 코스를 골라 제목·도시·경유지·후기 내용을 근거로 소개해라. 반환된 코스를 "딱 맞지 않다"며 버리지 마라. ' +
+          '단, 후기 본문을 그대로 베껴 쓰지 말고, 사용자가 물어본 핵심(예: 바다·맛집)에 초점을 맞춰 그 부분 위주로 정리해라. ' +
+          '사용자가 교통·이동을 직접 묻지 않았다면, 교통수단이나 이동 편의(지하철·버스·차·뚜벅이 등)에 대한 내용은 답변에 절대 넣지 마라. ' +
+          '3. search_similar_posts가 아무 코스도 반환하지 않았을 때에만 "게시판에 관련 코스가 아직 없어요"라고 말해라. 그리고 게시판에 없는 코스를 일반 상식으로 지어내지 마라. ' +
+          '4. 답변에서 장소(해수욕장·시장·명소 등)를 언급할 때는 place_search로 확인해 정확한 이름으로 적어라(사용자가 카카오맵에서 찾을 수 있게). ' +
+          '5. 특정 장소가 어디인지/어떤 곳인지만 묻는 질문이면 place_search로 답해라. ' +
+          '\n한국어로 친근하지만 간결하게 답해. 마크다운 제목(#)이나 굵게(**)는 쓰지 말고 자연스러운 문장과 줄바꿈으로 써.',
       },
       { role: 'user', content: question },
     ];
@@ -163,13 +167,18 @@ export class AgentService {
       if (name === 'search_similar_posts') {
         const query = String(args.query ?? '');
         const posts = await this.rag.searchByQuery(query, 4);
+        this.logger.log(
+          `search_similar_posts("${query}") → ${posts.length}건: ${posts
+            .map((p) => p.title)
+            .join(', ')}`,
+        );
         posts.forEach((p) => collectedPosts.set(p.id, p));
         // thumbnailUrl(base64)은 토큰을 폭증시키므로 제외하고 본문도 줄인다.
         return posts.map((p) => ({
           title: p.title,
           city: p.city,
           duration: p.duration,
-          summary: p.content.slice(0, 300),
+          summary: p.content.slice(0, 600),
         }));
       }
       if (name === 'place_search') {

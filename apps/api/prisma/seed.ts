@@ -42,6 +42,23 @@ type SeedCourse = {
   places: SeedPlace[];
 };
 
+type SeedComment = {
+  key: string;
+  postId: string;
+  author: string;
+  content: string;
+};
+
+type SeedSavedPost = {
+  user: string;
+  postId: string;
+};
+
+type SeedCommentLike = {
+  user: string;
+  commentKey: string;
+};
+
 // 게시판에 들어갈 샘플 코스들. 지역과 테마를 다양하게 섞었다.
 const COURSES: SeedCourse[] = [
   {
@@ -54,10 +71,30 @@ const COURSES: SeedCourse[] = [
     author: 'minji@example.com',
     tags: ['맛집', '바다', '도심'],
     places: [
-      { name: '부산역', address: '부산 동구 중앙대로', lat: 35.1151, lng: 129.0413 },
-      { name: '감천문화마을', address: '부산 사하구 감내2로', lat: 35.0975, lng: 129.0107 },
-      { name: '자갈치시장', address: '부산 중구 자갈치해안로', lat: 35.0966, lng: 129.0306 },
-      { name: '해운대해수욕장', address: '부산 해운대구 우동', lat: 35.1587, lng: 129.1604 },
+      {
+        name: '부산역',
+        address: '부산 동구 중앙대로',
+        lat: 35.1151,
+        lng: 129.0413,
+      },
+      {
+        name: '감천문화마을',
+        address: '부산 사하구 감내2로',
+        lat: 35.0975,
+        lng: 129.0107,
+      },
+      {
+        name: '자갈치시장',
+        address: '부산 중구 자갈치해안로',
+        lat: 35.0966,
+        lng: 129.0306,
+      },
+      {
+        name: '해운대해수욕장',
+        address: '부산 해운대구 우동',
+        lat: 35.1587,
+        lng: 129.1604,
+      },
     ],
   },
   {
@@ -70,10 +107,30 @@ const COURSES: SeedCourse[] = [
     author: 'dohyun@example.com',
     tags: ['자연', '카페', '혼행'],
     places: [
-      { name: '강릉역', address: '강원 강릉시 용지로', lat: 37.7637, lng: 128.8996 },
-      { name: '오죽헌', address: '강원 강릉시 율곡로', lat: 37.7793, lng: 128.8784 },
-      { name: '경포해변', address: '강원 강릉시 강문동', lat: 37.8055, lng: 128.9095 },
-      { name: '안목해변 커피거리', address: '강원 강릉시 창해로14번길', lat: 37.7714, lng: 128.9476 },
+      {
+        name: '강릉역',
+        address: '강원 강릉시 용지로',
+        lat: 37.7637,
+        lng: 128.8996,
+      },
+      {
+        name: '오죽헌',
+        address: '강원 강릉시 율곡로',
+        lat: 37.7793,
+        lng: 128.8784,
+      },
+      {
+        name: '경포해변',
+        address: '강원 강릉시 강문동',
+        lat: 37.8055,
+        lng: 128.9095,
+      },
+      {
+        name: '안목해변 커피거리',
+        address: '강원 강릉시 창해로14번길',
+        lat: 37.7714,
+        lng: 128.9476,
+      },
     ],
   },
   {
@@ -86,10 +143,30 @@ const COURSES: SeedCourse[] = [
     author: 'minji@example.com',
     tags: ['자연', '가성비', '드라이브'],
     places: [
-      { name: '제주국제공항', address: '제주시 공항로', lat: 33.5113, lng: 126.4929 },
-      { name: '성산일출봉', address: '서귀포시 성산읍', lat: 33.4581, lng: 126.9425 },
-      { name: '섭지코지', address: '서귀포시 성산읍 고성리', lat: 33.4239, lng: 126.9293 },
-      { name: '월정리 카페거리', address: '제주시 구좌읍 월정리', lat: 33.5564, lng: 126.7953 },
+      {
+        name: '제주국제공항',
+        address: '제주시 공항로',
+        lat: 33.5113,
+        lng: 126.4929,
+      },
+      {
+        name: '성산일출봉',
+        address: '서귀포시 성산읍',
+        lat: 33.4581,
+        lng: 126.9425,
+      },
+      {
+        name: '섭지코지',
+        address: '서귀포시 성산읍 고성리',
+        lat: 33.4239,
+        lng: 126.9293,
+      },
+      {
+        name: '월정리 카페거리',
+        address: '제주시 구좌읍 월정리',
+        lat: 33.5564,
+        lng: 126.7953,
+      },
     ],
   },
   {
@@ -102,10 +179,30 @@ const COURSES: SeedCourse[] = [
     author: 'seoyeon@example.com',
     tags: ['역사', '도심', '맛집'],
     places: [
-      { name: '경복궁', address: '서울 종로구 사직로', lat: 37.5796, lng: 126.977 },
-      { name: '북촌한옥마을', address: '서울 종로구 계동길', lat: 37.5826, lng: 126.9831 },
-      { name: '인사동', address: '서울 종로구 인사동길', lat: 37.574, lng: 126.9849 },
-      { name: '광장시장', address: '서울 종로구 창경궁로', lat: 37.5701, lng: 126.9997 },
+      {
+        name: '경복궁',
+        address: '서울 종로구 사직로',
+        lat: 37.5796,
+        lng: 126.977,
+      },
+      {
+        name: '북촌한옥마을',
+        address: '서울 종로구 계동길',
+        lat: 37.5826,
+        lng: 126.9831,
+      },
+      {
+        name: '인사동',
+        address: '서울 종로구 인사동길',
+        lat: 37.574,
+        lng: 126.9849,
+      },
+      {
+        name: '광장시장',
+        address: '서울 종로구 창경궁로',
+        lat: 37.5701,
+        lng: 126.9997,
+      },
     ],
   },
   {
@@ -118,11 +215,36 @@ const COURSES: SeedCourse[] = [
     author: 'junho@example.com',
     tags: ['역사', '가족', '야경'],
     places: [
-      { name: '불국사', address: '경북 경주시 불국로', lat: 35.79, lng: 129.332 },
-      { name: '석굴암', address: '경북 경주시 진현동', lat: 35.7947, lng: 129.349 },
-      { name: '첨성대', address: '경북 경주시 인왕동', lat: 35.8348, lng: 129.219 },
-      { name: '동궁과 월지', address: '경북 경주시 원화로', lat: 35.8348, lng: 129.2265 },
-      { name: '황리단길', address: '경북 경주시 포석로', lat: 35.836, lng: 129.211 },
+      {
+        name: '불국사',
+        address: '경북 경주시 불국로',
+        lat: 35.79,
+        lng: 129.332,
+      },
+      {
+        name: '석굴암',
+        address: '경북 경주시 진현동',
+        lat: 35.7947,
+        lng: 129.349,
+      },
+      {
+        name: '첨성대',
+        address: '경북 경주시 인왕동',
+        lat: 35.8348,
+        lng: 129.219,
+      },
+      {
+        name: '동궁과 월지',
+        address: '경북 경주시 원화로',
+        lat: 35.8348,
+        lng: 129.2265,
+      },
+      {
+        name: '황리단길',
+        address: '경북 경주시 포석로',
+        lat: 35.836,
+        lng: 129.211,
+      },
     ],
   },
   {
@@ -135,10 +257,30 @@ const COURSES: SeedCourse[] = [
     author: 'seoyeon@example.com',
     tags: ['맛집', '역사', '도심'],
     places: [
-      { name: '전주한옥마을', address: '전북 전주시 완산구 기린대로', lat: 35.815, lng: 127.153 },
-      { name: '경기전', address: '전북 전주시 완산구 태조로', lat: 35.8157, lng: 127.15 },
-      { name: '전동성당', address: '전북 전주시 완산구 태조로', lat: 35.8138, lng: 127.149 },
-      { name: '남부시장', address: '전북 전주시 완산구 풍남문2길', lat: 35.811, lng: 127.143 },
+      {
+        name: '전주한옥마을',
+        address: '전북 전주시 완산구 기린대로',
+        lat: 35.815,
+        lng: 127.153,
+      },
+      {
+        name: '경기전',
+        address: '전북 전주시 완산구 태조로',
+        lat: 35.8157,
+        lng: 127.15,
+      },
+      {
+        name: '전동성당',
+        address: '전북 전주시 완산구 태조로',
+        lat: 35.8138,
+        lng: 127.149,
+      },
+      {
+        name: '남부시장',
+        address: '전북 전주시 완산구 풍남문2길',
+        lat: 35.811,
+        lng: 127.143,
+      },
     ],
   },
   {
@@ -151,10 +293,30 @@ const COURSES: SeedCourse[] = [
     author: 'haneul@example.com',
     tags: ['야경', '맛집', '커플'],
     places: [
-      { name: '여수세계박람회장', address: '전남 여수시 박람회길', lat: 34.754, lng: 127.747 },
-      { name: '돌산공원', address: '전남 여수시 돌산읍', lat: 34.737, lng: 127.764 },
-      { name: '이순신광장', address: '전남 여수시 중앙동', lat: 34.739, lng: 127.743 },
-      { name: '낭만포차거리', address: '전남 여수시 종화동', lat: 34.74, lng: 127.746 },
+      {
+        name: '여수세계박람회장',
+        address: '전남 여수시 박람회길',
+        lat: 34.754,
+        lng: 127.747,
+      },
+      {
+        name: '돌산공원',
+        address: '전남 여수시 돌산읍',
+        lat: 34.737,
+        lng: 127.764,
+      },
+      {
+        name: '이순신광장',
+        address: '전남 여수시 중앙동',
+        lat: 34.739,
+        lng: 127.743,
+      },
+      {
+        name: '낭만포차거리',
+        address: '전남 여수시 종화동',
+        lat: 34.74,
+        lng: 127.746,
+      },
     ],
   },
   {
@@ -167,10 +329,30 @@ const COURSES: SeedCourse[] = [
     author: 'dohyun@example.com',
     tags: ['자연', '액티비티', '맛집'],
     places: [
-      { name: '설악산 소공원', address: '강원 속초시 설악산로', lat: 38.168, lng: 128.496 },
-      { name: '속초해수욕장', address: '강원 속초시 조양동', lat: 38.19, lng: 128.601 },
-      { name: '속초관광수산시장', address: '강원 속초시 중앙로', lat: 38.207, lng: 128.591 },
-      { name: '영금정', address: '강원 속초시 동명동', lat: 38.213, lng: 128.597 },
+      {
+        name: '설악산 소공원',
+        address: '강원 속초시 설악산로',
+        lat: 38.168,
+        lng: 128.496,
+      },
+      {
+        name: '속초해수욕장',
+        address: '강원 속초시 조양동',
+        lat: 38.19,
+        lng: 128.601,
+      },
+      {
+        name: '속초관광수산시장',
+        address: '강원 속초시 중앙로',
+        lat: 38.207,
+        lng: 128.591,
+      },
+      {
+        name: '영금정',
+        address: '강원 속초시 동명동',
+        lat: 38.213,
+        lng: 128.597,
+      },
     ],
   },
   {
@@ -183,9 +365,24 @@ const COURSES: SeedCourse[] = [
     author: 'junho@example.com',
     tags: ['자연', '바다', '맛집'],
     places: [
-      { name: '통영 케이블카', address: '경남 통영시 발개로', lat: 34.829, lng: 128.436 },
-      { name: '동피랑 벽화마을', address: '경남 통영시 동호동', lat: 34.844, lng: 128.425 },
-      { name: '통영중앙시장', address: '경남 통영시 중앙로', lat: 34.845, lng: 128.424 },
+      {
+        name: '통영 케이블카',
+        address: '경남 통영시 발개로',
+        lat: 34.829,
+        lng: 128.436,
+      },
+      {
+        name: '동피랑 벽화마을',
+        address: '경남 통영시 동호동',
+        lat: 34.844,
+        lng: 128.425,
+      },
+      {
+        name: '통영중앙시장',
+        address: '경남 통영시 중앙로',
+        lat: 34.845,
+        lng: 128.424,
+      },
     ],
   },
   {
@@ -198,9 +395,24 @@ const COURSES: SeedCourse[] = [
     author: 'seoyeon@example.com',
     tags: ['역사', '가족', '자연'],
     places: [
-      { name: '안동 하회마을', address: '경북 안동시 풍천면 하회리', lat: 36.539, lng: 128.517 },
-      { name: '부용대', address: '경북 안동시 풍천면', lat: 36.543, lng: 128.511 },
-      { name: '월영교', address: '경북 안동시 상아동', lat: 36.556, lng: 128.716 },
+      {
+        name: '안동 하회마을',
+        address: '경북 안동시 풍천면 하회리',
+        lat: 36.539,
+        lng: 128.517,
+      },
+      {
+        name: '부용대',
+        address: '경북 안동시 풍천면',
+        lat: 36.543,
+        lng: 128.511,
+      },
+      {
+        name: '월영교',
+        address: '경북 안동시 상아동',
+        lat: 36.556,
+        lng: 128.716,
+      },
     ],
   },
   {
@@ -213,9 +425,24 @@ const COURSES: SeedCourse[] = [
     author: 'haneul@example.com',
     tags: ['자연', '힐링', '커플'],
     places: [
-      { name: '아침고요수목원', address: '경기 가평군 상면 수목원로', lat: 37.744, lng: 127.352 },
-      { name: '쁘띠프랑스', address: '경기 가평군 청평면 호반로', lat: 37.757, lng: 127.496 },
-      { name: '남이섬', address: '강원 춘천시 남산면 남이섬길', lat: 37.79, lng: 127.525 },
+      {
+        name: '아침고요수목원',
+        address: '경기 가평군 상면 수목원로',
+        lat: 37.744,
+        lng: 127.352,
+      },
+      {
+        name: '쁘띠프랑스',
+        address: '경기 가평군 청평면 호반로',
+        lat: 37.757,
+        lng: 127.496,
+      },
+      {
+        name: '남이섬',
+        address: '강원 춘천시 남산면 남이섬길',
+        lat: 37.79,
+        lng: 127.525,
+      },
     ],
   },
   {
@@ -228,9 +455,24 @@ const COURSES: SeedCourse[] = [
     author: 'haneul@example.com',
     tags: ['야경', '커플', '도심'],
     places: [
-      { name: '남산서울타워', address: '서울 용산구 남산공원길', lat: 37.5512, lng: 126.9882 },
-      { name: '반포한강공원', address: '서울 서초구 신반포로', lat: 37.5106, lng: 126.9956 },
-      { name: '익선동 한옥거리', address: '서울 종로구 익선동', lat: 37.5742, lng: 126.9905 },
+      {
+        name: '남산서울타워',
+        address: '서울 용산구 남산공원길',
+        lat: 37.5512,
+        lng: 126.9882,
+      },
+      {
+        name: '반포한강공원',
+        address: '서울 서초구 신반포로',
+        lat: 37.5106,
+        lng: 126.9956,
+      },
+      {
+        name: '익선동 한옥거리',
+        address: '서울 종로구 익선동',
+        lat: 37.5742,
+        lng: 126.9905,
+      },
     ],
   },
   {
@@ -243,9 +485,24 @@ const COURSES: SeedCourse[] = [
     author: 'minji@example.com',
     tags: ['카페', '바다', '커플'],
     places: [
-      { name: '협재해수욕장', address: '제주시 한림읍 협재리', lat: 33.394, lng: 126.24 },
-      { name: '한담해안산책로', address: '제주시 애월읍 곽지리', lat: 33.407, lng: 126.264 },
-      { name: '애월 카페거리', address: '제주시 애월읍 애월로', lat: 33.463, lng: 126.31 },
+      {
+        name: '협재해수욕장',
+        address: '제주시 한림읍 협재리',
+        lat: 33.394,
+        lng: 126.24,
+      },
+      {
+        name: '한담해안산책로',
+        address: '제주시 애월읍 곽지리',
+        lat: 33.407,
+        lng: 126.264,
+      },
+      {
+        name: '애월 카페거리',
+        address: '제주시 애월읍 애월로',
+        lat: 33.463,
+        lng: 126.31,
+      },
     ],
   },
   {
@@ -258,8 +515,18 @@ const COURSES: SeedCourse[] = [
     author: 'dohyun@example.com',
     tags: ['카페', '혼행', '바다'],
     places: [
-      { name: '흰여울문화마을', address: '부산 영도구 영선동', lat: 35.079, lng: 129.047 },
-      { name: '전포 카페거리', address: '부산 부산진구 전포동', lat: 35.156, lng: 129.064 },
+      {
+        name: '흰여울문화마을',
+        address: '부산 영도구 영선동',
+        lat: 35.079,
+        lng: 129.047,
+      },
+      {
+        name: '전포 카페거리',
+        address: '부산 부산진구 전포동',
+        lat: 35.156,
+        lng: 129.064,
+      },
     ],
   },
   {
@@ -272,9 +539,24 @@ const COURSES: SeedCourse[] = [
     author: 'jiwoo@example.com',
     tags: ['도심', '맛집', '가족'],
     places: [
-      { name: '인천 차이나타운', address: '인천 중구 차이나타운로', lat: 37.475, lng: 126.6178 },
-      { name: '송월동 동화마을', address: '인천 중구 동화마을길', lat: 37.476, lng: 126.6155 },
-      { name: '월미도', address: '인천 중구 월미문화로', lat: 37.4733, lng: 126.597 },
+      {
+        name: '인천 차이나타운',
+        address: '인천 중구 차이나타운로',
+        lat: 37.475,
+        lng: 126.6178,
+      },
+      {
+        name: '송월동 동화마을',
+        address: '인천 중구 동화마을길',
+        lat: 37.476,
+        lng: 126.6155,
+      },
+      {
+        name: '월미도',
+        address: '인천 중구 월미문화로',
+        lat: 37.4733,
+        lng: 126.597,
+      },
     ],
   },
   {
@@ -287,9 +569,24 @@ const COURSES: SeedCourse[] = [
     author: 'taemin@example.com',
     tags: ['맛집', '자연', '커플'],
     places: [
-      { name: '명동 닭갈비골목', address: '강원 춘천시 조양동', lat: 37.8807, lng: 127.7298 },
-      { name: '소양강 스카이워크', address: '강원 춘천시 영서로', lat: 37.8895, lng: 127.732 },
-      { name: '김유정역', address: '강원 춘천시 신동면', lat: 37.816, lng: 127.681 },
+      {
+        name: '명동 닭갈비골목',
+        address: '강원 춘천시 조양동',
+        lat: 37.8807,
+        lng: 127.7298,
+      },
+      {
+        name: '소양강 스카이워크',
+        address: '강원 춘천시 영서로',
+        lat: 37.8895,
+        lng: 127.732,
+      },
+      {
+        name: '김유정역',
+        address: '강원 춘천시 신동면',
+        lat: 37.816,
+        lng: 127.681,
+      },
     ],
   },
   {
@@ -302,10 +599,30 @@ const COURSES: SeedCourse[] = [
     author: 'junho@example.com',
     tags: ['자연', '바다', '맛집'],
     places: [
-      { name: '호미곶', address: '경북 포항시 남구 호미곶면', lat: 36.076, lng: 129.568 },
-      { name: '영일대해수욕장', address: '경북 포항시 북구 두호동', lat: 36.056, lng: 129.385 },
-      { name: '죽도시장', address: '경북 포항시 북구 죽도동', lat: 36.033, lng: 129.365 },
-      { name: '구룡포 근대문화역사거리', address: '경북 포항시 남구 구룡포읍', lat: 35.989, lng: 129.553 },
+      {
+        name: '호미곶',
+        address: '경북 포항시 남구 호미곶면',
+        lat: 36.076,
+        lng: 129.568,
+      },
+      {
+        name: '영일대해수욕장',
+        address: '경북 포항시 북구 두호동',
+        lat: 36.056,
+        lng: 129.385,
+      },
+      {
+        name: '죽도시장',
+        address: '경북 포항시 북구 죽도동',
+        lat: 36.033,
+        lng: 129.365,
+      },
+      {
+        name: '구룡포 근대문화역사거리',
+        address: '경북 포항시 남구 구룡포읍',
+        lat: 35.989,
+        lng: 129.553,
+      },
     ],
   },
   {
@@ -318,9 +635,24 @@ const COURSES: SeedCourse[] = [
     author: 'sohee@example.com',
     tags: ['도심', '맛집'],
     places: [
-      { name: '김광석 다시그리기 길', address: '대구 중구 달구벌대로', lat: 35.865, lng: 128.601 },
-      { name: '서문시장', address: '대구 중구 큰장로', lat: 35.87, lng: 128.579 },
-      { name: '동성로', address: '대구 중구 동성로', lat: 35.869, lng: 128.595 },
+      {
+        name: '김광석 다시그리기 길',
+        address: '대구 중구 달구벌대로',
+        lat: 35.865,
+        lng: 128.601,
+      },
+      {
+        name: '서문시장',
+        address: '대구 중구 큰장로',
+        lat: 35.87,
+        lng: 128.579,
+      },
+      {
+        name: '동성로',
+        address: '대구 중구 동성로',
+        lat: 35.869,
+        lng: 128.595,
+      },
     ],
   },
   {
@@ -333,9 +665,24 @@ const COURSES: SeedCourse[] = [
     author: 'seoyeon@example.com',
     tags: ['자연', '힐링', '가족'],
     places: [
-      { name: '순천만 습지', address: '전남 순천시 순천만길', lat: 34.885, lng: 127.509 },
-      { name: '순천만 국가정원', address: '전남 순천시 국가정원1호길', lat: 34.907, lng: 127.501 },
-      { name: '낙안읍성', address: '전남 순천시 낙안면', lat: 34.906, lng: 127.347 },
+      {
+        name: '순천만 습지',
+        address: '전남 순천시 순천만길',
+        lat: 34.885,
+        lng: 127.509,
+      },
+      {
+        name: '순천만 국가정원',
+        address: '전남 순천시 국가정원1호길',
+        lat: 34.907,
+        lng: 127.501,
+      },
+      {
+        name: '낙안읍성',
+        address: '전남 순천시 낙안면',
+        lat: 34.906,
+        lng: 127.347,
+      },
     ],
   },
   {
@@ -348,9 +695,24 @@ const COURSES: SeedCourse[] = [
     author: 'haneul@example.com',
     tags: ['자연', '힐링', '커플'],
     places: [
-      { name: '죽녹원', address: '전남 담양군 담양읍 죽녹원로', lat: 35.321, lng: 127.001 },
-      { name: '메타세쿼이아 가로수길', address: '전남 담양군 담양읍 학동리', lat: 35.337, lng: 126.987 },
-      { name: '관방제림', address: '전남 담양군 담양읍 객사리', lat: 35.322, lng: 126.992 },
+      {
+        name: '죽녹원',
+        address: '전남 담양군 담양읍 죽녹원로',
+        lat: 35.321,
+        lng: 127.001,
+      },
+      {
+        name: '메타세쿼이아 가로수길',
+        address: '전남 담양군 담양읍 학동리',
+        lat: 35.337,
+        lng: 126.987,
+      },
+      {
+        name: '관방제림',
+        address: '전남 담양군 담양읍 객사리',
+        lat: 35.322,
+        lng: 126.992,
+      },
     ],
   },
   {
@@ -363,9 +725,24 @@ const COURSES: SeedCourse[] = [
     author: 'taemin@example.com',
     tags: ['자연', '바다', '커플'],
     places: [
-      { name: '남해 독일마을', address: '경남 남해군 삼동면', lat: 34.753, lng: 127.91 },
-      { name: '가천 다랭이마을', address: '경남 남해군 남면 홍현리', lat: 34.71, lng: 127.887 },
-      { name: '보리암', address: '경남 남해군 상주면', lat: 34.729, lng: 127.981 },
+      {
+        name: '남해 독일마을',
+        address: '경남 남해군 삼동면',
+        lat: 34.753,
+        lng: 127.91,
+      },
+      {
+        name: '가천 다랭이마을',
+        address: '경남 남해군 남면 홍현리',
+        lat: 34.71,
+        lng: 127.887,
+      },
+      {
+        name: '보리암',
+        address: '경남 남해군 상주면',
+        lat: 34.729,
+        lng: 127.981,
+      },
     ],
   },
   {
@@ -378,9 +755,24 @@ const COURSES: SeedCourse[] = [
     author: 'jiwoo@example.com',
     tags: ['자연', '바다', '드라이브'],
     places: [
-      { name: '바람의 언덕', address: '경남 거제시 남부면 갈곶리', lat: 34.733, lng: 128.648 },
-      { name: '신선대', address: '경남 거제시 남부면', lat: 34.732, lng: 128.647 },
-      { name: '외도 보타니아', address: '경남 거제시 일운면 외도', lat: 34.748, lng: 128.706 },
+      {
+        name: '바람의 언덕',
+        address: '경남 거제시 남부면 갈곶리',
+        lat: 34.733,
+        lng: 128.648,
+      },
+      {
+        name: '신선대',
+        address: '경남 거제시 남부면',
+        lat: 34.732,
+        lng: 128.647,
+      },
+      {
+        name: '외도 보타니아',
+        address: '경남 거제시 일운면 외도',
+        lat: 34.748,
+        lng: 128.706,
+      },
     ],
   },
   {
@@ -393,10 +785,30 @@ const COURSES: SeedCourse[] = [
     author: 'sohee@example.com',
     tags: ['액티비티', '바다', '커플'],
     places: [
-      { name: '서피비치', address: '강원 양양군 현북면 하조대해안로', lat: 38.117, lng: 128.628 },
-      { name: '죽도해변', address: '강원 양양군 현남면 인구리', lat: 38.066, lng: 128.626 },
-      { name: '하조대', address: '강원 양양군 현북면 하조대길', lat: 38.081, lng: 128.639 },
-      { name: '낙산사', address: '강원 양양군 강현면 낙산사로', lat: 38.123, lng: 128.628 },
+      {
+        name: '서피비치',
+        address: '강원 양양군 현북면 하조대해안로',
+        lat: 38.117,
+        lng: 128.628,
+      },
+      {
+        name: '죽도해변',
+        address: '강원 양양군 현남면 인구리',
+        lat: 38.066,
+        lng: 128.626,
+      },
+      {
+        name: '하조대',
+        address: '강원 양양군 현북면 하조대길',
+        lat: 38.081,
+        lng: 128.639,
+      },
+      {
+        name: '낙산사',
+        address: '강원 양양군 강현면 낙산사로',
+        lat: 38.123,
+        lng: 128.628,
+      },
     ],
   },
   {
@@ -409,10 +821,30 @@ const COURSES: SeedCourse[] = [
     author: 'seoyeon@example.com',
     tags: ['역사', '도심', '맛집'],
     places: [
-      { name: '경암동 철길마을', address: '전북 군산시 경촌4길', lat: 35.987, lng: 126.718 },
-      { name: '군산근대역사박물관', address: '전북 군산시 해망로', lat: 35.985, lng: 126.711 },
-      { name: '초원사진관', address: '전북 군산시 구영2길', lat: 35.983, lng: 126.714 },
-      { name: '이성당', address: '전북 군산시 중앙로', lat: 35.981, lng: 126.712 },
+      {
+        name: '경암동 철길마을',
+        address: '전북 군산시 경촌4길',
+        lat: 35.987,
+        lng: 126.718,
+      },
+      {
+        name: '군산근대역사박물관',
+        address: '전북 군산시 해망로',
+        lat: 35.985,
+        lng: 126.711,
+      },
+      {
+        name: '초원사진관',
+        address: '전북 군산시 구영2길',
+        lat: 35.983,
+        lng: 126.714,
+      },
+      {
+        name: '이성당',
+        address: '전북 군산시 중앙로',
+        lat: 35.981,
+        lng: 126.712,
+      },
     ],
   },
   {
@@ -425,9 +857,24 @@ const COURSES: SeedCourse[] = [
     author: 'junho@example.com',
     tags: ['맛집', '도심', '가족'],
     places: [
-      { name: '성심당 본점', address: '대전 중구 대종로480번길', lat: 36.328, lng: 127.427 },
-      { name: '한밭수목원', address: '대전 서구 둔산대로', lat: 36.368, lng: 127.388 },
-      { name: '으능정이 스카이로드', address: '대전 중구 중앙로', lat: 36.329, lng: 127.427 },
+      {
+        name: '성심당 본점',
+        address: '대전 중구 대종로480번길',
+        lat: 36.328,
+        lng: 127.427,
+      },
+      {
+        name: '한밭수목원',
+        address: '대전 서구 둔산대로',
+        lat: 36.368,
+        lng: 127.388,
+      },
+      {
+        name: '으능정이 스카이로드',
+        address: '대전 중구 중앙로',
+        lat: 36.329,
+        lng: 127.427,
+      },
     ],
   },
   {
@@ -440,9 +887,24 @@ const COURSES: SeedCourse[] = [
     author: 'taemin@example.com',
     tags: ['자연', '액티비티', '드라이브'],
     places: [
-      { name: '도담삼봉', address: '충북 단양군 매포읍 삼봉로', lat: 36.992, lng: 128.336 },
-      { name: '만천하 스카이워크', address: '충북 단양군 적성면', lat: 36.976, lng: 128.387 },
-      { name: '단양강 잔도', address: '충북 단양군 단양읍', lat: 36.992, lng: 128.365 },
+      {
+        name: '도담삼봉',
+        address: '충북 단양군 매포읍 삼봉로',
+        lat: 36.992,
+        lng: 128.336,
+      },
+      {
+        name: '만천하 스카이워크',
+        address: '충북 단양군 적성면',
+        lat: 36.976,
+        lng: 128.387,
+      },
+      {
+        name: '단양강 잔도',
+        address: '충북 단양군 단양읍',
+        lat: 36.992,
+        lng: 128.365,
+      },
     ],
   },
   {
@@ -455,9 +917,24 @@ const COURSES: SeedCourse[] = [
     author: 'sohee@example.com',
     tags: ['카페', '도심', '커플'],
     places: [
-      { name: '서울숲', address: '서울 성동구 뚝섬로', lat: 37.5444, lng: 127.0374 },
-      { name: '성수동 카페거리', address: '서울 성동구 성수이로', lat: 37.544, lng: 127.056 },
-      { name: '언더스탠드에비뉴', address: '서울 성동구 왕십리로', lat: 37.544, lng: 127.044 },
+      {
+        name: '서울숲',
+        address: '서울 성동구 뚝섬로',
+        lat: 37.5444,
+        lng: 127.0374,
+      },
+      {
+        name: '성수동 카페거리',
+        address: '서울 성동구 성수이로',
+        lat: 37.544,
+        lng: 127.056,
+      },
+      {
+        name: '언더스탠드에비뉴',
+        address: '서울 성동구 왕십리로',
+        lat: 37.544,
+        lng: 127.044,
+      },
     ],
   },
   {
@@ -470,9 +947,24 @@ const COURSES: SeedCourse[] = [
     author: 'jiwoo@example.com',
     tags: ['바다', '드라이브', '커플'],
     places: [
-      { name: '죽성 드림성당', address: '부산 기장군 기장읍 죽성리', lat: 35.247, lng: 129.247 },
-      { name: '아난티 코브', address: '부산 기장군 기장읍 기장해안로', lat: 35.19, lng: 129.223 },
-      { name: '일광해수욕장', address: '부산 기장군 일광읍', lat: 35.262, lng: 129.233 },
+      {
+        name: '죽성 드림성당',
+        address: '부산 기장군 기장읍 죽성리',
+        lat: 35.247,
+        lng: 129.247,
+      },
+      {
+        name: '아난티 코브',
+        address: '부산 기장군 기장읍 기장해안로',
+        lat: 35.19,
+        lng: 129.223,
+      },
+      {
+        name: '일광해수욕장',
+        address: '부산 기장군 일광읍',
+        lat: 35.262,
+        lng: 129.233,
+      },
     ],
   },
   {
@@ -485,8 +977,18 @@ const COURSES: SeedCourse[] = [
     author: 'haneul@example.com',
     tags: ['자연', '힐링', '드라이브'],
     places: [
-      { name: '대한다원 보성녹차밭', address: '전남 보성군 보성읍 녹차로', lat: 34.706, lng: 127.076 },
-      { name: '율포해수욕장', address: '전남 보성군 회천면', lat: 34.648, lng: 127.131 },
+      {
+        name: '대한다원 보성녹차밭',
+        address: '전남 보성군 보성읍 녹차로',
+        lat: 34.706,
+        lng: 127.076,
+      },
+      {
+        name: '율포해수욕장',
+        address: '전남 보성군 회천면',
+        lat: 34.648,
+        lng: 127.131,
+      },
     ],
   },
   {
@@ -499,15 +1001,568 @@ const COURSES: SeedCourse[] = [
     author: 'junho@example.com',
     tags: ['자연', '힐링', '가족'],
     places: [
-      { name: '대관령 양떼목장', address: '강원 평창군 대관령면', lat: 37.687, lng: 128.743 },
-      { name: '오대산 월정사', address: '강원 평창군 진부면 오대산로', lat: 37.731, lng: 128.592 },
-      { name: '대관령 하늘목장', address: '강원 평창군 대관령면', lat: 37.662, lng: 128.735 },
+      {
+        name: '대관령 양떼목장',
+        address: '강원 평창군 대관령면',
+        lat: 37.687,
+        lng: 128.743,
+      },
+      {
+        name: '오대산 월정사',
+        address: '강원 평창군 진부면 오대산로',
+        lat: 37.731,
+        lng: 128.592,
+      },
+      {
+        name: '대관령 하늘목장',
+        address: '강원 평창군 대관령면',
+        lat: 37.662,
+        lng: 128.735,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_seoul_budget',
+    title: '서울 1만원대 하루 산책과 시장 먹거리 코스',
+    content:
+      '서울을 처음 오는 친구에게 추천하기 좋은 저예산 당일 코스입니다. 오전에는 청계천을 따라 광화문까지 천천히 걸으며 도심 분위기를 보고, 점심은 광장시장에서 빈대떡·마약김밥·육회 중 예산에 맞춰 고릅니다. 오후에는 낙산공원 성곽길을 올라 도심 전망을 보고, 해가 지면 동대문디자인플라자 외관 조명까지 보고 마무리합니다. 이동은 지하철과 도보 중심이라 교통비 부담이 적고, 비가 오면 낙산공원 대신 DDP 내부 전시나 동대문 쇼핑몰로 대체하기 쉽습니다.',
+    city: '서울',
+    duration: 1,
+    author: 'jiwoo@example.com',
+    tags: ['가성비', '도심', '맛집'],
+    places: [
+      {
+        name: '청계천',
+        address: '서울 중구 청계천로',
+        lat: 37.5694,
+        lng: 126.9787,
+      },
+      {
+        name: '광화문광장',
+        address: '서울 종로구 세종대로',
+        lat: 37.5726,
+        lng: 126.9769,
+      },
+      {
+        name: '광장시장',
+        address: '서울 종로구 창경궁로',
+        lat: 37.5701,
+        lng: 126.9997,
+      },
+      {
+        name: '낙산공원',
+        address: '서울 종로구 낙산길',
+        lat: 37.5808,
+        lng: 127.0075,
+      },
+      {
+        name: '동대문디자인플라자',
+        address: '서울 중구 을지로',
+        lat: 37.5665,
+        lng: 127.0092,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_seoul_family_museum',
+    title: '서울 아이와 가는 박물관·공원 코스',
+    content:
+      '아이와 서울을 하루 다녀올 때 이동 피로를 줄이도록 용산과 여의도 권역으로 묶은 코스입니다. 오전에는 국립중앙박물관에서 실내 전시를 보고, 바로 옆 용산가족공원에서 간단히 산책합니다. 점심은 이촌역 주변 식당을 이용하면 이동이 짧고, 오후에는 여의도 한강공원으로 넘어가 자전거·돗자리 피크닉을 즐깁니다. 날씨가 덥거나 추우면 한강공원 시간을 줄이고 IFC몰 실내 코스로 대체할 수 있어 가족 여행 변수가 적습니다.',
+    city: '서울',
+    duration: 1,
+    author: 'seoyeon@example.com',
+    tags: ['가족', '도심', '힐링'],
+    places: [
+      {
+        name: '국립중앙박물관',
+        address: '서울 용산구 서빙고로',
+        lat: 37.5238,
+        lng: 126.9805,
+      },
+      {
+        name: '용산가족공원',
+        address: '서울 용산구 서빙고로',
+        lat: 37.5216,
+        lng: 126.9831,
+      },
+      {
+        name: '이촌역',
+        address: '서울 용산구 이촌로',
+        lat: 37.5223,
+        lng: 126.9735,
+      },
+      {
+        name: '여의도한강공원',
+        address: '서울 영등포구 여의동로',
+        lat: 37.5284,
+        lng: 126.933,
+      },
+      {
+        name: 'IFC몰',
+        address: '서울 영등포구 국제금융로',
+        lat: 37.5251,
+        lng: 126.9255,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_busan_rainy',
+    title: '부산 비 오는 날 실내 위주 1박 2일 코스',
+    content:
+      '부산 여행 날짜에 비 예보가 있을 때 쓰기 좋은 실내 중심 코스입니다. 첫날은 부산역에서 바로 이동하기 쉬운 영도 피아크와 흰여울문화마을의 실내 카페를 중심으로 잡고, 저녁에는 광안리 바다 전망 식당이나 카페에서 야경을 봅니다. 둘째 날은 센텀시티 신세계백화점과 영화의전당 주변으로 이동해 쇼핑·전시·식사를 한 번에 해결합니다. 해변 산책 비중을 줄이고 실내 대기 시간을 확보해서, 우천 취소 위험이 낮은 코스입니다.',
+    city: '부산',
+    duration: 2,
+    author: 'sohee@example.com',
+    tags: ['카페', '도심', '야경'],
+    places: [
+      {
+        name: '부산역',
+        address: '부산 동구 중앙대로',
+        lat: 35.1151,
+        lng: 129.0413,
+      },
+      {
+        name: '피아크',
+        address: '부산 영도구 해양로195번길',
+        lat: 35.0851,
+        lng: 129.0584,
+      },
+      {
+        name: '광안리해수욕장',
+        address: '부산 수영구 광안해변로',
+        lat: 35.1532,
+        lng: 129.1187,
+      },
+      {
+        name: '센텀시티',
+        address: '부산 해운대구 센텀남대로',
+        lat: 35.169,
+        lng: 129.129,
+      },
+      {
+        name: '영화의전당',
+        address: '부산 해운대구 수영강변대로',
+        lat: 35.1711,
+        lng: 129.127,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_busan_family',
+    title: '부산 아이와 가는 아쿠아리움·해변 코스',
+    content:
+      '아이와 부산을 여행할 때 동선을 짧게 유지하는 해운대 중심 코스입니다. 오전에는 SEA LIFE 부산아쿠아리움에서 실내 관람을 하고, 점심은 해운대시장이나 구남로 주변에서 해결합니다. 오후에는 해운대해수욕장에서 모래놀이와 산책을 하고, 체력이 남으면 동백섬 누리마루까지 가볍게 걷습니다. 이동 거리가 짧고 화장실·식당·카페가 많아 유아 동반 가족에게 편합니다. 여름 성수기에는 오전 일찍 아쿠아리움 예약을 권장합니다.',
+    city: '부산',
+    duration: 1,
+    author: 'haneul@example.com',
+    tags: ['가족', '바다', '도심'],
+    places: [
+      {
+        name: 'SEA LIFE 부산아쿠아리움',
+        address: '부산 해운대구 해운대해변로',
+        lat: 35.1596,
+        lng: 129.1603,
+      },
+      {
+        name: '해운대시장',
+        address: '부산 해운대구 구남로41번길',
+        lat: 35.1628,
+        lng: 129.1632,
+      },
+      {
+        name: '해운대해수욕장',
+        address: '부산 해운대구 우동',
+        lat: 35.1587,
+        lng: 129.1604,
+      },
+      {
+        name: '동백섬',
+        address: '부산 해운대구 동백로',
+        lat: 35.1527,
+        lng: 129.1526,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_jeju_rainy',
+    title: '제주 비 오는 날 동쪽 실내·카페 코스',
+    content:
+      '제주 동쪽을 잡았는데 비가 올 때 추천하는 대체 코스입니다. 오전에는 아르떼뮤지엄 제주처럼 실내 전시를 먼저 보고, 점심은 구좌읍 쪽에서 해산물이나 고기국수로 해결합니다. 오후에는 비자림을 짧게 걷되 비가 강하면 카페로 대체하고, 마지막은 세화해변 근처 오션뷰 카페에서 쉬어갑니다. 성산일출봉처럼 날씨 영향을 크게 받는 장소를 무리하게 넣지 않아 일정 실패 확률이 낮습니다.',
+    city: '제주',
+    duration: 1,
+    author: 'jiwoo@example.com',
+    tags: ['카페', '힐링', '비오는날'],
+    places: [
+      {
+        name: '아르떼뮤지엄 제주',
+        address: '제주시 애월읍 어림비로',
+        lat: 33.3968,
+        lng: 126.345,
+      },
+      {
+        name: '비자림',
+        address: '제주시 구좌읍 비자숲길',
+        lat: 33.4914,
+        lng: 126.8114,
+      },
+      {
+        name: '세화해변',
+        address: '제주시 구좌읍 세화리',
+        lat: 33.5263,
+        lng: 126.8584,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_jeju_family',
+    title: '제주 가족 여행 3박 4일 서쪽·남쪽 여유 코스',
+    content:
+      '부모님이나 아이와 함께 가는 제주 가족 여행은 하루에 많은 장소를 넣지 않는 것이 중요합니다. 첫날은 공항 도착 후 애월 해안도로와 숙소 체크인으로 가볍게 시작하고, 둘째 날은 협재해수욕장과 한림공원처럼 이동이 짧은 서쪽 코스를 봅니다. 셋째 날은 중문 권역으로 내려가 천제연폭포와 주상절리대를 보고, 마지막 날은 동문시장이나 공항 근처에서 기념품을 사는 흐름입니다. 렌터카 기준으로 무리 없는 일정이며, 휴식 시간이 충분한 가족형 코스입니다.',
+    city: '제주',
+    duration: 4,
+    author: 'seoyeon@example.com',
+    tags: ['가족', '자연', '드라이브'],
+    places: [
+      {
+        name: '제주국제공항',
+        address: '제주시 공항로',
+        lat: 33.5113,
+        lng: 126.4929,
+      },
+      {
+        name: '애월해안도로',
+        address: '제주시 애월읍',
+        lat: 33.4628,
+        lng: 126.3094,
+      },
+      {
+        name: '협재해수욕장',
+        address: '제주시 한림읍 협재리',
+        lat: 33.394,
+        lng: 126.24,
+      },
+      {
+        name: '한림공원',
+        address: '제주시 한림읍 한림로',
+        lat: 33.3898,
+        lng: 126.2391,
+      },
+      {
+        name: '주상절리대',
+        address: '서귀포시 이어도로',
+        lat: 33.2379,
+        lng: 126.425,
+      },
+      {
+        name: '동문시장',
+        address: '제주시 관덕로14길',
+        lat: 33.5116,
+        lng: 126.526,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_gangneung_family',
+    title: '강릉 아이와 가는 바다·체험 1박 2일 코스',
+    content:
+      '아이와 강릉을 간다면 바다만 보는 것보다 체험과 실내 장소를 섞는 것이 좋습니다. 첫날은 경포아쿠아리움과 경포호 산책을 묶고, 저녁에는 초당순두부마을에서 부담 없는 식사를 합니다. 둘째 날은 오죽헌에서 짧게 역사 이야기를 보고, 안목해변 커피거리에서는 부모는 커피를 마시고 아이는 해변 산책을 즐기는 흐름입니다. 비가 오면 경포호 산책 시간을 줄이고 아쿠아리움 체류 시간을 늘리면 됩니다.',
+    city: '강릉',
+    duration: 2,
+    author: 'minji@example.com',
+    tags: ['가족', '바다', '역사'],
+    places: [
+      {
+        name: '경포아쿠아리움',
+        address: '강원 강릉시 난설헌로',
+        lat: 37.7967,
+        lng: 128.9021,
+      },
+      {
+        name: '경포호',
+        address: '강원 강릉시 저동',
+        lat: 37.7951,
+        lng: 128.8971,
+      },
+      {
+        name: '초당순두부마을',
+        address: '강원 강릉시 초당동',
+        lat: 37.7912,
+        lng: 128.9145,
+      },
+      {
+        name: '오죽헌',
+        address: '강원 강릉시 율곡로',
+        lat: 37.7793,
+        lng: 128.8784,
+      },
+      {
+        name: '안목해변 커피거리',
+        address: '강원 강릉시 창해로14번길',
+        lat: 37.7714,
+        lng: 128.9476,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_gyeongju_family_slow',
+    title: '경주 가족 여행 2박 3일 느린 역사 코스',
+    content:
+      '경주는 볼 곳이 많지만 가족 여행에서는 하루에 두세 곳만 천천히 보는 편이 만족도가 높습니다. 첫날은 대릉원과 첨성대를 걸으며 시내권에 적응하고, 둘째 날은 불국사와 석굴암을 오전에 보고 오후에는 황리단길에서 쉬어갑니다. 마지막 날은 국립경주박물관에서 신라 유물을 보고 동궁과 월지 야경으로 마무리합니다. 역사 설명이 필요한 장소가 많아 아이와 함께라면 이동 중에 짧은 이야기나 사진 자료를 준비하면 좋습니다.',
+    city: '경주',
+    duration: 3,
+    author: 'dohyun@example.com',
+    tags: ['가족', '역사', '야경'],
+    places: [
+      {
+        name: '대릉원',
+        address: '경북 경주시 황남동',
+        lat: 35.8379,
+        lng: 129.2115,
+      },
+      {
+        name: '첨성대',
+        address: '경북 경주시 인왕동',
+        lat: 35.8348,
+        lng: 129.219,
+      },
+      {
+        name: '불국사',
+        address: '경북 경주시 불국로',
+        lat: 35.79,
+        lng: 129.332,
+      },
+      {
+        name: '국립경주박물관',
+        address: '경북 경주시 일정로',
+        lat: 35.8292,
+        lng: 129.2282,
+      },
+      {
+        name: '동궁과 월지',
+        address: '경북 경주시 원화로',
+        lat: 35.8348,
+        lng: 129.2265,
+      },
+    ],
+  },
+  {
+    id: 'seed_post_jeonju_couple',
+    title: '전주 커플 1박 2일 한옥 감성 코스',
+    content:
+      '전주한옥마을을 단순히 빠르게 둘러보는 대신, 숙소와 저녁 시간을 감성 있게 잡은 커플 코스입니다. 낮에는 경기전과 전동성당을 천천히 보고, 오후에는 한옥마을 골목 카페에서 쉬어갑니다. 저녁에는 남부시장 야시장이나 객리단길 식당을 이용하고, 다음 날 아침에는 사람이 적은 시간에 한옥 골목을 산책합니다. 사진을 많이 찍고 싶다면 한복 대여는 오후보다 오전이 덜 붐벼서 좋습니다.',
+    city: '전주',
+    duration: 2,
+    author: 'haneul@example.com',
+    tags: ['커플', '역사', '카페'],
+    places: [
+      {
+        name: '전주한옥마을',
+        address: '전북 전주시 완산구 기린대로',
+        lat: 35.815,
+        lng: 127.153,
+      },
+      {
+        name: '경기전',
+        address: '전북 전주시 완산구 태조로',
+        lat: 35.8157,
+        lng: 127.15,
+      },
+      {
+        name: '전동성당',
+        address: '전북 전주시 완산구 태조로',
+        lat: 35.8138,
+        lng: 127.149,
+      },
+      {
+        name: '남부시장',
+        address: '전북 전주시 완산구 풍남문2길',
+        lat: 35.811,
+        lng: 127.143,
+      },
+      {
+        name: '객리단길',
+        address: '전북 전주시 완산구 전주객사길',
+        lat: 35.8192,
+        lng: 127.1428,
+      },
     ],
   },
 ];
 
+// 상세 페이지가 실제 커뮤니티처럼 보이도록 각 코스에 자연스러운 댓글을 넣는다.
+const COMMENTS: SeedComment[] = [
+  {
+    key: 'busan-1',
+    postId: 'seed_post_busan',
+    author: 'dohyun@example.com',
+    content:
+      '감천문화마을에서 자갈치시장으로 넘어가는 동선이 좋아요. 저녁은 해운대보다 광안리 쪽도 괜찮았습니다.',
+  },
+  {
+    key: 'busan-2',
+    postId: 'seed_post_busan',
+    author: 'sohee@example.com',
+    content:
+      '뚜벅이 기준으로도 무리 없는 코스라 저장해뒀어요. 부모님 모시고 가도 괜찮을까요?',
+  },
+  {
+    key: 'jeju-1',
+    postId: 'seed_post_jeju',
+    author: 'haneul@example.com',
+    content:
+      '동쪽 코스는 아침 일찍 성산일출봉부터 가면 훨씬 여유롭습니다. 월정리 노을도 좋았어요.',
+  },
+  {
+    key: 'gyeongju-1',
+    postId: 'seed_post_gyeongju',
+    author: 'minji@example.com',
+    content:
+      '동궁과 월지는 꼭 밤에 가는 걸 추천합니다. 낮보다 훨씬 분위기가 좋아요.',
+  },
+  {
+    key: 'jeonju-1',
+    postId: 'seed_post_jeonju',
+    author: 'jiwoo@example.com',
+    content: '전주한옥마을은 오전에 가면 사람이 적어서 사진 찍기 편했습니다.',
+  },
+  {
+    key: 'yeosu-1',
+    postId: 'seed_post_yeosu',
+    author: 'taemin@example.com',
+    content: '낭만포차거리는 주말에 웨이팅이 길어서 조금 일찍 가는 게 좋아요.',
+  },
+  {
+    key: 'sokcho-1',
+    postId: 'seed_post_sokcho',
+    author: 'seoyeon@example.com',
+    content:
+      '설악산 소공원은 날씨가 좋으면 케이블카 줄이 길어요. 오전 방문 추천합니다.',
+  },
+  {
+    key: 'gapyeong-1',
+    postId: 'seed_post_gapyeong',
+    author: 'dohyun@example.com',
+    content:
+      '서울 근교라 당일치기로 부담 없어서 좋네요. 남이섬은 평일이 훨씬 여유롭습니다.',
+  },
+  {
+    key: 'yangyang-1',
+    postId: 'seed_post_yangyang',
+    author: 'junho@example.com',
+    content:
+      '서핑 처음이면 강습 예약하고 가는 게 안전합니다. 바람 부는 날은 체감온도가 낮아요.',
+  },
+  {
+    key: 'seongsu-1',
+    postId: 'seed_post_seongsu',
+    author: 'minji@example.com',
+    content:
+      '서울숲 산책 후 성수 카페로 넘어가는 흐름이 좋습니다. 비 오는 날에도 괜찮은 코스예요.',
+  },
+  {
+    key: 'pyeongchang-1',
+    postId: 'seed_post_pyeongchang',
+    author: 'sohee@example.com',
+    content:
+      '아이들과 가기 좋겠네요. 월정사 전나무 숲길은 유모차도 괜찮을까요?',
+  },
+  {
+    key: 'gunsan-1',
+    postId: 'seed_post_gunsan',
+    author: 'haneul@example.com',
+    content:
+      '군산은 빵지순례랑 근대문화 코스가 잘 어울려요. 이성당은 오전에 가야 종류가 많았습니다.',
+  },
+  {
+    key: 'seoul-budget-1',
+    postId: 'seed_post_seoul_budget',
+    author: 'taemin@example.com',
+    content:
+      '서울 처음 오는 친구에게 추천하기 좋네요. 낙산공원은 해 질 무렵에 올라가면 사진이 훨씬 잘 나왔습니다.',
+  },
+  {
+    key: 'seoul-family-1',
+    postId: 'seed_post_seoul_family_museum',
+    author: 'minji@example.com',
+    content:
+      '아이와 가면 국립중앙박물관 어린이박물관 예약도 같이 확인하는 게 좋아요. 한강공원까지 동선이 무리 없었습니다.',
+  },
+  {
+    key: 'busan-rainy-1',
+    postId: 'seed_post_busan_rainy',
+    author: 'dohyun@example.com',
+    content:
+      '비 오는 부산 코스가 따로 있는 게 좋네요. 센텀 쪽은 식사와 쇼핑을 한 번에 해결하기 편했습니다.',
+  },
+  {
+    key: 'jeju-family-1',
+    postId: 'seed_post_jeju_family',
+    author: 'sohee@example.com',
+    content:
+      '가족 여행은 하루 장소 수를 줄이는 게 진짜 중요하더라고요. 서쪽과 남쪽을 나눈 구성이 참고됐습니다.',
+  },
+  {
+    key: 'gangneung-family-1',
+    postId: 'seed_post_gangneung_family',
+    author: 'jiwoo@example.com',
+    content:
+      '초당순두부마을을 중간에 넣은 게 좋아요. 아이와 가면 식사 장소가 가까운 게 제일 편했습니다.',
+  },
+  {
+    key: 'gyeongju-family-slow-1',
+    postId: 'seed_post_gyeongju_family_slow',
+    author: 'haneul@example.com',
+    content:
+      '경주는 욕심내면 금방 지치는데 2박 3일로 나누니 훨씬 현실적인 일정 같아요.',
+  },
+];
+
+// 마이페이지와 저장 수가 비어 보이지 않도록 저장 샘플을 넣는다.
+const SAVED_POSTS: SeedSavedPost[] = [
+  { user: 'minji@example.com', postId: 'seed_post_gangneung' },
+  { user: 'minji@example.com', postId: 'seed_post_gyeongju' },
+  { user: 'dohyun@example.com', postId: 'seed_post_busan' },
+  { user: 'dohyun@example.com', postId: 'seed_post_jeju_west' },
+  { user: 'seoyeon@example.com', postId: 'seed_post_yeosu' },
+  { user: 'seoyeon@example.com', postId: 'seed_post_pyeongchang' },
+  { user: 'junho@example.com', postId: 'seed_post_sokcho' },
+  { user: 'haneul@example.com', postId: 'seed_post_gapyeong' },
+  { user: 'jiwoo@example.com', postId: 'seed_post_seoul_night' },
+  { user: 'sohee@example.com', postId: 'seed_post_busan_cafe' },
+  { user: 'taemin@example.com', postId: 'seed_post_danyang' },
+  { user: 'taemin@example.com', postId: 'seed_post_namhae' },
+  { user: 'minji@example.com', postId: 'seed_post_seoul_budget' },
+  { user: 'dohyun@example.com', postId: 'seed_post_busan_rainy' },
+  { user: 'seoyeon@example.com', postId: 'seed_post_jeju_family' },
+  { user: 'junho@example.com', postId: 'seed_post_gyeongju_family_slow' },
+  { user: 'sohee@example.com', postId: 'seed_post_gangneung_family' },
+];
+
+// 댓글 좋아요 샘플. 댓글 섹션이 비어 보이지 않게 만든다.
+const COMMENT_LIKES: SeedCommentLike[] = [
+  { user: 'minji@example.com', commentKey: 'busan-1' },
+  { user: 'seoyeon@example.com', commentKey: 'busan-1' },
+  { user: 'junho@example.com', commentKey: 'busan-2' },
+  { user: 'dohyun@example.com', commentKey: 'jeju-1' },
+  { user: 'jiwoo@example.com', commentKey: 'gyeongju-1' },
+  { user: 'haneul@example.com', commentKey: 'yeosu-1' },
+  { user: 'minji@example.com', commentKey: 'sokcho-1' },
+  { user: 'sohee@example.com', commentKey: 'gapyeong-1' },
+  { user: 'taemin@example.com', commentKey: 'yangyang-1' },
+  { user: 'dohyun@example.com', commentKey: 'seongsu-1' },
+  { user: 'junho@example.com', commentKey: 'gunsan-1' },
+  { user: 'jiwoo@example.com', commentKey: 'seoul-budget-1' },
+  { user: 'seoyeon@example.com', commentKey: 'seoul-family-1' },
+  { user: 'minji@example.com', commentKey: 'busan-rainy-1' },
+  { user: 'taemin@example.com', commentKey: 'jeju-family-1' },
+  { user: 'junho@example.com', commentKey: 'gangneung-family-1' },
+  { user: 'dohyun@example.com', commentKey: 'gyeongju-family-slow-1' },
+];
+
 async function main() {
   // seed를 반복 실행해도 중복되지 않도록 게시판 데이터를 먼저 비운다.
+  await prisma.commentLike.deleteMany();
+  await prisma.savedPost.deleteMany();
   await prisma.postTag.deleteMany();
   await prisma.place.deleteMany();
   await prisma.postEmbedding.deleteMany();
@@ -568,7 +1623,38 @@ async function main() {
     });
   }
 
-  console.log(`Travel seed data inserted: ${COURSES.length} courses`);
+  const commentIdByKey = new Map<string, string>();
+  for (const comment of COMMENTS) {
+    const created = await prisma.comment.create({
+      data: {
+        content: comment.content,
+        postId: comment.postId,
+        authorId: userIdByEmail.get(comment.author)!,
+      },
+      select: { id: true },
+    });
+    commentIdByKey.set(comment.key, created.id);
+  }
+
+  await prisma.savedPost.createMany({
+    data: SAVED_POSTS.map((saved) => ({
+      userId: userIdByEmail.get(saved.user)!,
+      postId: saved.postId,
+    })),
+    skipDuplicates: true,
+  });
+
+  await prisma.commentLike.createMany({
+    data: COMMENT_LIKES.map((like) => ({
+      userId: userIdByEmail.get(like.user)!,
+      commentId: commentIdByKey.get(like.commentKey)!,
+    })),
+    skipDuplicates: true,
+  });
+
+  console.log(
+    `Travel seed data inserted: ${COURSES.length} courses, ${COMMENTS.length} comments, ${SAVED_POSTS.length} saves`,
+  );
 }
 
 main()

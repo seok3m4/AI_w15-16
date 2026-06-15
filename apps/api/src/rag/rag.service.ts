@@ -19,7 +19,7 @@ export type SimilarPost = {
 
 // 코사인 유사도가 이 값 미만이면 "관련이 약하다"고 보고 결과에서 제외한다.
 // 무조건 상위 N개를 채우는 대신, 충분히 가까운 코스만 추천/출처로 쓴다.
-const SIMILARITY_THRESHOLD = 0.38;
+const SIMILARITY_THRESHOLD = 0.33;
 
 @Injectable()
 export class RagService {

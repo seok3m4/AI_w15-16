@@ -5,7 +5,8 @@ import OpenAI from 'openai';
 
 // text-embedding-3-small은 1536차원 벡터를 만든다. (schema의 vector(1536)과 일치)
 const EMBEDDING_MODEL = 'text-embedding-3-small';
-const CHAT_MODEL = 'gpt-4o-mini';
+// gpt-4o: 프롬프트 지시(질문 중심 답변, 부가정보 생략)를 mini보다 잘 따른다.
+const CHAT_MODEL = 'gpt-4o';
 
 @Injectable()
 export class OpenAiService {
@@ -71,7 +72,8 @@ export class OpenAiService {
     const client = this.ensureClient();
     const response = await client.chat.completions.create({
       model: CHAT_MODEL,
-      temperature: 0.4,
+      // 게시판 근거에 충실하도록 낮게 유지 (덜 창의적 = 덜 지어냄)
+      temperature: 0.2,
       messages,
       tools,
       tool_choice: 'auto',
