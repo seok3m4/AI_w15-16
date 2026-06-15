@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko" class="no-js">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Memento · 디자인 미리보기 v2 (Mono Notebook)</title>
+<meta name="description" content="Memento MVP 디자인 방향 검증 v2 — 시크한 블랙/그레이 기록장 톤, 단일 액센트, 고강도 모션" />
+<script>document.documentElement.className='js';</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" />
+<script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Pretendard', 'system-ui', 'sans-serif'] },
+        colors: {
+          paper: '#F1F0EC',
+          surface: '#FFFFFF',
+          soft: '#F6F5F2',
+          raised: '#EAE9E4',
+          hairline: '#E2E1DB',
+          ink: '#18181B',
+          bodytext: '#56554F',
+          muted: '#94928C',
+          success: '#3F7D4E',
+          error: '#B23B3B',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  :root { --ease: cubic-bezier(0.16, 1, 0.3, 1); }
+  * { word-break: keep-all; }
+  body { background:#F1F0EC; color:#56554F; -webkit-font-smoothing:antialiased; }
+  .grain { position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.028; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .shadow-soft { box-shadow: 0 1px 2px rgba(24,24,27,.04), 0 12px 30px -18px rgba(24,24,27,.18); }
+  .shadow-softer { box-shadow: 0 1px 2px rgba(24,24,27,.03), 0 6px 16px -12px rgba(24,24,27,.12); }
+  .t-anim { transition: all .5s var(--ease); }
+  .lift:hover { transform: translateY(-2px); box-shadow: 0 1px 2px rgba(24,24,27,.05), 0 16px 32px -22px rgba(24,24,27,.20); }
+  .press:active { transform: scale(.98); }
+  /* reveal motion (intensity 8) */
+  .reveal { opacity:0; transform: translateY(12px); transition: opacity .55s var(--ease), transform .55s var(--ease); }
+  .reveal.in { opacity:1; transform:none; }
+  html.no-js .reveal { opacity:1; transform:none; filter:none; }
+  /* sidebar collapse */
+  #shell { display:grid; grid-template-columns: 212px 1fr; transition: grid-template-columns .55s var(--ease); }
+  #shell.collapsed { grid-template-columns: 64px 1fr; }
+  .nav-label { transition: opacity .35s var(--ease), transform .35s var(--ease); white-space:nowrap; }
+  #shell.collapsed .nav-label { opacity:0; transform: translateX(-6px); pointer-events:none; }
+  #shell.collapsed .wordmark-full { display:none; }
+  .wordmark-mini { display:none; }
+  #shell.collapsed .wordmark-mini { display:block; }
+  #shell.collapsed .nav-item { justify-content:center; }
+  #shell.collapsed .sb-hide { opacity:0; pointer-events:none; }
+  .label-eyebrow { letter-spacing:.14em; }
+  @keyframes breathe { 0%,100%{ transform: scale(1); opacity:.85 } 50%{ transform: scale(1.1); opacity:1 } }
+  .breathe { animation: breathe 3.8s var(--ease) infinite; }
+  @keyframes floaty { 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+  .floaty { animation: floaty 2.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .reveal{opacity:1;transform:none;filter:none} .breathe,.floaty{animation:none} }
+</style>
+</head>
+<body class="font-sans text-bodytext">
+<div class="grain" aria-hidden="true"></div>
+
+<div class="max-w-[1120px] mx-auto px-5 sm:px-8 py-12 relative" style="z-index:2">
+
+  <!-- header -->
+  <header class="mb-14 reveal">
+    <div class="inline-flex items-center gap-2 rounded-full bg-raised text-ink px-3 py-1 text-[11px] font-medium label-eyebrow uppercase mb-5">
+      <iconify-icon icon="solar:notebook-minimalistic-linear" aria-hidden="true"></iconify-icon>
+      디자인 방향 v2
+    </div>
+    <h1 class="text-ink text-4xl md:text-5xl leading-tight font-bold tracking-tight mb-3">Memento — Mono Notebook</h1>
+    <p class="text-base md:text-lg text-bodytext max-w-[58ch] leading-relaxed">
+      웜톤을 덜어내고 시크한 블랙·그레이 기록장 톤으로 전환했습니다. 팔레트를 중립 6색 + 시맨틱 2색으로 줄이고,
+      강조는 잉크 단일 톤으로 통일했습니다. 전부 Pretendard, 사이드바는 접고 펼칠 수 있으며, MVP 화면 전체 세트를 담고 모션 강도는 8로 맞췄습니다.
+    </p>
+  </header>
+
+  <!-- ============ PART 1 — STYLE TILE ============ -->
+  <section class="mb-16">
+    <div class="flex items-center gap-3 mb-6 reveal">
+      <span class="text-[11px] font-medium label-eyebrow uppercase text-muted">Part 1</span>
+      <h2 class="text-ink text-xl font-bold tracking-tight">스타일 타일</h2>
+    </div>
+
+    <!-- colors (reduced) -->
+    <div class="bg-surface rounded-2xl border border-hairline shadow-softer p-6 md:p-7 mb-5 reveal">
+      <h3 class="text-ink text-[15px] font-bold mb-4 flex items-center gap-2">
+        <iconify-icon icon="solar:pallete-2-linear" aria-hidden="true"></iconify-icon> 컬러 — 중립 6 + 시맨틱 2
+      </h3>
+      <div class="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#F1F0EC"></div><p class="text-[12px] text-ink mt-1.5 font-medium">paper</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#FFFFFF"></div><p class="text-[12px] text-ink mt-1.5 font-medium">surface</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#EAE9E4"></div><p class="text-[12px] text-ink mt-1.5 font-medium">raised</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#E2E1DB"></div><p class="text-[12px] text-ink mt-1.5 font-medium">hairline</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#94928C"></div><p class="text-[12px] text-ink mt-1.5 font-medium">muted</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#18181B"></div><p class="text-[12px] text-ink mt-1.5 font-medium">ink</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#3F7D4E"></div><p class="text-[12px] text-ink mt-1.5 font-medium">success</p></div>
+        <div><div class="h-14 rounded-xl border border-black/5" style="background:#B23B3B"></div><p class="text-[12px] text-ink mt-1.5 font-medium">error</p></div>
+      </div>
+      <p class="text-[12px] text-muted mt-3">강조는 별도 hue 없이 <span class="text-ink font-medium">ink 단일 톤</span>으로 통일. 구분은 색이 아니라 아이콘·굵기·테두리로.</p>
+    </div>
+
+    <!-- type (all sans) -->
+    <div class="bg-surface rounded-2xl border border-hairline shadow-softer p-6 md:p-7 mb-5 reveal">
+      <h3 class="text-ink text-[15px] font-bold mb-4 flex items-center gap-2">
+        <iconify-icon icon="solar:text-square-2-linear" aria-hidden="true"></iconify-icon> 타이포 — Pretendard 단일
+      </h3>
+      <div class="divide-y divide-hairline">
+        <div class="py-3 flex flex-col md:flex-row md:items-baseline gap-1 md:gap-6">
+          <span class="text-[11px] text-muted w-24 shrink-0 label-eyebrow uppercase">Display</span>
+          <p class="text-ink text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">기억을 다시 꺼내 쓰다</p>
+        </div>
+        <div class="py-3 flex flex-col md:flex-row md:items-baseline gap-1 md:gap-6">
+          <span class="text-[11px] text-muted w-24 shrink-0 label-eyebrow uppercase">Heading</span>
+          <p class="text-ink text-xl font-bold leading-snug tracking-tight">비 오는 날 성수동 카페에서</p>
+        </div>
+        <div class="py-3 flex flex-col md:flex-row md:items-baseline gap-1 md:gap-6">
+          <span class="text-[11px] text-muted w-24 shrink-0 label-eyebrow uppercase">Body</span>
+          <p class="text-bodytext text-[15px] leading-relaxed max-w-[58ch]">오후 내내 창가 자리에서 책을 읽었다. 빗소리 때문인지 평소보다 집중이 잘 됐다.</p>
+        </div>
+        <div class="py-3 flex flex-col md:flex-row md:items-baseline gap-1 md:gap-6">
+          <span class="text-[11px] text-muted w-24 shrink-0 label-eyebrow uppercase">Caption</span>
+          <p class="text-muted text-[13px]">3일 전 · 좋아요 4 · 댓글 2</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- components -->
+    <div class="bg-surface rounded-2xl border border-hairline shadow-softer p-6 md:p-7 reveal">
+      <h3 class="text-ink text-[15px] font-bold mb-5 flex items-center gap-2">
+        <iconify-icon icon="solar:widget-5-linear" aria-hidden="true"></iconify-icon> 컴포넌트
+      </h3>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div>
+            <p class="text-[12px] text-muted mb-2">버튼</p>
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button class="t-anim press inline-flex items-center gap-2 bg-ink text-white rounded-full pl-4 pr-1.5 py-2 text-[13px] font-medium hover:scale-[1.03]">
+                기록 작성 <span class="w-6 h-6 rounded-full bg-white/15 grid place-items-center"><iconify-icon icon="solar:pen-new-square-linear" aria-hidden="true"></iconify-icon></span>
+              </button>
+              <button class="t-anim press inline-flex items-center gap-1.5 bg-surface text-ink border border-hairline rounded-full px-4 py-2 text-[13px] font-medium hover:bg-soft">
+                <iconify-icon icon="solar:users-group-rounded-linear" aria-hidden="true"></iconify-icon> 친구
+              </button>
+              <button class="t-anim inline-flex items-center gap-1 text-ink text-[13px] font-medium hover:gap-2">더 보기 <iconify-icon icon="solar:alt-arrow-right-linear" aria-hidden="true"></iconify-icon></button>
+            </div>
+          </div>
+          <div>
+            <p class="text-[12px] text-muted mb-2">검색 입력</p>
+            <div class="t-anim flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 focus-within:border-ink focus-within:bg-surface">
+              <iconify-icon icon="solar:magnifer-linear" class="text-muted" aria-hidden="true"></iconify-icon>
+              <input class="bg-transparent outline-none text-[14px] text-ink placeholder:text-muted w-full" placeholder="작년 가을 카페에서 남긴 기록 찾아줘" />
+            </div>
+          </div>
+          <div>
+            <p class="text-[12px] text-muted mb-2">태그 · 배지 (모노)</p>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="bg-soft text-bodytext border border-hairline rounded-full px-2.5 py-1 text-[12px]"># 성수동</span>
+              <span class="bg-soft text-bodytext border border-hairline rounded-full px-2.5 py-1 text-[12px]"># 카페</span>
+              <span class="bg-raised text-ink rounded-full px-2.5 py-1 text-[12px] font-medium"># 회고</span>
+              <span class="inline-flex items-center gap-1 border border-ink/25 text-ink rounded-full px-2 py-1 text-[12px] font-medium"><iconify-icon icon="solar:magic-stars-linear" class="breathe" aria-hidden="true"></iconify-icon> AI</span>
+              <span class="inline-flex items-center gap-1 border border-hairline text-muted rounded-full px-2 py-1 text-[12px]"><iconify-icon icon="solar:users-group-rounded-linear" aria-hidden="true"></iconify-icon> 친구</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <p class="text-[12px] text-muted mb-2">메모리 카드</p>
+            <article class="t-anim lift bg-surface border border-hairline rounded-xl p-4 shadow-softer">
+              <div class="flex items-center gap-2 text-[12px] text-muted mb-1.5">
+                <span class="w-5 h-5 rounded-full bg-raised text-ink grid place-items-center text-[10px] font-bold">윤</span> 하윤서 · 3일 전
+              </div>
+              <h4 class="text-ink text-[15px] font-bold leading-snug mb-1">비 오는 날 성수동 카페에서</h4>
+              <p class="text-bodytext text-[13.5px] leading-relaxed mb-2.5">창가 자리에서 책을 읽었다. 빗소리 때문인지 집중이 잘 됐다.</p>
+              <div class="flex items-center justify-between">
+                <div class="flex gap-1"><span class="bg-soft border border-hairline rounded-full px-2 py-0.5 text-[11px]"># 카페</span></div>
+                <div class="flex items-center gap-2.5 text-muted text-[12px]">
+                  <span class="inline-flex items-center gap-1"><iconify-icon icon="solar:heart-linear" aria-hidden="true"></iconify-icon> 4</span>
+                  <span class="inline-flex items-center gap-1"><iconify-icon icon="solar:chat-round-linear" aria-hidden="true"></iconify-icon> 2</span>
+                </div>
+              </div>
+            </article>
+          </div>
+          <div>
+            <p class="text-[12px] text-muted mb-2">AI 답변 + 근거 (모노, 잉크 테두리로 구분)</p>
+            <div class="rounded-xl border border-ink/15 bg-soft p-4">
+              <div class="flex items-center gap-1.5 mb-1.5 text-ink"><iconify-icon icon="solar:magic-stars-bold" class="breathe" aria-hidden="true"></iconify-icon><span class="text-[12px] font-bold">AI 요약</span></div>
+              <p class="text-ink text-[13.5px] leading-relaxed mb-2.5">작년 가을 비 오는 날 카페에서 집중이 잘 됐다고 남긴 기록이 있어요.</p>
+              <div class="flex flex-wrap gap-1.5">
+                <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 성수동 카페</a>
+                <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 10월 회고</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PART 2 — SCREENS ============ -->
+  <section>
+    <div class="flex items-center gap-3 mb-6 reveal">
+      <span class="text-[11px] font-medium label-eyebrow uppercase text-muted">Part 2</span>
+      <h2 class="text-ink text-xl font-bold tracking-tight">화면</h2>
+    </div>
+
+    <!-- SCREEN 1 — 홈 / Memory Search (collapsible SNB, interactive) -->
+    <p class="text-[13px] text-muted mb-2 reveal">① 홈 / Memory Search · <span class="text-ink">사이드바 토글 버튼을 눌러보세요</span></p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div id="shell" class="bg-surface rounded-[16px] overflow-hidden border border-hairline">
+        <!-- sidebar -->
+        <aside class="bg-soft border-r border-hairline p-3 flex flex-col">
+          <div class="flex items-center justify-between mb-5 px-1">
+            <div class="text-ink text-xl font-extrabold tracking-tight wordmark-full">Memento</div>
+            <div class="text-ink text-xl font-extrabold wordmark-mini">M</div>
+            <button id="collapseBtn" aria-label="사이드바 접기" class="t-anim press w-8 h-8 grid place-items-center rounded-lg text-muted hover:bg-raised hover:text-ink">
+              <iconify-icon id="collapseIcon" icon="solar:siderbar-linear" aria-hidden="true"></iconify-icon>
+            </button>
+          </div>
+          <nav class="space-y-0.5 text-[13.5px]">
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 bg-raised text-ink font-medium"><iconify-icon icon="solar:home-smile-linear" aria-hidden="true"></iconify-icon><span class="nav-label">홈</span></a>
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 text-bodytext hover:bg-raised"><iconify-icon icon="solar:magnifer-linear" aria-hidden="true"></iconify-icon><span class="nav-label">검색</span></a>
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 text-bodytext hover:bg-raised"><iconify-icon icon="solar:box-minimalistic-linear" aria-hidden="true"></iconify-icon><span class="nav-label">캡슐</span></a>
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 text-bodytext hover:bg-raised"><iconify-icon icon="solar:users-group-rounded-linear" aria-hidden="true"></iconify-icon><span class="nav-label">친구</span></a>
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 text-bodytext hover:bg-raised"><iconify-icon icon="solar:cpu-bolt-linear" aria-hidden="true"></iconify-icon><span class="nav-label">에이전트</span></a>
+            <a class="nav-item t-anim flex items-center gap-3 rounded-lg px-2.5 py-2 text-bodytext hover:bg-raised"><iconify-icon icon="solar:settings-linear" aria-hidden="true"></iconify-icon><span class="nav-label">설정</span></a>
+          </nav>
+          <div class="mt-auto flex items-center gap-2 pt-4 border-t border-hairline">
+            <span class="w-7 h-7 rounded-full bg-raised text-ink grid place-items-center text-[11px] font-bold shrink-0">윤</span>
+            <div class="leading-tight sb-hide"><p class="text-[12px] text-ink font-medium">하윤서</p><p class="text-[10px] text-muted">개인 기록</p></div>
+          </div>
+        </aside>
+        <!-- main -->
+        <main class="p-5 md:p-6 bg-paper/40">
+          <div class="flex items-center justify-between mb-4">
+            <div><p class="text-[11px] text-muted label-eyebrow uppercase">내 기록</p><h3 class="text-ink text-2xl font-extrabold tracking-tight">오늘의 기억</h3></div>
+            <button class="t-anim press inline-flex items-center gap-2 bg-ink text-white rounded-full pl-4 pr-1.5 py-2 text-[13px] font-medium hover:scale-[1.03]">기록 작성 <span class="w-6 h-6 rounded-full bg-white/15 grid place-items-center"><iconify-icon icon="solar:pen-new-square-linear" aria-hidden="true"></iconify-icon></span></button>
+          </div>
+          <div class="t-anim flex items-center gap-2 bg-surface border border-hairline rounded-xl px-3.5 py-3 shadow-softer mb-3 focus-within:border-ink">
+            <iconify-icon icon="solar:magnifer-linear" class="text-muted text-lg" aria-hidden="true"></iconify-icon>
+            <input class="bg-transparent outline-none text-[14px] text-ink w-full" value="작년 가을에 카페에서 공부하다 남긴 기록 찾아줘" />
+            <span class="inline-flex items-center gap-1 border border-ink/20 text-ink rounded-full px-2 py-0.5 text-[11px] font-medium"><iconify-icon icon="solar:magic-stars-linear" class="breathe" aria-hidden="true"></iconify-icon> 자연어</span>
+          </div>
+          <div class="rounded-xl border border-ink/15 bg-soft p-4 mb-5">
+            <div class="flex items-center gap-1.5 mb-1.5 text-ink"><iconify-icon icon="solar:magic-stars-bold" class="breathe" aria-hidden="true"></iconify-icon><span class="text-[12px] font-bold">AI 요약</span><span class="text-[11px] text-muted font-normal">· 내 기록 3건 기반</span></div>
+            <p class="text-ink text-[13.5px] leading-relaxed mb-3">작년 가을, 비 오는 날 성수동 카페에서 책을 읽으며 집중이 잘 됐다고 남긴 기록이 있어요. 그 무렵 사이드 프로젝트를 다시 시작하려던 회고도 함께 적어두셨네요.</p>
+            <div class="flex flex-wrap gap-1.5">
+              <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 비 오는 날 성수동 카페에서</a>
+              <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 10월 회고</a>
+            </div>
+          </div>
+          <div class="flex items-center justify-between mb-2"><p class="text-[12px] text-muted">최근 기록</p><button class="t-anim inline-flex items-center gap-1 text-[12px] text-ink font-medium hover:gap-2">전체 <iconify-icon icon="solar:alt-arrow-right-linear" aria-hidden="true"></iconify-icon></button></div>
+          <div class="grid sm:grid-cols-2 gap-2.5">
+            <article class="t-anim lift bg-surface border border-hairline rounded-xl p-4 shadow-softer">
+              <div class="flex items-center gap-2 text-[11px] text-muted mb-1.5"><span class="w-5 h-5 rounded-full bg-raised text-ink grid place-items-center text-[10px] font-bold">윤</span> 3일 전</div>
+              <h4 class="text-ink text-[14px] font-bold leading-snug mb-1">비 오는 날 성수동 카페에서</h4>
+              <p class="text-bodytext text-[13px] leading-relaxed mb-2.5">창가 자리에서 책을 읽었다. 빗소리 때문인지 집중이 잘 됐다.</p>
+              <div class="flex items-center justify-between"><div class="flex gap-1"><span class="bg-soft border border-hairline rounded-full px-2 py-0.5 text-[11px]"># 성수동</span><span class="bg-soft border border-hairline rounded-full px-2 py-0.5 text-[11px]"># 카페</span></div><div class="flex items-center gap-2 text-muted text-[12px]"><span class="inline-flex items-center gap-0.5"><iconify-icon icon="solar:heart-linear" aria-hidden="true"></iconify-icon>4</span><span class="inline-flex items-center gap-0.5"><iconify-icon icon="solar:chat-round-linear" aria-hidden="true"></iconify-icon>2</span></div></div>
+            </article>
+            <article class="t-anim lift bg-surface border border-hairline rounded-xl p-4 shadow-softer">
+              <div class="flex items-center gap-2 text-[11px] text-muted mb-1.5"><span class="w-5 h-5 rounded-full bg-raised text-ink grid place-items-center text-[10px] font-bold">윤</span> 2주 전</div>
+              <h4 class="text-ink text-[14px] font-bold leading-snug mb-1">10월 회고: 사이드 프로젝트</h4>
+              <p class="text-bodytext text-[13px] leading-relaxed mb-2.5">미뤄둔 프로젝트를 다시 펼쳤다. 작게라도 매주 한 번은 손대보기로 했다.</p>
+              <div class="flex items-center justify-between"><div class="flex gap-1"><span class="bg-raised text-ink rounded-full px-2 py-0.5 text-[11px] font-medium"># 회고</span></div><div class="flex items-center gap-2 text-muted text-[12px]"><span class="inline-flex items-center gap-0.5"><iconify-icon icon="solar:heart-linear" aria-hidden="true"></iconify-icon>7</span><span class="inline-flex items-center gap-0.5"><iconify-icon icon="solar:chat-round-linear" aria-hidden="true"></iconify-icon>1</span></div></div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- SCREEN 2 — 게시물 상세 -->
+    <p class="text-[13px] text-muted mb-2 reveal">② 게시물 상세 · 댓글 + 좋아요 + 관련 기억(AI)</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline grid grid-cols-1 lg:grid-cols-[1fr_280px] overflow-hidden">
+        <article class="p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-hairline">
+          <button class="t-anim inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink mb-4"><iconify-icon icon="solar:alt-arrow-left-linear" aria-hidden="true"></iconify-icon> 홈으로</button>
+          <div class="flex items-center gap-2 text-[12px] text-muted mb-3"><span class="w-6 h-6 rounded-full bg-raised text-ink grid place-items-center text-[11px] font-bold">윤</span> 하윤서 · 2025년 10월 18일</div>
+          <h3 class="text-ink text-2xl md:text-3xl font-extrabold leading-tight tracking-tight mb-4">비 오는 날 성수동 카페에서</h3>
+          <p class="text-bodytext text-[15px] leading-[1.8] mb-3">오후 내내 창가 자리에서 책을 읽었다. 빗소리 때문인지 평소보다 집중이 잘 됐고, 노트에 떠오르는 생각을 한참 적었다.</p>
+          <p class="text-bodytext text-[15px] leading-[1.8] mb-5">다음에 또 비 오는 날 여기 와서 미뤄둔 사이드 프로젝트를 정리해봐야겠다.</p>
+          <div class="flex flex-wrap gap-1.5 mb-5">
+            <span class="bg-soft border border-hairline rounded-full px-2.5 py-1 text-[12px]"># 성수동</span>
+            <span class="bg-soft border border-hairline rounded-full px-2.5 py-1 text-[12px]"># 카페</span>
+            <span class="bg-soft border border-hairline rounded-full px-2.5 py-1 text-[12px]"># 공부</span>
+          </div>
+          <div class="flex items-center gap-3 pb-5 border-b border-hairline">
+            <button class="t-anim press inline-flex items-center gap-1.5 bg-ink text-white rounded-full px-3.5 py-2 text-[13px] font-medium hover:scale-[1.03]"><iconify-icon icon="solar:heart-bold" aria-hidden="true"></iconify-icon> 4</button>
+            <button class="t-anim press inline-flex items-center gap-1.5 bg-surface border border-hairline text-ink rounded-full px-3.5 py-2 text-[13px] hover:bg-soft"><iconify-icon icon="solar:chat-round-linear" aria-hidden="true"></iconify-icon> 댓글 2</button>
+            <button class="t-anim press inline-flex items-center gap-1.5 bg-surface border border-hairline text-ink rounded-full px-3.5 py-2 text-[13px] hover:bg-soft ml-auto"><iconify-icon icon="solar:pen-linear" aria-hidden="true"></iconify-icon> 수정</button>
+          </div>
+          <div class="pt-5 space-y-4">
+            <div class="flex gap-2.5"><span class="w-7 h-7 rounded-full bg-raised text-ink grid place-items-center text-[11px] font-bold shrink-0">준</span><div><p class="text-[13px] text-ink"><span class="font-medium">정민준</span> <span class="text-muted text-[11px]">· 2일 전</span></p><p class="text-[13.5px] text-bodytext leading-relaxed">나도 비 오는 날 거기 가봐야겠다.</p></div></div>
+            <div class="flex gap-2.5"><span class="w-7 h-7 rounded-full bg-raised text-ink grid place-items-center text-[11px] font-bold shrink-0">윤</span><div><p class="text-[13px] text-ink"><span class="font-medium">하윤서</span> <span class="text-muted text-[11px]">· 1일 전</span></p><p class="text-[13.5px] text-bodytext leading-relaxed">같이 가자, 2층 창가가 좋아.</p></div></div>
+            <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5"><input class="bg-transparent outline-none text-[13.5px] text-ink w-full placeholder:text-muted" placeholder="댓글 달기…" /><button class="t-anim press w-7 h-7 rounded-full bg-ink text-white grid place-items-center"><iconify-icon icon="solar:arrow-up-linear" aria-hidden="true"></iconify-icon></button></div>
+          </div>
+        </article>
+        <aside class="p-5 bg-paper/40">
+          <div class="flex items-center gap-1.5 mb-3 text-ink"><iconify-icon icon="solar:magic-stars-bold" class="breathe" aria-hidden="true"></iconify-icon><span class="text-[12px] font-bold">관련 기억</span></div>
+          <div class="space-y-2">
+            <a class="t-anim lift block bg-surface border border-hairline rounded-xl p-3"><p class="text-[13px] text-ink font-medium leading-snug mb-0.5">10월 회고: 사이드 프로젝트</p><p class="text-[11px] text-muted">유사도 높음 · 2주 전</p></a>
+            <a class="t-anim lift block bg-surface border border-hairline rounded-xl p-3"><p class="text-[13px] text-ink font-medium leading-snug mb-0.5">밤 산책에서 떠오른 생각</p><p class="text-[11px] text-muted">유사도 중간 · 1개월 전</p></a>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- SCREEN 3 — Context Capsule -->
+    <p class="text-[13px] text-muted mb-2 reveal">③ Context Capsule · 목적별 컨텍스트 묶음</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center justify-between mb-5">
+          <div><p class="text-[11px] text-muted label-eyebrow uppercase">외부 LLM에 전달 가능한 컨텍스트</p><h3 class="text-ink text-2xl font-extrabold tracking-tight">내 캡슐</h3></div>
+          <button class="t-anim press inline-flex items-center gap-2 bg-ink text-white rounded-full pl-4 pr-1.5 py-2 text-[13px] font-medium hover:scale-[1.03]">새 캡슐 <span class="w-6 h-6 rounded-full bg-white/15 grid place-items-center"><iconify-icon icon="solar:add-circle-linear" aria-hidden="true"></iconify-icon></span></button>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-2.5">
+          <div class="t-anim lift bg-paper/50 border border-hairline rounded-xl p-4">
+            <div class="w-9 h-9 rounded-lg bg-raised grid place-items-center text-ink mb-3"><iconify-icon icon="solar:suitcase-linear" aria-hidden="true"></iconify-icon></div>
+            <h4 class="text-ink text-[14px] font-bold mb-0.5">내 여행 취향</h4>
+            <p class="text-[12px] text-muted leading-relaxed mb-3">조용한 카페·도시 산책 선호</p>
+            <p class="text-[11px] text-muted">근거 <span class="text-ink font-bold" data-count="12">0</span>건</p>
+          </div>
+          <div class="t-anim lift bg-paper/50 border border-hairline rounded-xl p-4">
+            <div class="w-9 h-9 rounded-lg bg-raised grid place-items-center text-ink mb-3"><iconify-icon icon="solar:code-square-linear" aria-hidden="true"></iconify-icon></div>
+            <h4 class="text-ink text-[14px] font-bold mb-0.5">개발 프로젝트 이력</h4>
+            <p class="text-[12px] text-muted leading-relaxed mb-3">사이드 프로젝트 회고 모음</p>
+            <p class="text-[11px] text-muted">근거 <span class="text-ink font-bold" data-count="8">0</span>건</p>
+          </div>
+          <div class="t-anim lift bg-surface border-2 border-ink rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3"><div class="w-9 h-9 rounded-lg bg-ink grid place-items-center text-white"><iconify-icon icon="solar:calendar-linear" aria-hidden="true"></iconify-icon></div><span class="text-[10px] bg-ink text-white rounded-full px-2 py-0.5 font-medium">최근 생성</span></div>
+            <h4 class="text-ink text-[14px] font-bold mb-0.5">최근 30일 관심사</h4>
+            <p class="text-[12px] text-muted leading-relaxed mb-3">독서·집중·기록 습관</p>
+            <p class="text-[11px] text-muted">근거 <span class="text-ink font-bold" data-count="21">0</span>건</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 4 — 게시물 작성 -->
+    <p class="text-[13px] text-muted mb-2 reveal">④ 게시물 작성 · AI 태그 추천</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-8 max-w-[720px] mx-auto">
+        <div class="flex items-center justify-between mb-5"><h3 class="text-ink text-xl font-extrabold tracking-tight">새 기록</h3><button class="t-anim inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink"><iconify-icon icon="solar:close-circle-linear" aria-hidden="true"></iconify-icon> 닫기</button></div>
+        <input class="w-full bg-transparent outline-none text-ink text-2xl font-extrabold tracking-tight placeholder:text-muted/60 mb-3" placeholder="제목" value="비 오는 날 성수동 카페에서" />
+        <div class="border-t border-hairline pt-4">
+          <textarea rows="4" class="w-full bg-transparent outline-none text-bodytext text-[15px] leading-[1.8] placeholder:text-muted/60 resize-none" placeholder="오늘의 기억을 남겨보세요…">오후 내내 창가 자리에서 책을 읽었다. 빗소리 때문인지 평소보다 집중이 잘 됐다.</textarea>
+        </div>
+        <div class="mt-4 pt-4 border-t border-hairline">
+          <div class="flex items-center gap-1.5 mb-2 text-ink"><iconify-icon icon="solar:magic-stars-bold" class="breathe" aria-hidden="true"></iconify-icon><span class="text-[12px] font-bold">AI 추천 태그</span></div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <button class="t-anim press inline-flex items-center gap-1 bg-surface border border-ink/25 text-ink rounded-full px-2.5 py-1 text-[12px] hover:bg-soft"><iconify-icon icon="solar:add-circle-linear" aria-hidden="true"></iconify-icon> 성수동</button>
+            <button class="t-anim press inline-flex items-center gap-1 bg-surface border border-ink/25 text-ink rounded-full px-2.5 py-1 text-[12px] hover:bg-soft"><iconify-icon icon="solar:add-circle-linear" aria-hidden="true"></iconify-icon> 카페</button>
+            <button class="t-anim press inline-flex items-center gap-1 bg-surface border border-ink/25 text-ink rounded-full px-2.5 py-1 text-[12px] hover:bg-soft"><iconify-icon icon="solar:add-circle-linear" aria-hidden="true"></iconify-icon> 공부</button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5"><span class="bg-raised text-ink rounded-full px-2.5 py-1 text-[12px] font-medium"># 회고 <iconify-icon icon="solar:close-circle-linear" class="ml-0.5" aria-hidden="true"></iconify-icon></span></div>
+            <button class="t-anim press inline-flex items-center gap-2 bg-ink text-white rounded-full pl-5 pr-1.5 py-2.5 text-[13px] font-medium hover:scale-[1.03]">저장 <span class="w-6 h-6 rounded-full bg-white/15 grid place-items-center"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon></span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 5 — Agent 실행 + 승인 (P3) -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑤ Agent 실행 + 승인 대기 (P3)</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center gap-2 mb-1"><iconify-icon icon="solar:cpu-bolt-bold" class="text-ink" aria-hidden="true"></iconify-icon><h3 class="text-ink text-xl font-extrabold tracking-tight">주간 회고 생성</h3><span class="ml-2 inline-flex items-center gap-1 bg-soft border border-hairline text-bodytext rounded-full px-2 py-0.5 text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-warning floaty"></span> 승인 대기</span></div>
+        <p class="text-[13px] text-muted mb-5">목표 · 지난 7일 기록을 모아 회고를 만들고 Notion에 저장</p>
+        <div class="relative pl-5 space-y-3 mb-5">
+          <div class="absolute left-[6px] top-1 bottom-1 w-px bg-hairline"></div>
+          <div class="relative"><span class="absolute -left-5 top-1 w-3 h-3 rounded-full bg-ink grid place-items-center"><iconify-icon icon="solar:check-read-linear" class="text-white text-[8px]" aria-hidden="true"></iconify-icon></span><p class="text-[13px] text-ink font-medium">기록 검색</p><p class="text-[12px] text-muted">최근 7일 기록 6건 수집</p></div>
+          <div class="relative"><span class="absolute -left-5 top-1 w-3 h-3 rounded-full bg-ink"></span><p class="text-[13px] text-ink font-medium">회고 초안 생성</p><p class="text-[12px] text-muted">근거 기록 인용 포함</p></div>
+          <div class="relative"><span class="absolute -left-5 top-1 w-3 h-3 rounded-full bg-warning floaty"></span><p class="text-[13px] text-ink font-medium">Notion 저장</p><p class="text-[12px] text-muted">외부 쓰기 — 사용자 승인 필요</p></div>
+        </div>
+        <div class="rounded-xl border border-ink/15 bg-soft p-4">
+          <p class="text-[13px] text-ink font-medium mb-1">Notion 페이지로 저장할까요?</p>
+          <p class="text-[12px] text-muted mb-3">‘주간 회고 · 10월 3주차’ 페이지가 생성됩니다.</p>
+          <div class="flex gap-2">
+            <button class="t-anim press inline-flex items-center gap-1.5 bg-ink text-white rounded-full px-4 py-2 text-[13px] font-medium hover:scale-[1.03]"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon> 승인</button>
+            <button class="t-anim press inline-flex items-center gap-1.5 bg-surface border border-hairline text-ink rounded-full px-4 py-2 text-[13px] hover:bg-soft"><iconify-icon icon="solar:close-circle-linear" aria-hidden="true"></iconify-icon> 거절</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 6 — 로그인 / 회원가입 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑥ 로그인 / 회원가입</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-8 grid md:grid-cols-2 gap-6">
+        <div class="md:pr-6 md:border-r border-hairline">
+          <div class="text-ink text-2xl font-extrabold tracking-tight mb-1">Memento</div>
+          <p class="text-[13px] text-muted mb-5">기억을 다시 꺼내 쓰는 기록장</p>
+          <h3 class="text-ink text-lg font-bold mb-4">로그인</h3>
+          <label class="block text-[12px] text-muted mb-1">이메일</label>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 mb-3 focus-within:border-ink"><iconify-icon icon="solar:letter-linear" class="text-muted" aria-hidden="true"></iconify-icon><input class="bg-transparent outline-none text-[14px] text-ink w-full" value="yoonseo@memento.app" /></div>
+          <label class="block text-[12px] text-muted mb-1">비밀번호</label>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 mb-4 focus-within:border-ink"><iconify-icon icon="solar:lock-password-linear" class="text-muted" aria-hidden="true"></iconify-icon><input type="password" class="bg-transparent outline-none text-[14px] text-ink w-full" value="memento" /><iconify-icon icon="solar:eye-linear" class="text-muted" aria-hidden="true"></iconify-icon></div>
+          <button class="t-anim press w-full bg-ink text-white rounded-full py-2.5 text-[14px] font-medium hover:scale-[1.02]">로그인</button>
+          <p class="text-[12px] text-muted text-center mt-3">계정이 없으신가요? <span class="text-ink font-medium">회원가입</span></p>
+        </div>
+        <div class="md:pl-2">
+          <h3 class="text-ink text-lg font-bold mb-4">회원가입</h3>
+          <label class="block text-[12px] text-muted mb-1">닉네임</label>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 mb-3 focus-within:border-ink"><iconify-icon icon="solar:user-linear" class="text-muted" aria-hidden="true"></iconify-icon><input class="bg-transparent outline-none text-[14px] text-ink w-full" placeholder="하윤서" /></div>
+          <label class="block text-[12px] text-muted mb-1">이메일</label>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 mb-3 focus-within:border-ink"><iconify-icon icon="solar:letter-linear" class="text-muted" aria-hidden="true"></iconify-icon><input class="bg-transparent outline-none text-[14px] text-ink w-full" placeholder="you@email.com" /></div>
+          <label class="block text-[12px] text-muted mb-1">비밀번호</label>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-2.5 mb-2 focus-within:border-ink"><iconify-icon icon="solar:lock-password-linear" class="text-muted" aria-hidden="true"></iconify-icon><input type="password" class="bg-transparent outline-none text-[14px] text-ink w-full" placeholder="8자 이상" /></div>
+          <p class="inline-flex items-center gap-1 text-[12px] text-success mb-4"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon> 사용 가능한 이메일입니다</p>
+          <button class="t-anim press w-full bg-surface border border-ink text-ink rounded-full py-2.5 text-[14px] font-medium hover:bg-soft">가입하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 7 — 키워드 검색 결과 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑦ 키워드 검색 결과 · 페이징</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-3 mb-3 focus-within:border-ink">
+          <iconify-icon icon="solar:magnifer-linear" class="text-muted text-lg" aria-hidden="true"></iconify-icon>
+          <input class="bg-transparent outline-none text-[14px] text-ink w-full" value="카페" />
+        </div>
+        <div class="flex items-center gap-1.5 mb-4 text-[12px]">
+          <button class="t-anim press bg-ink text-white rounded-full px-3 py-1 font-medium">내 기록</button>
+          <button class="t-anim press bg-surface border border-hairline text-bodytext rounded-full px-3 py-1 hover:bg-soft">친구 포함</button>
+          <span class="ml-auto text-muted"><span class="text-ink font-medium">3</span>건 · 제목·본문·댓글·태그</span>
+        </div>
+        <div class="space-y-2.5">
+          <article class="t-anim lift bg-paper/50 border border-hairline rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1"><h4 class="text-ink text-[14px] font-bold">비 오는 날 성수동 <mark class="bg-raised text-ink rounded px-0.5">카페</mark>에서</h4><span class="text-[11px] text-muted">3일 전</span></div>
+            <p class="text-bodytext text-[13px] leading-relaxed">창가 자리에서 책을 읽었다. 빗소리 때문인지 집중이 잘 됐다.</p>
+          </article>
+          <article class="t-anim lift bg-paper/50 border border-hairline rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1"><h4 class="text-ink text-[14px] font-bold">동네 <mark class="bg-raised text-ink rounded px-0.5">카페</mark> 탐방 기록</h4><span class="text-[11px] text-muted">3주 전</span></div>
+            <p class="text-bodytext text-[13px] leading-relaxed">새로 생긴 곳들을 정리했다. 다음에 가볼 후보도 적어둠.</p>
+          </article>
+          <article class="t-anim lift bg-paper/50 border border-hairline rounded-xl p-4">
+            <div class="flex items-center justify-between mb-1"><h4 class="text-ink text-[14px] font-bold">작업하기 좋은 <mark class="bg-raised text-ink rounded px-0.5">카페</mark> 조건</h4><span class="text-[11px] text-muted">2개월 전</span></div>
+            <p class="text-bodytext text-[13px] leading-relaxed">콘센트, 적당한 소음, 큰 테이블. 댓글로 추천도 받았다.</p>
+          </article>
+        </div>
+        <div class="flex items-center justify-center gap-1 mt-5 text-[13px]">
+          <button class="t-anim press w-8 h-8 grid place-items-center rounded-lg text-muted hover:bg-soft"><iconify-icon icon="solar:alt-arrow-left-linear" aria-hidden="true"></iconify-icon></button>
+          <button class="w-8 h-8 grid place-items-center rounded-lg bg-ink text-white font-medium">1</button>
+          <button class="t-anim press w-8 h-8 grid place-items-center rounded-lg text-bodytext hover:bg-soft">2</button>
+          <button class="t-anim press w-8 h-8 grid place-items-center rounded-lg text-bodytext hover:bg-soft">3</button>
+          <button class="t-anim press w-8 h-8 grid place-items-center rounded-lg text-muted hover:bg-soft"><iconify-icon icon="solar:alt-arrow-right-linear" aria-hidden="true"></iconify-icon></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 8 — 친구 목록 / 요청 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑧ 친구 — 목록 / 요청</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center justify-between mb-5"><h3 class="text-ink text-2xl font-extrabold tracking-tight">친구</h3>
+          <div class="flex items-center gap-2 bg-soft border border-hairline rounded-full px-3 py-1.5 focus-within:border-ink"><iconify-icon icon="solar:magnifer-linear" class="text-muted" aria-hidden="true"></iconify-icon><input class="bg-transparent outline-none text-[13px] text-ink w-32" placeholder="닉네임으로 추가" /></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-[12px] text-muted mb-2">받은 요청 <span class="text-ink font-medium">2</span></p>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3">
+                <span class="w-8 h-8 rounded-full bg-raised text-ink grid place-items-center text-[12px] font-bold">현</span>
+                <div class="flex-1"><p class="text-[13px] text-ink font-medium">박도현</p><p class="text-[11px] text-muted">친구 요청을 보냈어요</p></div>
+                <button class="t-anim press w-8 h-8 grid place-items-center rounded-full bg-ink text-white" aria-label="승인"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon></button>
+                <button class="t-anim press w-8 h-8 grid place-items-center rounded-full bg-surface border border-hairline text-muted hover:text-ink" aria-label="거절"><iconify-icon icon="solar:close-circle-linear" aria-hidden="true"></iconify-icon></button>
+              </div>
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3">
+                <span class="w-8 h-8 rounded-full bg-raised text-ink grid place-items-center text-[12px] font-bold">서</span>
+                <div class="flex-1"><p class="text-[13px] text-ink font-medium">이서진</p><p class="text-[11px] text-muted">친구 요청을 보냈어요</p></div>
+                <button class="t-anim press w-8 h-8 grid place-items-center rounded-full bg-ink text-white" aria-label="승인"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon></button>
+                <button class="t-anim press w-8 h-8 grid place-items-center rounded-full bg-surface border border-hairline text-muted hover:text-ink" aria-label="거절"><iconify-icon icon="solar:close-circle-linear" aria-hidden="true"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[12px] text-muted mb-2">내 친구 <span class="text-ink font-medium">3</span></p>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-8 h-8 rounded-full bg-raised text-ink grid place-items-center text-[12px] font-bold">준</span><div class="flex-1"><p class="text-[13px] text-ink font-medium">정민준</p><p class="text-[11px] text-success inline-flex items-center gap-1"><iconify-icon icon="solar:magic-stars-linear" aria-hidden="true"></iconify-icon> AI 공유 동의함</p></div><button class="t-anim press text-[12px] text-muted hover:text-ink">기록 보기</button></div>
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-8 h-8 rounded-full bg-raised text-ink grid place-items-center text-[12px] font-bold">하</span><div class="flex-1"><p class="text-[13px] text-ink font-medium">김하늘</p><p class="text-[11px] text-muted">AI 공유 미동의</p></div><button class="t-anim press text-[12px] text-muted hover:text-ink">기록 보기</button></div>
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-8 h-8 rounded-full bg-raised text-ink grid place-items-center text-[12px] font-bold">진</span><div class="flex-1"><p class="text-[13px] text-ink font-medium">오예린</p><p class="text-[11px] text-success inline-flex items-center gap-1"><iconify-icon icon="solar:magic-stars-linear" aria-hidden="true"></iconify-icon> AI 공유 동의함</p></div><button class="t-anim press text-[12px] text-muted hover:text-ink">기록 보기</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 9 — 친구 기록 기반 생일선물 추천 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑨ 친구 기록 기반 생일선물 추천 · 공유 동의 필요</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center gap-2.5 mb-4">
+          <span class="w-9 h-9 rounded-full bg-raised text-ink grid place-items-center text-[13px] font-bold">준</span>
+          <div><p class="text-ink text-[15px] font-bold">정민준에게 줄 선물</p><p class="text-[11px] text-success inline-flex items-center gap-1"><iconify-icon icon="solar:shield-check-linear" aria-hidden="true"></iconify-icon> 친구 + AI 공유 동의 확인됨</p></div>
+        </div>
+        <div class="flex items-center gap-2 bg-soft border border-hairline rounded-xl px-3.5 py-3 mb-4 focus-within:border-ink"><iconify-icon icon="solar:magic-stars-linear" class="text-ink breathe" aria-hidden="true"></iconify-icon><input class="bg-transparent outline-none text-[14px] text-ink w-full" value="민준이 생일선물로 뭘 주면 좋을까?" /></div>
+        <div class="rounded-xl border border-ink/15 bg-soft p-4">
+          <div class="flex items-center gap-1.5 mb-1.5 text-ink"><iconify-icon icon="solar:gift-linear" aria-hidden="true"></iconify-icon><span class="text-[12px] font-bold">추천</span></div>
+          <p class="text-ink text-[13.5px] leading-relaxed mb-3">민준님은 한강 야간 산책과 러닝 기록을 자주 남겼어요. <span class="font-medium">가벼운 러닝용 넥워머나 무선 이어폰</span>이 잘 맞을 것 같아요. 카페 기록도 많아 <span class="font-medium">핸드드립 원두 세트</span>도 좋은 선택이에요.</p>
+          <p class="text-[12px] text-muted mb-1.5">근거 — 민준님이 공유한 기록</p>
+          <div class="flex flex-wrap gap-1.5">
+            <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 한강 야간 산책</a>
+            <a class="t-anim inline-flex items-center gap-1 bg-surface border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink hover:border-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon> 주말 러닝 루틴</a>
+          </div>
+          <p class="text-[11px] text-muted mt-3 inline-flex items-center gap-1"><iconify-icon icon="solar:info-circle-linear" aria-hidden="true"></iconify-icon> 공유된 기록 기반으로만 답하며, 추측은 하지 않습니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 10 — Context Capsule 상세 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑩ Context Capsule 상세 · 외부 LLM 전달용</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline grid lg:grid-cols-[1fr_300px] overflow-hidden">
+        <div class="p-6 md:p-7 border-b lg:border-b-0 lg:border-r border-hairline">
+          <button class="t-anim inline-flex items-center gap-1 text-[12px] text-muted hover:text-ink mb-3"><iconify-icon icon="solar:alt-arrow-left-linear" aria-hidden="true"></iconify-icon> 캡슐</button>
+          <div class="flex items-center gap-2 mb-1"><span class="w-8 h-8 rounded-lg bg-raised grid place-items-center text-ink"><iconify-icon icon="solar:suitcase-linear" aria-hidden="true"></iconify-icon></span><h3 class="text-ink text-xl font-extrabold tracking-tight">내 여행 취향</h3></div>
+          <p class="text-[13px] text-muted mb-5">목적 · 여행 계획 시 참고할 개인 취향 컨텍스트</p>
+          <p class="text-[12px] text-muted mb-1">요약</p>
+          <p class="text-bodytext text-[14px] leading-relaxed mb-4">조용한 카페와 도시 산책을 선호하고, 사람이 적은 시간대를 좋아한다. 즉흥보다 계획형이며 기록을 즐긴다.</p>
+          <p class="text-[12px] text-muted mb-1.5">핵심 사실</p>
+          <ul class="space-y-1.5 mb-4">
+            <li class="flex items-start gap-2 text-[13.5px] text-bodytext"><iconify-icon icon="solar:check-circle-linear" class="text-ink mt-0.5" aria-hidden="true"></iconify-icon> 카페에서 책 읽기를 자주 기록</li>
+            <li class="flex items-start gap-2 text-[13.5px] text-bodytext"><iconify-icon icon="solar:check-circle-linear" class="text-ink mt-0.5" aria-hidden="true"></iconify-icon> 한강·도시 산책 선호</li>
+            <li class="flex items-start gap-2 text-[13.5px] text-bodytext"><iconify-icon icon="solar:check-circle-linear" class="text-ink mt-0.5" aria-hidden="true"></iconify-icon> 붐비지 않는 시간대를 찾음</li>
+          </ul>
+          <p class="text-[12px] text-muted mb-1.5">관련 게시물</p>
+          <div class="flex flex-wrap gap-1.5"><span class="bg-soft border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink">성수동 카페</span><span class="bg-soft border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink">한강 산책</span><span class="bg-soft border border-hairline rounded-lg px-2.5 py-1 text-[12px] text-ink">동네 카페 탐방</span></div>
+        </div>
+        <aside class="p-5 bg-paper/40">
+          <div class="flex items-center justify-between mb-2"><p class="text-[12px] text-muted">compact context</p><button class="t-anim press inline-flex items-center gap-1 text-[12px] text-ink font-medium hover:gap-1.5"><iconify-icon icon="solar:copy-linear" aria-hidden="true"></iconify-icon> 복사</button></div>
+          <pre class="bg-ink text-white/90 rounded-xl p-3 text-[11px] leading-relaxed overflow-x-auto" style="font-family:ui-monospace,monospace">{
+  "purpose": "여행 취향",
+  "summary": "조용한 카페·도시 산책 선호…",
+  "facts": [
+    "카페 독서 자주 기록",
+    "한강·도시 산책 선호"
+  ],
+  "sources": 12
+}</pre>
+          <div class="flex gap-2 mt-3"><button class="t-anim press flex-1 bg-surface border border-hairline text-ink rounded-full py-2 text-[12px] hover:bg-soft">수정</button><button class="t-anim press flex-1 bg-surface border border-hairline text-error rounded-full py-2 text-[12px] hover:bg-soft">삭제</button></div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- SCREEN 11 — 설정 · 친구 AI 공유 동의 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑪ 설정 · 친구 AI 활용 전역 동의</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7 max-w-[680px] mx-auto">
+        <h3 class="text-ink text-xl font-extrabold tracking-tight mb-5">설정</h3>
+        <div class="flex items-center gap-3 pb-5 border-b border-hairline mb-5">
+          <span class="w-11 h-11 rounded-full bg-raised text-ink grid place-items-center text-[14px] font-bold">윤</span>
+          <div class="flex-1"><p class="text-[14px] text-ink font-medium">하윤서</p><p class="text-[12px] text-muted">yoonseo@memento.app</p></div>
+          <button class="t-anim press text-[12px] text-muted border border-hairline rounded-full px-3 py-1.5 hover:bg-soft">프로필 수정</button>
+        </div>
+        <div class="rounded-xl border border-ink/15 bg-soft p-4 mb-3">
+          <div class="flex items-start justify-between gap-4">
+            <div><p class="text-[14px] text-ink font-bold mb-1 inline-flex items-center gap-1.5"><iconify-icon icon="solar:magic-stars-linear" class="breathe" aria-hidden="true"></iconify-icon> 친구 AI 활용 전역 동의</p><p class="text-[12.5px] text-muted leading-relaxed max-w-[44ch]">켜면 내 친구가 명시적으로 요청할 때, 내 게시글·댓글·태그를 AI 근거로 사용할 수 있어요. 끄면 친구가 글은 봐도 AI 근거로는 못 씁니다. 기본값은 꺼짐.</p></div>
+            <label class="inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+              <input type="checkbox" class="sr-only peer" checked />
+              <span class="w-11 h-6 rounded-full bg-raised peer-checked:bg-ink relative transition-colors duration-500 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:w-[18px] after:h-[18px] after:rounded-full after:bg-white after:transition-transform after:duration-500 peer-checked:after:translate-x-5"></span>
+            </label>
+          </div>
+        </div>
+        <div class="flex items-center justify-between rounded-xl border border-hairline p-4 mb-3">
+          <div><p class="text-[14px] text-ink font-medium">이메일 알림</p><p class="text-[12px] text-muted">주간 회고 준비 알림</p></div>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" class="sr-only peer" />
+            <span class="w-11 h-6 rounded-full bg-raised peer-checked:bg-ink relative transition-colors duration-500 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:w-[18px] after:h-[18px] after:rounded-full after:bg-white after:transition-transform after:duration-500 peer-checked:after:translate-x-5"></span>
+          </label>
+        </div>
+        <button class="t-anim press inline-flex items-center gap-1.5 text-[13px] text-error hover:underline mt-2"><iconify-icon icon="solar:logout-2-linear" aria-hidden="true"></iconify-icon> 로그아웃</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 12 — Agent 실행 이력 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑫ Agent 실행 이력 (P3)</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft mb-10 reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <div class="flex items-center justify-between mb-5"><h3 class="text-ink text-2xl font-extrabold tracking-tight">에이전트 실행</h3><button class="t-anim press inline-flex items-center gap-2 bg-ink text-white rounded-full pl-4 pr-1.5 py-2 text-[13px] font-medium hover:scale-[1.02]">새 실행 <span class="w-6 h-6 rounded-full bg-white/15 grid place-items-center"><iconify-icon icon="solar:play-linear" aria-hidden="true"></iconify-icon></span></button></div>
+        <div class="space-y-2">
+          <div class="t-anim lift flex items-center gap-3 bg-paper/50 border border-hairline rounded-xl p-4">
+            <iconify-icon icon="solar:cpu-bolt-linear" class="text-ink text-xl" aria-hidden="true"></iconify-icon>
+            <div class="flex-1"><p class="text-[14px] text-ink font-medium">주간 회고 생성</p><p class="text-[12px] text-muted">Notion 저장 · 오늘 14:20</p></div>
+            <span class="inline-flex items-center gap-1 bg-surface border border-hairline text-bodytext rounded-full px-2.5 py-1 text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-warning floaty"></span> 승인 대기</span>
+          </div>
+          <div class="t-anim lift flex items-center gap-3 bg-paper/50 border border-hairline rounded-xl p-4">
+            <iconify-icon icon="solar:cpu-bolt-linear" class="text-ink text-xl" aria-hidden="true"></iconify-icon>
+            <div class="flex-1"><p class="text-[14px] text-ink font-medium">비슷한 과거 기록 추천</p><p class="text-[12px] text-muted">3건 추천 · 어제</p></div>
+            <span class="inline-flex items-center gap-1 bg-surface border border-hairline text-success rounded-full px-2.5 py-1 text-[11px]"><iconify-icon icon="solar:check-circle-linear" aria-hidden="true"></iconify-icon> 성공</span>
+          </div>
+          <div class="t-anim lift flex items-center gap-3 bg-paper/50 border border-hairline rounded-xl p-4">
+            <iconify-icon icon="solar:cpu-bolt-linear" class="text-ink text-xl" aria-hidden="true"></iconify-icon>
+            <div class="flex-1"><p class="text-[14px] text-ink font-medium">태그 기반 기록 정리</p><p class="text-[12px] text-muted">진행 중 · step 2/4</p></div>
+            <span class="inline-flex items-center gap-1 bg-surface border border-hairline text-bodytext rounded-full px-2.5 py-1 text-[11px]"><span class="w-1.5 h-1.5 rounded-full bg-ink floaty"></span> 실행 중</span>
+          </div>
+          <div class="t-anim lift flex items-center gap-3 bg-paper/50 border border-hairline rounded-xl p-4">
+            <iconify-icon icon="solar:cpu-bolt-linear" class="text-ink text-xl" aria-hidden="true"></iconify-icon>
+            <div class="flex-1"><p class="text-[14px] text-ink font-medium">친구 생일선물 추천</p><p class="text-[12px] text-muted">동의 미확인 · 3일 전</p></div>
+            <span class="inline-flex items-center gap-1 bg-surface border border-hairline text-error rounded-full px-2.5 py-1 text-[11px]"><iconify-icon icon="solar:close-circle-linear" aria-hidden="true"></iconify-icon> 실패</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 13 — MCP 연결 관리 -->
+    <p class="text-[13px] text-muted mb-2 reveal">⑬ MCP 연결 관리 (P3)</p>
+    <div class="bg-paper rounded-[22px] border border-hairline p-3 shadow-soft reveal">
+      <div class="bg-surface rounded-[16px] border border-hairline p-6 md:p-7">
+        <h3 class="text-ink text-2xl font-extrabold tracking-tight mb-5">MCP 연결</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <p class="text-[12px] text-muted mb-2">MCP Server — 외부 LLM에 제공하는 tool</p>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-7 h-7 rounded-lg bg-raised grid place-items-center text-ink"><iconify-icon icon="solar:magnifer-linear" aria-hidden="true"></iconify-icon></span><div class="flex-1"><p class="text-[13px] text-ink font-medium" style="font-family:ui-monospace,monospace">search_memories</p><p class="text-[11px] text-muted">scope · read:memories</p></div><span class="w-1.5 h-1.5 rounded-full bg-success"></span></div>
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-7 h-7 rounded-lg bg-raised grid place-items-center text-ink"><iconify-icon icon="solar:box-minimalistic-linear" aria-hidden="true"></iconify-icon></span><div class="flex-1"><p class="text-[13px] text-ink font-medium" style="font-family:ui-monospace,monospace">get_context_capsule</p><p class="text-[11px] text-muted">scope · read:capsule</p></div><span class="w-1.5 h-1.5 rounded-full bg-success"></span></div>
+              <div class="flex items-center gap-2.5 bg-paper/50 border border-hairline rounded-xl p-3"><span class="w-7 h-7 rounded-lg bg-raised grid place-items-center text-ink"><iconify-icon icon="solar:document-text-linear" aria-hidden="true"></iconify-icon></span><div class="flex-1"><p class="text-[13px] text-ink font-medium" style="font-family:ui-monospace,monospace">summarize_recent_posts</p><p class="text-[11px] text-muted">scope · read:posts</p></div><span class="w-1.5 h-1.5 rounded-full bg-success"></span></div>
+            </div>
+            <button class="t-anim press inline-flex items-center gap-1.5 text-[12px] text-ink font-medium mt-3 hover:gap-2"><iconify-icon icon="solar:key-linear" aria-hidden="true"></iconify-icon> 토큰 발급 / 폐기</button>
+          </div>
+          <div>
+            <p class="text-[12px] text-muted mb-2">MCP Client — 외부 서비스 연동</p>
+            <div class="bg-paper/50 border border-hairline rounded-xl p-4">
+              <div class="flex items-center gap-2.5 mb-3"><span class="w-9 h-9 rounded-lg bg-ink text-white grid place-items-center"><iconify-icon icon="solar:notebook-linear" aria-hidden="true"></iconify-icon></span><div class="flex-1"><p class="text-[14px] text-ink font-bold">Notion</p><p class="text-[11px] text-success inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-success"></span> 연결됨</p></div><button class="t-anim press text-[12px] text-muted border border-hairline rounded-full px-3 py-1 hover:bg-soft">해제</button></div>
+              <p class="text-[11px] text-muted mb-1">최근 호출</p>
+              <div class="space-y-1 text-[12px]">
+                <div class="flex items-center justify-between"><span class="text-bodytext">주간 회고 export</span><span class="text-success">성공</span></div>
+                <div class="flex items-center justify-between"><span class="text-bodytext">태그 묶음 DB export</span><span class="text-muted">승인 대기</span></div>
+              </div>
+            </div>
+            <p class="text-[11px] text-muted mt-3 inline-flex items-start gap-1"><iconify-icon icon="solar:info-circle-linear" class="mt-0.5" aria-hidden="true"></iconify-icon> 외부 쓰기 작업은 항상 사용자 승인 후 실행됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<script>
+  // sidebar collapse
+  (function(){
+    var shell=document.getElementById('shell'), btn=document.getElementById('collapseBtn');
+    if(btn){ btn.addEventListener('click',function(){ shell.classList.toggle('collapsed'); }); }
+  })();
+  // staggered reveal
+  (function(){
+    var els=[].slice.call(document.querySelectorAll('.reveal'));
+    if(!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('in');}); return; }
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ var e=en.target; e.style.transitionDelay=((+e.dataset.i||0)%5*70)+'ms'; e.classList.add('in'); io.unobserve(e);} });
+    },{threshold:.12});
+    els.forEach(function(e,i){ e.dataset.i=i; io.observe(e); });
+  })();
+  // count-up
+  (function(){
+    var nums=[].slice.call(document.querySelectorAll('[data-count]'));
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(!en.isIntersecting) return; var el=en.target, t=+el.dataset.count, s=performance.now();
+        function tick(n){ var p=Math.min(1,(n-s)/900); el.textContent=Math.round(t*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(tick); }
+        requestAnimationFrame(tick); io.unobserve(el); });
+    },{threshold:.5});
+    nums.forEach(function(e){ io.observe(e); });
+  })();
+</script>
+</body>
+</html>
