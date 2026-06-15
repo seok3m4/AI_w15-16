@@ -325,6 +325,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
         : game.status === "draw"
           ? "무승부"
           : "승패 미정";
+  const gameNote = game.note.trim();
+  const shouldShowGameNote = Boolean(gameNote && gameNote !== "-");
   const summaryTags = [game.awayTeam, game.homeTeam];
   const summaryTitle = `${game.gameDate} ${game.awayTeam} VS ${game.homeTeam} 관련 글`;
   const summaryDescription = [
@@ -404,7 +406,12 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               </div>
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div
+              className={[
+                "mt-3 grid gap-3",
+                shouldShowGameNote ? "md:grid-cols-3" : "md:grid-cols-2",
+              ].join(" ")}
+            >
               <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
                 <p className="text-xs font-bold text-[#667085]">결과</p>
                 <p className="mt-1 text-sm font-black text-[#202632]">
@@ -417,12 +424,14 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                   {game.tv || "정보 없음"}
                 </p>
               </div>
-              <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
-                <p className="text-xs font-bold text-[#667085]">비고</p>
-                <p className="mt-1 text-sm font-black text-[#202632]">
-                  {game.note || "특이사항 없음"}
-                </p>
-              </div>
+              {shouldShowGameNote ? (
+                <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
+                  <p className="text-xs font-bold text-[#667085]">비고</p>
+                  <p className="mt-1 text-sm font-black text-[#202632]">
+                    {gameNote}
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             <LiveGamecastPanel game={game} />
