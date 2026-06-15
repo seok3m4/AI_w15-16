@@ -287,7 +287,7 @@ export function PostCreateForm({
           return;
         }
 
-        setExistingTags(data.tags);
+        setExistingTags(data.tags.filter((tag) => tag.counts.posts > 0));
       } catch {
         if (isMounted) {
           setExistingTags([]);
