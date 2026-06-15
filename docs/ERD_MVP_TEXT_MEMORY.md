@@ -36,6 +36,8 @@ ERD는 PostgreSQL과 pgvector를 전제로 한다. 모든 주요 리소스 ID는
 | embedding 원본 본문 | 게시글/댓글/MemoryChunk 본문은 MVP에서 필드 암호화하지 않는다. 검색, pgvector, RAG 근거로 사용해야 하므로 접근 제어, 저장소 암호화, 파기 정책으로 보호한다. |
 | 비동기 작업 | 공통 `async_jobs` 테이블로 reindex, AI 요약 timeout, 선물 추천 timeout, Agent task 상태를 추적한다. |
 | Agent/MCP | P3 초안으로 유지한다. 로그에는 원문 입출력을 저장하지 않고 요약/마스킹된 최소 정보만 저장한다. |
+| AWS 운영 저장소 | 공식 MVP 배포는 RDS PostgreSQL + pgvector를 기준으로 하며, 저장소 암호화와 자동 백업을 활성화한다. |
+| 운영 secret | 운영 환경에서는 AWS Secrets Manager와 KMS를 우선 사용하고, DB에는 secret 원문 대신 암호문 또는 external secret ref만 저장한다. |
 
 ## 4. 전체 ERD
 
@@ -563,12 +565,15 @@ P3 영역은 MVP 후반 또는 후속 구현을 위한 저장 경계다. 구현 
 | MCP/외부 연동 secret | 외부 secret manager 또는 `mcp_connection_secrets` | AES-256-GCM envelope encryption 결과 저장. |
 | Agent/MCP/job 로그 | 요약/마스킹 JSON | 민감정보와 LLM 원문 입력 저장 금지. |
 | 게시글/댓글/MemoryChunk/ContextCapsule 본문 | 필드 암호화하지 않음 | 검색/RAG 사용성을 위해 접근 제어, DB 저장소 암호화, 파기 정책으로 보호한다. |
+| RDS 저장소 | KMS 기반 encryption at rest | 운영 DB는 public access를 끄고 private network에서만 접근한다. |
+| RDS 백업 | automated backup, snapshot | MVP 데모 환경도 최소 백업 보존 기간을 둔다. |
 
 키 관리 원칙:
 
 - HMAC pepper, AES key, Argon2id 운영 파라미터는 DB에 저장하지 않는다.
 - 운영 환경에서는 KMS 또는 secret manager 기반 envelope encryption을 사용한다.
 - key rotation은 `key_id`를 기준으로 추적한다. 기존 데이터 재암호화 전략은 운영 전 확정한다.
+- AWS MVP 데모 환경에서는 Secrets Manager secret ARN 또는 secret name을 배포 환경 변수로 주입하고, 애플리케이션 로그에 secret 값을 출력하지 않는다.
 
 ## 9. 삭제, 파기, 비식별화 정책
 
@@ -620,6 +625,7 @@ P3 영역은 MVP 후반 또는 후속 구현을 위한 저장 경계다. 구현 
 3. AES-GCM key rotation과 기존 암호문 재암호화 전략.
 4. Agent/MCP/job 로그 보존 기간과 개인정보 마스킹 규칙.
 5. pgvector index를 `hnsw`와 `ivfflat` 중 무엇으로 시작할지.
+6. RDS instance class, backup retention, snapshot 생성 시점, 배포 전 migration 실행 주체.
 
 ## 12. 후속 산출물 연결
 
@@ -627,3 +633,4 @@ P3 영역은 MVP 후반 또는 후속 구현을 위한 저장 경계다. 구현 
 - 아키텍처 문서: Spring Boot/FastAPI 책임 경계와 비동기 job 처리 흐름을 확정한다.
 - MCP 설계 문서: MCP 인증, scope 모델, provider별 config schema, external write approval 흐름을 확정한다.
 - 마이그레이션 초안: 위 테이블을 PostgreSQL DDL, pgvector extension 활성화, partial unique index, check constraint로 변환한다.
+- AWS 배포 설계: RDS PostgreSQL/pgvector, Secrets Manager, KMS, backup/snapshot, private network 접근 기준을 배포 체크리스트로 연결한다.

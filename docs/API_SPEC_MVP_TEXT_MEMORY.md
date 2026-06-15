@@ -14,6 +14,16 @@
 /api/v1
 ```
 
+환경별 URL 원칙:
+
+| 환경 | Frontend | API |
+|------|----------|-----|
+| Track A 로컬 Docker | `http://localhost:5173` | `http://localhost:8080/api/v1` |
+| 개별 로컬 개발 | `http://localhost:5173` | `http://localhost:8080/api/v1` |
+| Track B AWS MVP 데모 | `https://<frontend-domain>` | `https://<api-domain>/api/v1` |
+
+Track A에서는 Docker Compose network 안에서 Spring Boot가 FastAPI와 PostgreSQL에 연결한다. Track B AWS MVP 데모 환경에서 React 정적 파일은 S3/CloudFront로 제공하고, API는 ALB 뒤의 Spring Boot service로 라우팅한다.
+
 ### 2.2 인증
 
 보호 API는 JWT Bearer 인증을 사용한다.
@@ -28,6 +38,10 @@ Authorization: Bearer <accessToken>
 - `refreshToken`의 기본 만료 시간은 14일이며, 토큰 재발급 시 rotation한다.
 - 로그아웃 시 서버는 refresh token을 폐기하고, 클라이언트는 보유 중인 access token을 삭제한다.
 - 인증이 필요한 API에 토큰이 없거나 유효하지 않으면 `401 Unauthorized`를 반환한다.
+- Track A 로컬 Docker와 개별 로컬 개발에서는 HTTP를 전제로 `Secure` cookie 예외를 둘 수 있다.
+- Track B AWS MVP 데모 환경에서는 HTTPS를 전제로 `Secure` cookie를 반드시 사용한다.
+- 운영 CORS allow origin은 CloudFront frontend domain으로 제한한다. wildcard origin은 사용하지 않는다.
+- JWT signing key와 refresh token HMAC pepper는 AWS Secrets Manager 또는 동등한 secret store에서 주입한다.
 
 ### 2.3 ID와 시간
 
@@ -125,6 +139,17 @@ Authorization: Bearer <accessToken>
 | `all_accessible` | 본인 데이터와 접근 가능한 친구 데이터를 함께 조회한다. |
 
 친구 데이터는 친구 관계가 `accepted`일 때만 포함된다. AI 기능에서 친구 데이터를 근거로 쓰려면 기록 소유자의 친구 AI 활용 전역 동의가 `true`여야 한다.
+
+### 2.8 배포 Health Check
+
+AWS ALB와 ECS service health check는 다음 endpoint를 사용한다.
+
+| Service | Endpoint | 성공 기준 |
+|---------|----------|-----------|
+| Spring Boot Backend API | `GET /api/health` | API process가 요청을 받을 수 있으면 `200 OK` |
+| FastAPI AI Server | `GET /health` | AI server process가 요청을 받을 수 있으면 `200 OK` |
+
+health check는 DB migration, embedding provider, 외부 LLM provider 장애를 모두 강하게 검사하지 않는다. 외부 의존성 상태는 별도 readiness 또는 운영 로그/알람으로 확인한다.
 
 ## 3. 공통 스키마
 
@@ -1324,9 +1349,14 @@ MVP MCP Client는 Notion export를 1차 대상으로 한다.
 - Agent 실행은 `202 Accepted` 이후 상태 조회로 진행 상황을 확인한다.
 - Notion export는 승인 전 실행되지 않고, 승인 후 실행된다.
 - validation/auth/permission/not found/conflict 에러가 Problem Details 형식으로 반환된다.
+- AWS MVP 데모 환경에서 CloudFront frontend URL이 로드되고, API domain의 `GET /api/health`가 `200 OK`를 반환한다.
+- AWS MVP 데모 환경에서 refresh token cookie가 `HttpOnly`, `Secure`, `SameSite=Lax` 속성으로 설정된다.
+- AWS MVP 데모 환경에서 허용되지 않은 CORS origin의 credential 요청은 차단된다.
+- ECS 재배포 후 기존 RDS 데이터로 게시글 목록 조회가 가능하다.
 
 ## 13. 남은 설계 항목
 
 - MCP wire protocol과 외부 LLM client 인증 방식은 MCP 설계 문서에서 확정한다.
 - Agent step/tool call log가 커질 경우 cursor 페이징으로 확장한다.
 - OpenAPI YAML 생성은 이 초안 검토 후 진행한다.
+- 실제 운영 domain과 CORS allow origin 값은 AWS 배포 설계 문서와 배포 환경 변수에서 확정한다.

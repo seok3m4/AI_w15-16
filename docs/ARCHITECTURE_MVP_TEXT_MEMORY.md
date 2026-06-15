@@ -10,6 +10,7 @@
 - `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md`
 - `docs/API_SPEC_MVP_TEXT_MEMORY.md`
 - `docs/ERD_MVP_TEXT_MEMORY.md`
+- `docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md`
 - `docs/DEPLOYMENT_AWS_MVP.md`
 
 이 문서는 React, Spring Boot, FastAPI, PostgreSQL/pgvector, Agent, MCP의 책임 경계를 고정하고, 구현자가 서비스 간 데이터 흐름과 실패 처리를 같은 기준으로 해석하도록 돕는다.
@@ -33,8 +34,8 @@
 | 비동기 실행 모델 | 별도 broker 없이 `async_jobs`를 durable queue로 사용하고, Spring Boot worker가 job을 claim한 뒤 FastAPI를 호출한다. |
 | 내부 호출 안정성 | Spring Boot와 FastAPI 간 호출에는 `requestId`, `jobId`, idempotency key, timeout, retry 정책을 둔다. |
 | MCP 인증 최소 기준 | 외부 MCP client는 앱 JWT를 재사용하지 않고, 사용자별로 발급/폐기 가능한 scoped token 또는 OAuth 계열 credential을 사용한다. |
-| 공식 AWS 배포 | React는 S3/CloudFront, Spring Boot와 FastAPI는 ECS Fargate, PostgreSQL/pgvector는 RDS를 사용한다. |
-| 학습용 배포 | EC2 + Docker Compose는 학습/실험 경로로 허용하되, 최종 MVP 데모 검증 기준은 ECS + RDS로 둔다. |
+| Track A 로컬 실행 | Docker Compose로 React, Spring Boot, FastAPI, PostgreSQL/pgvector를 로컬에서 함께 실행한다. |
+| Track B AWS 배포 | React는 S3/CloudFront, Spring Boot와 FastAPI는 ECS Fargate, PostgreSQL/pgvector는 RDS를 사용한다. |
 
 ### 2.1 Spring Boot 조율을 선택한 이유
 
@@ -429,7 +430,7 @@ Memento의 memory는 개인 기록이므로 LLM provider 호출은 외부 데이
 
 ## 9. 배포와 로컬 실행 기준
 
-MVP 로컬 개발 기준 서비스:
+Track A 로컬 Docker 기준 서비스:
 
 - React: `http://localhost:5173`
 - Spring Boot: `http://localhost:8080`
@@ -444,7 +445,13 @@ health check:
 - FastAPI: `GET /health`
 - React: Vite dev server 응답 확인
 
-AWS MVP 데모 기준 서비스:
+Track A smoke check:
+
+- Docker Compose로 frontend, backend, ai-server, postgres를 함께 실행한다.
+- 회원가입, 로그인, 게시글 작성, memory 상태 조회, Memory Search, AI 요약이 로컬에서 성공한다.
+- mock AI provider와 real provider 전환 방식을 확인한다.
+
+Track B AWS MVP 데모 기준 서비스:
 
 - React: S3 static hosting + CloudFront + ACM HTTPS
 - Spring Boot: ECS Fargate service behind ALB
@@ -454,7 +461,7 @@ AWS MVP 데모 기준 서비스:
 - Secret: AWS Secrets Manager + KMS
 - Logs/metrics: CloudWatch Logs와 ECS/ALB/RDS 기본 metrics
 
-AWS 배포 smoke check:
+Track B AWS 배포 smoke check:
 
 - CloudFront frontend URL 접속
 - API domain의 `GET /api/health` 확인
@@ -545,5 +552,6 @@ AWS 배포 smoke check:
 - 마이그레이션 초안: ERD를 PostgreSQL DDL, pgvector extension, partial index, check constraint로 변환한다.
 - 화면 흐름도: 게시글, 친구, Memory Search, Capsule, Agent 승인, MCP 관리 UI를 연결한다.
 - OpenAPI YAML: `docs/API_SPEC_MVP_TEXT_MEMORY.md` 검토 이후 생성한다.
+- 로컬 Docker 실행 체크리스트: `docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md`를 기반으로 compose service, env, health check를 구현한다.
 - AWS 배포 체크리스트: `docs/DEPLOYMENT_AWS_MVP.md`를 기반으로 실제 도메인, secret name, ECR repository, ECS service 이름을 채운다.
 - ERD 동기화: `docs/ERD_MVP_TEXT_MEMORY.md`의 구현 전 확인 항목 중 Spring/FastAPI write owner는 이 문서 기준으로 Spring Boot로 확정한다.

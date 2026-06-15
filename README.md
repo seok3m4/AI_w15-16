@@ -95,7 +95,7 @@ Spring Boot Backend API
 | **Database**    | PostgreSQL, pgvector             |
 | **AI / Agent**  | OpenAI API, LangChain, LangGraph |
 | **Integration** | MCP                              |
-| **Infra**       | Docker Compose                   |
+| **Infra**       | Docker Compose, AWS ECS/RDS/S3   |
 
 ---
 
@@ -106,7 +106,7 @@ Spring Boot Backend API
 ├── ai-server/             # AI Agent, RAG, LLM 연동 서비스
 ├── backend/               # Spring Boot 기반 핵심 비즈니스 API
 ├── frontend/              # React 기반 웹 클라이언트
-├── docs/                  # 요구사항, 설계, 아키텍처, API 문서
+├── docs/                  # 요구사항, 설계, API, 배포 문서
 ├── scripts/               # 개발·배포·테스트 자동화 스크립트
 ├── docker-compose.yml     # 로컬 개발 환경 구성
 ├── docker-compose.app.yml # 애플리케이션 통합 실행 구성
@@ -117,26 +117,29 @@ Spring Boot Backend API
 
 ## 🚀 Quick Start
 
-### 1. 환경 변수 설정
+### Track A. 로컬 Docker 실행
 
 ```bash
 cp .env.example .env
+docker compose up --build
 ```
 
-### 2. PostgreSQL 실행
+로컬 Docker 실행 계획과 smoke check는 [로컬 Docker 실행 설계](docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md)를 따른다.
+
+### 개별 실행
 
 ```bash
 docker compose up -d postgres
 ```
 
-### 3. Backend 실행
+Backend:
 
 ```bash
 cd backend
 ./gradlew bootRun
 ```
 
-### 4. AI Server 실행
+AI Server:
 
 ```bash
 cd ai-server
@@ -148,7 +151,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 5. Frontend 실행
+Frontend:
 
 ```bash
 cd frontend
@@ -157,7 +160,7 @@ npm install
 npm run dev
 ```
 
-> 💡 Windows PowerShell 명령과 smoke / verification runbook은 [로컬 개발 문서](docs/LOCAL_DEVELOPMENT.md)를 참고한다.
+> 💡 AWS 배포는 Track B로 분리하며, [AWS 배포 설계](docs/DEPLOYMENT_AWS_MVP.md)를 참고한다.
 
 ---
 
@@ -170,3 +173,10 @@ npm run dev
 | React       | `http://localhost:5173`                |
 
 ---
+
+## ☁️ Deployment
+
+배포 전략은 투트랙으로 가져간다.
+
+- Track A: 로컬 Docker Compose 기반 실행. 기능 구현과 1차 데모 smoke를 담당한다.
+- Track B: AWS ECS/RDS/S3 기반 배포. Track A 통과 이후 최종 배포 검증을 담당한다.
