@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { BoardAssistantPanel } from "@/components/ai/board-assistant-panel";
 import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
 import { HotPostsPanel } from "@/components/board/hot-posts-panel";
 import { TeamTabs } from "@/components/games/team-tabs";
@@ -98,6 +99,7 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
         </div>
 
         <aside className="order-3 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
+          <BoardAssistantPanel selectedTeam={selectedTeam} />
           <HotPostsPanel selectedTeam={selectedTeam} />
         </aside>
       </div>
