@@ -2,9 +2,15 @@
 //   - search_similar_posts(RAG): 게시판 코스 후기 검색
 //   - place_search(MCP): 실제 장소 위치·주소 검색
 // 답변과 함께, 답변에 실제로 언급된 장소를 카카오맵 카드로 보여준다.
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { askAgent, type AgentAnswer, type AgentPlace } from './api'
+import {
+  askAgent,
+  getPosts,
+  type AgentAnswer,
+  type AgentPlace,
+  type TravelPost,
+} from './api'
 
 // 처음 보여줄 예시 질문들. 클릭하면 바로 질문이 채워진다.
 const EXAMPLES = [
@@ -52,6 +58,35 @@ function pickMentionedPlaces(answer: string, places: AgentPlace[]): AgentPlace[]
 export function AskPage() {
   const [question, setQuestion] = useState('')
   const [state, setState] = useState<AskState>({ kind: 'idle' })
+  // 로딩 중 "기다리는 동안 이런 코스는 어때요?"로 돌려 보여줄 게시판 코스들
+  const [adPosts, setAdPosts] = useState<TravelPost[]>([])
+  const [adIndex, setAdIndex] = useState(0)
+
+  // 페이지 진입 시 추천용 코스를 미리 불러와 무작위로 섞어 둔다.
+  useEffect(() => {
+    let mounted = true
+    getPosts(1, 20)
+      .then((res) => {
+        if (!mounted) return
+        const shuffled = [...res.items].sort(() => Math.random() - 0.5)
+        setAdPosts(shuffled)
+      })
+      .catch(() => {
+        // 광고는 부가 요소라 실패해도 무시한다.
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  // 로딩 중일 때만 일정 간격으로 보여줄 코스를 바꾼다.
+  useEffect(() => {
+    if (state.kind !== 'loading' || adPosts.length === 0) return
+    const id = setInterval(() => {
+      setAdIndex((i) => (i + 1) % adPosts.length)
+    }, 3500)
+    return () => clearInterval(id)
+  }, [state.kind, adPosts.length])
 
   async function submit(q: string) {
     const trimmed = q.trim()
@@ -138,9 +173,52 @@ export function AskPage() {
         )}
 
         {state.kind === 'loading' && (
-          <p className="status-text">
-            게시판 코스와 장소 정보를 찾아 답변을 정리하고 있어요...
-          </p>
+          <div className="ask-loading">
+            <div className="ask-loading-head">
+              <div className="ask-loading-dots" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </div>
+              <p className="ask-loading-text">
+                게시판 코스와 장소 정보를 찾아 답변을 정리하고 있어요
+              </p>
+            </div>
+
+            {adPosts.length > 0 && (
+              <div className="ask-ad">
+                <p className="ask-ad-label">기다리는 동안, 이런 코스는 어때요?</p>
+                <Link
+                  key={adPosts[adIndex].id}
+                  to={`/posts/${adPosts[adIndex].id}`}
+                  className="ask-ad-card"
+                >
+                  {adPosts[adIndex].thumbnailUrl ? (
+                    <div className="ask-ad-thumb">
+                      <img src={adPosts[adIndex].thumbnailUrl ?? ''} alt="" />
+                    </div>
+                  ) : (
+                    <div className="ask-ad-thumb placeholder">
+                      <span>{adPosts[adIndex].city}</span>
+                    </div>
+                  )}
+                  <div className="ask-ad-info">
+                    <span className="ask-ad-city">{adPosts[adIndex].city}</span>
+                    <strong>{adPosts[adIndex].title}</strong>
+                    <span className="ask-ad-meta">
+                      작성자 {adPosts[adIndex].author.name}
+                      {adPosts[adIndex].duration
+                        ? ` · ${adPosts[adIndex].duration}일 코스`
+                        : ''}
+                    </span>
+                  </div>
+                  <span className="ask-ad-arrow" aria-hidden>
+                    →
+                  </span>
+                </Link>
+              </div>
+            )}
+          </div>
         )}
 
         {state.kind === 'error' && (

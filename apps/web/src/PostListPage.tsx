@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { getPosts, type PaginatedPosts } from './api'
 import { useAuth } from './useAuth'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 9
 
 type ListState =
   | { kind: 'loading' }

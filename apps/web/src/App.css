@@ -1583,11 +1583,28 @@
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.35);
 }
 
+.feature-head {
+  margin: 56px 0 20px;
+  text-align: center;
+}
+.feature-head h2 {
+  margin: 6px 0 8px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-strong);
+}
+.feature-head-copy {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  margin: 48px 0 8px;
+  margin: 0 0 8px;
 }
 
 .feature-card {
@@ -1604,7 +1621,7 @@
   line-height: 1;
 }
 
-.feature-card h2 {
+.feature-card h3 {
   margin: 16px 0 8px;
   color: var(--text-strong);
   font-size: 19px;
@@ -1750,8 +1767,12 @@
 .feature-grid .feature-card:nth-child(4) {
   animation-delay: 0.26s;
 }
-.post-grid .post-card:nth-child(5) {
+.post-grid .post-card:nth-child(5),
+.feature-grid .feature-card:nth-child(5) {
   animation-delay: 0.33s;
+}
+.feature-grid .feature-card:nth-child(6) {
+  animation-delay: 0.4s;
 }
 .post-grid .post-card:nth-child(n + 6) {
   animation-delay: 0.4s;
@@ -2031,141 +2052,6 @@
   color: var(--text-muted);
 }
 
-/* ===== AI Agent: 코스 초안 생성 (작성 폼 상단) ===== */
-.ai-draft {
-  margin-bottom: 24px;
-  padding: 22px 24px;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, #0071e3 0%, #00c2ff 100%);
-  color: #fff;
-  box-shadow: var(--shadow);
-}
-.ai-draft-head {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.ai-draft-badge {
-  align-self: flex-start;
-  font-size: 12px;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.22);
-  padding: 4px 12px;
-  border-radius: 980px;
-}
-.ai-draft-head p {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.95);
-}
-.ai-draft-input {
-  display: flex;
-  gap: 10px;
-}
-.ai-draft-input input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 13px 16px;
-  font: inherit;
-  background: #fff;
-  color: var(--text);
-}
-.ai-draft-input input:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
-}
-.ai-draft-input button {
-  flex-shrink: 0;
-  min-height: 46px;
-  padding: 0 20px;
-  border: none;
-  border-radius: 980px;
-  background: #fff;
-  color: var(--accent);
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.15s ease;
-}
-.ai-draft-input button:active:not(:disabled) {
-  transform: scale(0.98);
-}
-.ai-draft-input button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.ai-draft-hint {
-  margin: 12px 0 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
-}
-.ai-draft .error-message {
-  margin: 12px 0 0;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.18);
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-}
-
-@media (max-width: 640px) {
-  .ai-draft-input {
-    flex-direction: column;
-  }
-}
-
-/* ===== AI 질문: 참고한 장소 정보 (MCP 결과) ===== */
-.ask-places-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ask-place-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.15s ease, transform 0.1s ease;
-}
-.ask-place-card:hover {
-  border-color: var(--accent);
-  transform: translateX(2px);
-}
-.ask-place-pin {
-  flex-shrink: 0;
-  font-size: 18px;
-}
-.ask-place-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-.ask-place-info strong {
-  font-size: 15px;
-  font-weight: 600;
-}
-.ask-place-info span {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.ask-place-arrow {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  font-size: 15px;
-}
-
 /* ===== AI 질문: 답변에 나온 장소 → 카카오맵 칩 ===== */
 .ask-place-chips {
   display: flex;
@@ -2201,4 +2087,142 @@
 .ask-place-chip-arrow {
   font-size: 12px;
   opacity: 0.6;
+}
+
+/* ===== AI 질문: 로딩 애니메이션 + 코스 광고 ===== */
+.ask-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.ask-loading-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+.ask-loading-dots {
+  display: flex;
+  gap: 8px;
+}
+.ask-loading-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: askDotPulse 1.2s ease-in-out infinite;
+}
+.ask-loading-dots span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.ask-loading-dots span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+@keyframes askDotPulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.ask-loading-text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.ask-ad-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.ask-ad-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+  animation: askAdFade 0.5s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ask-ad-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+@keyframes askAdFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ask-ad-thumb {
+  flex-shrink: 0;
+  width: 96px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.ask-ad-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ask-ad-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0071e3 0%, #00c2ff 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ask-ad-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.ask-ad-city {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.ask-ad-info strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ask-ad-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.ask-ad-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ask-loading-dots span,
+  .ask-ad-card {
+    animation: none;
+  }
 }
