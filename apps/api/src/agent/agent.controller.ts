@@ -1,18 +1,15 @@
-// 📌 AI Agent API. 자유 요청을 받아 여행 코스 초안을 생성한다.
-// 로그인한 사용자만 사용할 수 있다. (작성 폼에서 호출)
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+// 📌 AI Agent API. 질문을 받아 도구(RAG 코스 검색 + MCP 장소 검색)를 활용해 답한다.
+import { Body, Controller, Post } from '@nestjs/common';
 import { AgentService } from './agent.service';
-import { DraftDto } from './dto/draft.dto';
+import { AgentAskDto } from './dto/ask.dto';
 
 @Controller('agent')
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 
-  // POST /agent/draft  { "request": "부산 2박 3일 바다 코스 만들어줘" }
-  @UseGuards(JwtAuthGuard)
-  @Post('draft')
-  draft(@Body() dto: DraftDto) {
-    return this.agentService.draftCourse(dto.request);
+  // POST /agent/ask  { "question": "부산에서 바다 보기 좋은 코스 알려줘" }
+  @Post('ask')
+  ask(@Body() dto: AgentAskDto) {
+    return this.agentService.ask(dto.question);
   }
 }

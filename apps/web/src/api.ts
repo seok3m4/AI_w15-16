@@ -258,7 +258,7 @@ export function searchSemantic(query: string, limit = 4) {
   return request<SimilarPost[]>(`/rag/search?${params.toString()}`)
 }
 
-// 게시판 Q&A: 질문을 보내 기존 후기를 근거로 한 AI 답변을 받는다.
+// 게시판 Q&A(순수 RAG): 질문을 보내 기존 후기를 근거로 한 AI 답변을 받는다.
 export function askRag(question: string) {
   return request<AskResponse>('/rag/ask', {
     method: 'POST',
@@ -266,27 +266,29 @@ export function askRag(question: string) {
   })
 }
 
-// AI Agent가 생성한 여행 코스 초안. (작성 폼에 그대로 채울 수 있다)
-export type CourseDraft = {
-  title: string
-  city: string
-  duration: number | null
-  content: string
-  tags: string[]
-  places: {
-    name: string
-    address?: string
-    lat: number
-    lng: number
-  }[]
+// AI Agent가 답변에 참고한 실제 장소(MCP/Kakao 검색 결과).
+export type AgentPlace = {
+  index: number
+  name: string
+  category: string
+  address: string
+  lat: number
+  lng: number
+  url: string
 }
 
-// AI Agent에게 자유 요청을 보내 여행 코스 초안을 생성받는다. (로그인 필요)
-export function draftCourse(token: string, request_: string) {
-  return request<CourseDraft>('/agent/draft', {
+// AI Agent Q&A 응답. answer는 답변, sources는 참고한 게시판 코스, places는 참고한 실제 장소.
+export type AgentAnswer = {
+  answer: string
+  sources: SimilarPost[]
+  places: AgentPlace[]
+}
+
+// AI Agent에게 질문한다. Agent가 RAG(게시판 코스)와 MCP(실제 장소)를 도구로 써서 답한다.
+export function askAgent(question: string) {
+  return request<AgentAnswer>('/agent/ask', {
     method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ request: request_ }),
+    body: JSON.stringify({ question }),
   })
 }
 

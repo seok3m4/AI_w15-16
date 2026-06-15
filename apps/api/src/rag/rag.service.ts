@@ -17,6 +17,10 @@ export type SimilarPost = {
   similarity: number; // 0~1, 1에 가까울수록 유사
 };
 
+// 코사인 유사도가 이 값 미만이면 "관련이 약하다"고 보고 결과에서 제외한다.
+// 무조건 상위 N개를 채우는 대신, 충분히 가까운 코스만 추천/출처로 쓴다.
+const SIMILARITY_THRESHOLD = 0.45;
+
 @Injectable()
 export class RagService {
   private readonly logger = new Logger(RagService.name);
@@ -97,10 +101,12 @@ export class RagService {
        JOIN "User" u ON u.id = p."authorId"
        CROSS JOIN (SELECT embedding FROM "PostEmbedding" WHERE "postId" = $1) base
        WHERE pe."postId" != $1
+         AND (1 - (pe.embedding <=> base.embedding)) >= $3
        ORDER BY pe.embedding <=> base.embedding
        LIMIT $2`,
       postId,
       limit,
+      SIMILARITY_THRESHOLD,
     );
 
     return rows.map(this.toSimilarPost);
@@ -122,10 +128,12 @@ export class RagService {
        FROM "PostEmbedding" pe
        JOIN "Post" p ON p.id = pe."postId"
        JOIN "User" u ON u.id = p."authorId"
+       WHERE (1 - (pe.embedding <=> $1::vector)) >= $3
        ORDER BY pe.embedding <=> $1::vector
        LIMIT $2`,
       literal,
       limit,
+      SIMILARITY_THRESHOLD,
     );
 
     return rows.map(this.toSimilarPost);
