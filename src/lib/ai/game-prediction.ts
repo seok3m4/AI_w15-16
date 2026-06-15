@@ -417,6 +417,22 @@ function extractLineupFromRelayData(
   return away || home ? { source, away, home } : null;
 }
 
+function isCompleteTeamLineup(lineup: TeamLineup | null): lineup is TeamLineup {
+  return Boolean(
+    lineup && lineup.starterCount >= 9 && lineup.batters.length >= 9,
+  );
+}
+
+function getConfirmedGameLineup(lineup: GameLineup | null): GameLineup | null {
+  if (!lineup) {
+    return null;
+  }
+
+  return isCompleteTeamLineup(lineup.away) && isCompleteTeamLineup(lineup.home)
+    ? lineup
+    : null;
+}
+
 function getFirstKboValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value[0] ?? null;
@@ -556,11 +572,11 @@ async function fetchKboOfficialLineup(
   const home = parseKboLineupTable(homeTeam, getFirstKboValue(data[3]));
   const away = parseKboLineupTable(awayTeam, getFirstKboValue(data[4]));
 
-  if (!lineupReady && !away && !home) {
+  if (!lineupReady) {
     return null;
   }
 
-  return away || home ? { source, away, home } : null;
+  return getConfirmedGameLineup({ source, away, home });
 }
 
 async function fetchGameLineup(game: KboGame): Promise<GameLineup | null> {
@@ -573,36 +589,48 @@ async function fetchGameLineup(game: KboGame): Promise<GameLineup | null> {
   const lineupPath = `/schedule/games/${naverGameId}/lineup`;
   const recordPath = `/schedule/games/${naverGameId}/record`;
   const relayPath = `/schedule/games/${naverGameId}/relay`;
-  const [kboResult, lineupResult, recordResult, relayResult] =
-    await Promise.allSettled([
-      fetchKboOfficialLineup(game),
-      fetchNaverJson<unknown>(lineupPath, naverGameId),
-      fetchNaverJson<unknown>(recordPath, naverGameId),
-      fetchNaverJson<unknown>(relayPath, naverGameId),
-    ]);
+  const [kboResult, lineupResult] = await Promise.allSettled([
+    fetchKboOfficialLineup(game),
+    fetchNaverJson<unknown>(lineupPath, naverGameId),
+  ]);
   const kbo = kboResult.status === "fulfilled" ? kboResult.value : null;
   const lineup =
     lineupResult.status === "fulfilled"
-      ? extractLineupFromLineupData(
-          lineupResult.value,
-          game,
-          `${NAVER_SPORTS_API_BASE_URL}${lineupPath}`,
+      ? getConfirmedGameLineup(
+          extractLineupFromLineupData(
+            lineupResult.value,
+            game,
+            `${NAVER_SPORTS_API_BASE_URL}${lineupPath}`,
+          ),
         )
       : null;
+
+  if (game.status === "scheduled") {
+    return kbo ?? lineup;
+  }
+
+  const [recordResult, relayResult] = await Promise.allSettled([
+    fetchNaverJson<unknown>(recordPath, naverGameId),
+    fetchNaverJson<unknown>(relayPath, naverGameId),
+  ]);
   const record =
     recordResult.status === "fulfilled"
-      ? extractLineupFromRecordData(
-          recordResult.value,
-          game,
-          `${NAVER_SPORTS_API_BASE_URL}${recordPath}`,
+      ? getConfirmedGameLineup(
+          extractLineupFromRecordData(
+            recordResult.value,
+            game,
+            `${NAVER_SPORTS_API_BASE_URL}${recordPath}`,
+          ),
         )
       : null;
   const relay =
     relayResult.status === "fulfilled"
-      ? extractLineupFromRelayData(
-          relayResult.value,
-          game,
-          `${NAVER_SPORTS_API_BASE_URL}${relayPath}`,
+      ? getConfirmedGameLineup(
+          extractLineupFromRelayData(
+            relayResult.value,
+            game,
+            `${NAVER_SPORTS_API_BASE_URL}${relayPath}`,
+          ),
         )
       : null;
 
