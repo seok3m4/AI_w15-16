@@ -14,7 +14,7 @@
 
 - **구현자**가 어떤 화면에서 어떤 API를 호출하는지 같은 그림을 보게 한다.
 - **설계자**가 누락된 상태(빈/로딩/에러/권한없음)나 API 매핑 공백을 미리 발견하게 한다.
-- P0~P2는 화면 상세 + 저충실도 블록 스케치를 제공한다. P3는 흐름 위주 경량 기술이다.
+- P0~P2는 화면 상세 + 저충실도 블록 스케치를 제공한다. P3는 Agent/MCP 흐름 위주, P4는 승인 UI·실행 이력 polish로 경량 기술한다.
 
 표기 규칙:
 
@@ -28,23 +28,23 @@
 
 | 화면 ID | 이름 | 우선순위 | 주요 API | 접근 권한 |
 |---------|------|----------|----------|-----------|
-| S-01 | 로그인 | P0 | `POST /auth/login` | 비인증 |
-| S-02 | 회원가입 | P0 | `POST /auth/signup` | 비인증 |
-| S-03 | 홈 / 내 기록 피드 | P0 | `GET /posts?scope=me` | 인증 |
-| S-04 | 게시물 상세 | P0~P2 | `GET /posts/{postId}`, `GET /posts/{postId}/comments` | 인증 (친구 포함) |
-| S-05 | 게시물 작성 | P0~P1 | `POST /posts`, `GET /tags` | 인증 |
-| S-06 | 게시물 수정 | P0 | `GET /posts/{postId}`, `PUT /posts/{postId}` | 인증 (작성자만) |
-| S-07 | 키워드 검색 결과 | P0 | `GET /posts?q={keyword}&scope=…` | 인증 |
-| S-08 | Memory Search + AI 요약 | P1~P2 | `POST /memory-search`, `POST /memory-search/summarize` | 인증 |
-| S-09 | 친구 목록 / 친구 요청 | P2 | `GET /friendships`, `POST /friendships/requests` | 인증 |
-| S-10 | 친구 기록 피드 | P2 | `GET /posts?scope=friends` | 인증 (accepted 친구) |
-| S-11 | Context Capsule 목록 | P2 | `GET /context-capsules` | 인증 |
-| S-12 | Context Capsule 상세 / 생성 | P2 | `GET /context-capsules/{capsuleId}`, `POST /context-capsules` | 인증 |
-| S-13 | 설정 (AI 공유 동의) | P2 | `GET /auth/me`, `PUT /privacy/ai-sharing` | 인증 |
-| S-14 | 친구 AI 기반 선물 추천 | P3 | `POST /friends/{friendId}/gift-recommendations` | 인증 + 친구 + AI 공유 동의 |
-| S-15 | Agent 실행 / 결과 | P3 | `POST /agent-runs`, `GET /agent-runs/{runId}`, `GET /agent-runs/{runId}/steps` | 인증 |
-| S-16 | Agent 승인 대기 | P3 | `POST /agent-runs/{runId}/approvals/{approvalId}/approve`, `.../reject` | 인증 |
-| S-17 | Agent 실행 이력 | P3 | `GET /agent-runs/{runId}`, `GET /agent-runs/{runId}/steps` | 인증 |
+| S-01 | 로그인 | P0 | `POST /api/v1/auth/login` | 비인증 |
+| S-02 | 회원가입 | P0 | `POST /api/v1/auth/signup` | 비인증 |
+| S-03 | 홈 / 내 기록 피드 | P0 | `GET /api/v1/posts?scope=me` | 인증 |
+| S-04 | 게시물 상세 | P0~P2 | `GET /api/v1/posts/{postId}`, `GET /api/v1/posts/{postId}/comments` | 인증 (친구 포함) |
+| S-05 | 게시물 작성 | P0~P1 | `POST /api/v1/posts`, `GET /api/v1/tags` | 인증 |
+| S-06 | 게시물 수정 | P0 | `GET /api/v1/posts/{postId}`, `PUT /api/v1/posts/{postId}` | 인증 (작성자만) |
+| S-07 | 키워드 검색 결과 | P0 | `GET /api/v1/posts?q={keyword}&scope=…` | 인증 |
+| S-08 | Memory Search + AI 요약 | P1~P2 | `POST /api/v1/memory-search`, `POST /api/v1/memory-search/summarize` | 인증 |
+| S-09 | 친구 목록 / 친구 요청 | P2 | `GET /api/v1/friendships`, `POST /api/v1/friendships/requests` | 인증 |
+| S-10 | 친구 기록 피드 | P2 | `GET /api/v1/posts?scope=friends` | 인증 (accepted 친구) |
+| S-11 | Context Capsule 목록 | P2 | `GET /api/v1/context-capsules` | 인증 |
+| S-12 | Context Capsule 상세 / 생성 | P2 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules` | 인증 |
+| S-13 | 설정 (AI 공유 동의) | P2 | `GET /api/v1/auth/me`, `PUT /api/v1/privacy/ai-sharing` | 인증 |
+| S-14 | 친구 AI 기반 선물 추천 | P3 | `POST /api/v1/friends/{friendId}/gift-recommendations` | 인증 + 친구 + AI 공유 동의 |
+| S-15 | Agent 실행 / 결과 | P3 | `POST /api/v1/agent-runs`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` | 인증 |
+| S-16 | Agent 승인 대기 | P4 | `POST /api/v1/agent-runs/{runId}/approvals/{approvalId}/approve`, `.../reject` | 인증 |
+| S-17 | Agent 실행 이력 | P4 | `GET /api/v1/agent-runs?page=0&size=20`, `GET /api/v1/agent-runs/{runId}` | 인증 |
 | S-18 | MCP 연결 관리 | P3 | MCP Server tools, MCP Client (Notion) | 인증 |
 
 ---
@@ -77,9 +77,11 @@ flowchart LR
     subgraph P3["P3 — Agent·MCP"]
       S14[S-14 선물 추천]
       S15[S-15 Agent 실행]
+      S18[S-18 MCP 관리]
+    end
+    subgraph P4["P4 — 실행 이력·승인 UI polish"]
       S16[S-16 승인 대기]
       S17[S-17 Agent 이력]
-      S18[S-18 MCP 관리]
     end
   end
 
@@ -121,18 +123,18 @@ sequenceDiagram
   participant AI as FastAPI
 
   U->>FE: 로그인
-  FE->>BE: POST /auth/login
+  FE->>BE: POST /api/v1/auth/login
   BE-->>FE: accessToken + refreshToken cookie
   FE->>FE: S-03 홈/내 기록 피드 로드
-  FE->>BE: GET /posts?scope=me
+  FE->>BE: GET /api/v1/posts?scope=me
   BE-->>FE: PostResponse[] + page
   U->>FE: 게시물 작성
-  FE->>BE: POST /posts {title, content, tagNames}
+  FE->>BE: POST /api/v1/posts {title, content, tagNames}
   BE-->>FE: 201 PostResponse
   BE-)AI: (비동기) memory chunk + embedding 생성
   AI-->>BE: embedding 완료 (memoryStatus: succeeded)
   U->>FE: 게시물 상세 클릭
-  FE->>BE: GET /posts/{postId}
+  FE->>BE: GET /api/v1/posts/{postId}
   BE-->>FE: PostResponse (recentComments 포함)
 ```
 
@@ -146,18 +148,18 @@ sequenceDiagram
   participant AI as FastAPI
 
   U->>FE: 자연어 쿼리 입력
-  FE->>BE: POST /memory-search {query, scope: "me"}
+  FE->>BE: POST /api/v1/memory-search {query, scope: "me"}
   BE->>AI: vector 검색
   AI-->>BE: 검색 결과
   BE-->>FE: results[] (동기)
   FE->>FE: 검색 결과 카드 표시
   U->>FE: "AI 요약 보기" 클릭
-  FE->>BE: POST /memory-search/summarize {query, sourcePostIds}
+  FE->>BE: POST /api/v1/memory-search/summarize {query, sourcePostIds}
   alt 15초 이내
     BE-->>FE: 200 answer + sources
   else 15초 초과
     BE-->>FE: 202 AsyncJobResponse {jobId}
-    FE->>BE: GET /jobs/{jobId} (polling)
+    FE->>BE: GET /api/v1/jobs/{jobId} (polling)
     BE-->>FE: status: succeeded + result
   end
   FE->>FE: AI 답변 블록 + citation 링크 표시
@@ -171,15 +173,15 @@ sequenceDiagram
   actor B as 친구
   participant BE as Spring Boot
 
-  A->>BE: POST /friendships/requests {addresseeUserId}
+  A->>BE: POST /api/v1/friendships/requests {addresseeUserId}
   BE-->>A: 201 pending
-  B->>BE: POST /friendships/{id}/accept
+  B->>BE: POST /api/v1/friendships/{friendshipId}/accept
   BE-->>B: 200 accepted
-  A->>BE: GET /posts?scope=friends
+  A->>BE: GET /api/v1/posts?scope=friends
   BE-->>A: 친구 PostResponse[]
   Note over B: 설정에서 친구 AI 공유 동의 ON
-  B->>BE: PUT /privacy/ai-sharing {enabled: true}
-  A->>BE: POST /friends/{friendId}/gift-recommendations
+  B->>BE: PUT /api/v1/privacy/ai-sharing {enabled: true}
+  A->>BE: POST /api/v1/friends/{friendId}/gift-recommendations
   BE-->>A: 200 recommendations + sources
 ```
 
@@ -193,13 +195,13 @@ sequenceDiagram
   participant AI as FastAPI
 
   U->>FE: Agent 목표 입력
-  FE->>BE: POST /agent-runs {goal, allowedTools}
+  FE->>BE: POST /api/v1/agent-runs {goal, allowedTools}
   BE-->>FE: 202 {runId, status: pending}
-  FE->>BE: GET /agent-runs/{runId} (polling)
+  FE->>BE: GET /api/v1/agent-runs/{runId} (polling)
   BE-->>FE: status: approval_required + pendingApprovals
   FE->>FE: S-16 승인 대기 화면 표시
   U->>FE: 승인 클릭
-  FE->>BE: POST /agent-runs/{runId}/approvals/{approvalId}/approve
+  FE->>BE: POST /api/v1/agent-runs/{runId}/approvals/{approvalId}/approve
   BE->>AI: Notion export 실행
   AI-->>BE: 완료
   BE-->>FE: agentRunStatus: succeeded
@@ -498,9 +500,9 @@ sequenceDiagram
 | 친구 목록 | `GET /api/v1/friendships?status=accepted` | 친구 카드 목록 |
 | 수신 요청 목록 | `GET /api/v1/friendships?status=pending` | 요청 카드 목록 |
 | 친구 요청 발신 | `POST /api/v1/friendships/requests` | pending 뱃지 추가 |
-| 요청 수락 | `POST /api/v1/friendships/{id}/accept` | 친구 목록으로 이동 |
-| 요청 거절 | `POST /api/v1/friendships/{id}/reject` | 요청 목록에서 제거 |
-| 친구 해제 | `DELETE /api/v1/friendships/{id}` | 목록에서 제거 |
+| 요청 수락 | `POST /api/v1/friendships/{friendshipId}/accept` | 친구 목록으로 이동 |
+| 요청 거절 | `POST /api/v1/friendships/{friendshipId}/reject` | 요청 목록에서 제거 |
+| 친구 해제 | `DELETE /api/v1/friendships/{friendshipId}` | 목록에서 제거 |
 | 친구 기록 보기 | — | S-10 이동 |
 | 선물 추천 | — | S-14 이동 (AI 공유 동의 확인 후) |
 
@@ -649,11 +651,11 @@ sequenceDiagram
 | 스텝 목록 | `GET /api/v1/agent-runs/{runId}/steps` | step 타임라인 |
 | 승인 필요 | status = `approval_required` | S-16으로 이동 |
 
-**상태 배지**: `pending` — 회색, `running` — floaty amber dot, `approval_required` — "승인 대기" warn 카드, `succeeded` — 녹색, `failed` — error 빨간색.
+**상태 배지**: `pending` — muted, `running` — `ink` floaty dot, `approval_required` — `ink/20` 테두리 + `raised` 배지, `succeeded` — success, `failed` — error.
 
 ---
 
-### S-16 Agent 승인 대기 (P3)
+### S-16 Agent 승인 대기 (P4)
 
 **목적**: 외부 쓰기 작업 실행 전 사용자 승인 또는 거절.  
 **진입**: S-15에서 `approval_required` 상태 감지.  
@@ -668,7 +670,7 @@ sequenceDiagram
 
 ---
 
-### S-17 Agent 실행 이력 (P3)
+### S-17 Agent 실행 이력 (P4)
 
 **목적**: 완료·실패한 Agent 실행의 스텝별 입출력을 확인한다.  
 **진입**: S-15 완료 후, SNB "에이전트 이력" 탭.  
@@ -676,10 +678,11 @@ sequenceDiagram
 
 | 액션 | API | 성공 결과 |
 |------|-----|----------|
-| 이력 목록 | `GET /api/v1/agent-runs/{runId}` | 실행 요약 |
-| 스텝 상세 | `GET /api/v1/agent-runs/{runId}/steps` | step 타임라인 (입출력 요약) |
+| 이력 목록 | `GET /api/v1/agent-runs?page=0&size=20` | 실행 요약 목록 |
+| 실행 상세 | `GET /api/v1/agent-runs/{runId}` | 선택한 실행의 상태·결과 표시 |
+| 스텝 상세 | `GET /api/v1/agent-runs/{runId}/steps?page=0&size=20` | step 타임라인 (입출력 요약) |
 
-**상태 배지**: `succeeded` — 녹색, `failed` — 빨간색, `approval_required` — warn, `running` — floaty dot.
+**상태 배지**: `succeeded` — success, `failed` — error, `approval_required` — `ink/20` 테두리 + `raised` 배지, `running` — `ink` floaty dot.
 
 ---
 
@@ -730,7 +733,7 @@ sequenceDiagram
 | HTTP 코드 | 화면 대응 |
 |-----------|-----------|
 | 400 | 해당 인풋 필드 하단 `text-error text-[12px]` 메시지 |
-| 401 | 토큰 갱신 시도 (`POST /auth/refresh`) → 실패 시 S-01 리다이렉트 |
+| 401 | 토큰 갱신 시도 (`POST /api/v1/auth/refresh`) → 실패 시 S-01 리다이렉트 |
 | 403 | "수행 권한이 없습니다" 토스트 (bg-error) |
 | 404 | "찾을 수 없는 게시물입니다" 페이지 에러 화면 |
 | 409 | 중복 필드 에러 메시지 (이메일 중복 등) |
@@ -771,7 +774,7 @@ sequenceDiagram
 | S-06 | POST-005, MEMORY-003 | `GET /api/v1/posts/{postId}`, `PUT /api/v1/posts/{postId}` |
 | S-07 | SEARCH-002~007 | `GET /api/v1/posts?q=…&scope=…` |
 | S-08 | RAG-001~012, EMBED-006~007 | `POST /api/v1/memory-search`, `POST /api/v1/memory-search/summarize`, `GET /api/v1/jobs/{jobId}` |
-| S-09 | FRIEND-001~012 | `GET /api/v1/friendships`, `POST /api/v1/friendships/requests`, `POST /api/v1/friendships/{id}/accept`, `POST /api/v1/friendships/{id}/reject`, `DELETE /api/v1/friendships/{id}` |
+| S-09 | FRIEND-001~012 | `GET /api/v1/friendships`, `POST /api/v1/friendships/requests`, `POST /api/v1/friendships/{friendshipId}/accept`, `POST /api/v1/friendships/{friendshipId}/reject`, `DELETE /api/v1/friendships/{friendshipId}` |
 | S-10 | POST-008~009, FRIEND-006~010 | `GET /api/v1/posts?scope=friends`, `POST /api/v1/posts/{postId}/likes` |
 | S-11 | CAPSULE-005, CAPSULE-008 | `GET /api/v1/context-capsules` |
 | S-12 | CAPSULE-001~010 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules`, `PUT /api/v1/context-capsules/{capsuleId}`, `DELETE /api/v1/context-capsules/{capsuleId}` |
@@ -779,10 +782,10 @@ sequenceDiagram
 | S-14 | AGENT-011, RAG-009~012 | `POST /api/v1/friends/{friendId}/gift-recommendations`, `GET /api/v1/jobs/{jobId}` |
 | S-15 | AGENT-001~011 | `POST /api/v1/agent-runs`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` |
 | S-16 | AGENT-008~009, MCP-010 | `POST /api/v1/agent-runs/{runId}/approvals/{approvalId}/approve`, `.../reject` |
-| S-17 | AGENT-006~007 | `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` |
+| S-17 | AGENT-006~007 | `GET /api/v1/agent-runs?page=0&size=20`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` |
 | S-18 | MCP-001~013 | MCP Server tools, MCP Client (Notion) |
 
-### 7.2 P0~P3 기능 커버리지 역검증
+### 7.2 P0~P4 기능 커버리지 역검증
 
 | 우선순위 | 요구사항 모듈 | 대응 화면 |
 |----------|-------------|-----------|
@@ -791,18 +794,18 @@ sequenceDiagram
 | P0 | COMMENT | S-04 |
 | P0 | TAG | S-05, S-07 |
 | P0 | SEARCH (키워드) | S-07 |
-| P0 | FRIEND (기본) | S-09, S-10 |
 | P1 | MEMORY CHUNK / EMBED | S-05 (비동기 처리, 배경) |
 | P1 | Memory Search (벡터) | S-08 |
 | P2 | AI 요약 + citation | S-08 |
 | P2 | Context Capsule | S-11, S-12 |
+| P2 | FRIEND (친구 관계·친구 피드) | S-09, S-10 |
 | P2 | 친구 AI 동의 설정 | S-13 |
 | P2 | 좋아요 | S-04, S-10 |
 | P3 | 선물 추천 | S-14 |
 | P3 | Agent Workflow | S-15 |
-| P3 | Agent 승인 | S-16 |
-| P3 | Agent 이력 | S-17 |
 | P3 | MCP Server/Client | S-18 |
+| P4 | Agent 승인 UI | S-16 |
+| P4 | Agent 실행 이력 | S-17 |
 
 ---
 

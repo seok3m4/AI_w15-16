@@ -1191,7 +1191,47 @@ Response `202 Accepted`:
 }
 ```
 
-### 9.2 Agent 실행 상태/결과 조회
+### 9.2 Agent 실행 목록 조회
+
+```http
+GET /api/v1/agent-runs?page=0&size=20&status=succeeded
+```
+
+Query:
+
+| 이름 | 필수 | 설명 |
+|------|------|------|
+| `page` | N | 기본값 `0` |
+| `size` | N | 기본값 `20`, 최대 `50` |
+| `status` | N | `pending`, `running`, `approval_required`, `succeeded`, `failed`, `rejected` 중 선택 필터 |
+
+Response `200 OK`:
+
+```json
+{
+  "items": [
+    {
+      "id": "uuid",
+      "goal": "최근 기록을 바탕으로 주간 회고를 만들고 Notion에 저장해줘",
+      "status": "succeeded",
+      "requiresApproval": false,
+      "failureReason": null,
+      "createdAt": "2026-06-15T03:10:00Z",
+      "updatedAt": "2026-06-15T03:12:00Z"
+    }
+  ],
+  "page": {
+    "page": 0,
+    "size": 20,
+    "totalCount": 1,
+    "totalPages": 1
+  }
+}
+```
+
+목록은 인증 사용자의 AgentRun만 반환한다. 실행 상세와 step 입출력 요약은 단건 조회와 step 목록 조회에서 확인한다.
+
+### 9.3 Agent 실행 상태/결과 조회
 
 ```http
 GET /api/v1/agent-runs/{runId}
@@ -1219,7 +1259,7 @@ Response `200 OK`:
 }
 ```
 
-### 9.3 Agent step 목록 조회
+### 9.4 Agent step 목록 조회
 
 ```http
 GET /api/v1/agent-runs/{runId}/steps?page=0&size=20
@@ -1250,7 +1290,7 @@ Response `200 OK`:
 }
 ```
 
-### 9.4 승인 대기 작업 승인
+### 9.5 승인 대기 작업 승인
 
 ```http
 POST /api/v1/agent-runs/{runId}/approvals/{approvalId}/approve
@@ -1267,7 +1307,7 @@ Response `200 OK`:
 }
 ```
 
-### 9.5 승인 대기 작업 거절
+### 9.6 승인 대기 작업 거절
 
 ```http
 POST /api/v1/agent-runs/{runId}/approvals/{approvalId}/reject

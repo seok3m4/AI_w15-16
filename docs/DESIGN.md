@@ -40,8 +40,8 @@
 | 레퍼런스 | 가져온 요소 |
 |----------|-------------|
 | **Cal.com** | 화이트 캔버스 + 잉크 `#111` CTA 구조, hairline 카드 테두리, 다크 풋터 패턴 |
-| **Intercom** | 소프트 크림 배경, charcoal ink 단색 체계, 단일 강조색(Fin Orange → 잉크로 대체), zero drop shadow 기조 |
-| **Clay.com** | cream 베이스 계열 온도, 카드 밀도 |
+| **Intercom** | charcoal ink 단색 체계, 단일 강조색(Fin Orange → 잉크로 대체), zero drop shadow 기조 |
+| **Clay.com** | 조밀한 카드 밀도, 데이터가 한 화면에 많이 보이는 모듈형 구성 |
 | **Stoic** | 조용한 저널 톤, 기록 중심 IA |
 
 ### 의도적으로 뺀 것
@@ -60,22 +60,29 @@
 
 ### 4.1 컬러
 
-**팔레트 — 중립 6 + 시맨틱 2**
+**프리뷰 표시 팔레트 — 중립 6 + 시맨틱 2**
+
+`docs/design/memento-style-preview.html`의 스타일 타일에 노출된 8개 칩을 기준으로 한다. `soft`, `bodytext`는 구현 편의를 위한 역할 토큰이며, 새로운 강조 hue가 아니다. 대기 상태도 별도 전용 색 토큰을 만들지 않고 `ink` alpha와 `raised` 조합으로 처리한다.
 
 | 이름 | hex | CSS 변수 | 용도 |
 |------|-----|----------|------|
 | `paper` | `#F1F0EC` | `--color-paper` | 전체 캔버스 배경 |
 | `surface` | `#FFFFFF` | `--color-surface` | 카드·모달·인풋 배경 |
-| `soft` | `#F6F5F2` | `--color-soft` | 인풋 기본 배경, AI 블록 배경 |
 | `raised` | `#EAE9E4` | `--color-raised` | 아바타 배경, SNB 배지 배경 |
 | `hairline` | `#E2E1DB` | `--color-hairline` | 구분선, 카드 테두리, 인풋 테두리 기본 |
 | `muted` | `#94928C` | `--color-muted` | 날짜·부가 정보 텍스트, 아이콘 기본 |
 | `ink` | `#18181B` | `--color-ink` | 헤딩, 강조 버튼 배경, 포커스 링 |
-| `bodytext` | `#56554F` | `--color-bodytext` | 본문 텍스트 |
 | `success` | `#3F7D4E` | `--color-success` | 성공 뱃지, 온라인 상태 도트 |
 | `error` | `#B23B3B` | `--color-error` | 에러 텍스트·뱃지 |
 
-**시맨틱 별칭 (CSS 변수)**
+**역할 보조 토큰**
+
+| 이름 | hex | CSS 변수 | 용도 |
+|------|-----|----------|------|
+| `soft` | `#F6F5F2` | `--color-soft` | 인풋 기본 배경, AI 블록 배경 |
+| `bodytext` | `#56554F` | `--color-bodytext` | 본문 텍스트 |
+
+**CSS 변수**
 
 ```css
 :root {
@@ -89,8 +96,6 @@
   --color-bodytext:  #56554F;
   --color-success:   #3F7D4E;
   --color-error:     #B23B3B;
-  /* warn은 MVP 범위에서 amber 고정 */
-  --color-warn:      #B45309;
 }
 ```
 
@@ -193,7 +198,9 @@ border: 1px solid rgba(24,24,27,.15);      /* AI 블록 (ink/15) */
 border: 1px solid rgba(24,24,27,.25);      /* AI 배지 (ink/25) */
 ```
 
-### 4.7 모션 (intensity 8)
+### 4.7 모션 (MOTION_INTENSITY 8)
+
+`docs/design/memento-style-preview.html` v2 기준값인 `8`을 고정한다. 체감은 풍부하게 유지하되 blur, rotate, 과한 overshoot 없이 `opacity`, `translate`, `scale`만 사용한다.
 
 ```css
 :root { --ease: cubic-bezier(0.16, 1, 0.3, 1); }
@@ -368,11 +375,11 @@ AI 구분 원칙: 별도 배경 hue 없음. `border border-ink/15` + `bg-soft` +
 ### 5.6 승인 대기 카드 (Agent)
 
 ```html
-<div class="rounded-xl border border-warn/30 bg-surface p-4">
+<div class="rounded-xl border border-ink/20 bg-surface p-4">
   <div class="flex items-center gap-2 mb-2">
-    <iconify-icon icon="solar:clock-circle-bold" class="text-warn floaty"></iconify-icon>
+    <iconify-icon icon="solar:clock-circle-bold" class="text-ink floaty"></iconify-icon>
     <span class="text-[13px] font-bold text-ink">승인 대기</span>
-    <span class="ml-auto bg-warn/10 text-warn rounded-full px-2 py-0.5 text-[11px] font-medium">대기 중</span>
+    <span class="ml-auto bg-raised text-ink rounded-full px-2 py-0.5 text-[11px] font-medium">대기 중</span>
   </div>
   <p class="text-bodytext text-[13px] mb-3">에이전트가 외부 쓰기 액션을 요청했습니다.</p>
   <div class="flex gap-2">
@@ -382,7 +389,7 @@ AI 구분 원칙: 별도 배경 hue 없음. `border border-ink/15` + `bg-soft` +
 </div>
 ```
 
-`--color-warn: #B45309` 사용. 대기 도트는 `.floaty` 적용.
+대기 상태는 별도 전용 색을 만들지 않는다. `ink`, `ink/20`, `raised` 조합과 `.floaty`만 사용한다.
 
 ### 5.7 네비게이션 (SNB — 사이드 내비게이션 바)
 
@@ -565,7 +572,6 @@ theme: {
       muted:    '#94928C',
       success:  '#3F7D4E',
       error:    '#B23B3B',
-      warn:     '#B45309',
     },
   },
 },
@@ -586,7 +592,6 @@ theme: {
   --color-bodytext: #56554F;
   --color-success:  #3F7D4E;
   --color-error:    #B23B3B;
-  --color-warn:     #B45309;
 }
 
 * { word-break: keep-all; }
