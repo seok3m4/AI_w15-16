@@ -21,6 +21,10 @@
 ## What Was Applied
 
 - Google OAuth2 login is exposed at `/oauth2/authorization/google`.
+- The Google OAuth callback URI is explicitly configurable with `GOOGLE_REDIRECT_URI`.
+  If it is not set, Spring uses `${APP_PUBLIC_BASE_URL}/login/oauth2/code/{registrationId}`.
+  This keeps CloudFront deployments from accidentally generating an `http://` callback
+  when the backend is behind CloudFront and an ALB.
 - After a successful web login, Spring Security redirects to `${FRONTEND_BOARD_URL:http://localhost:5173/home}`.
 - Google user profile data is upserted into `app_users` by provider and provider user id.
 - Login-time profile persistence and request-time user lookup are intentionally separated:
@@ -107,7 +111,13 @@
   - Set `GOOGLE_CLIENT_ID`.
   - Set `GOOGLE_CLIENT_SECRET`.
   - Configure the Google redirect URI as `http://localhost:8080/login/oauth2/code/google`.
+  - If local `APP_PUBLIC_BASE_URL` stays on the frontend dev server, set
+    `GOOGLE_REDIRECT_URI=http://localhost:8080/login/oauth2/code/google`.
   - Start backend and frontend, then open `http://localhost:5173/home`.
+- Google OAuth CloudFront setup:
+  - Set `APP_PUBLIC_BASE_URL=https://<cloudfront-domain>`.
+  - Set `GOOGLE_REDIRECT_URI=https://<cloudfront-domain>/login/oauth2/code/google`, or omit it and let the value derive from `APP_PUBLIC_BASE_URL`.
+  - Configure the same HTTPS callback in Google Cloud Console.
 
 ## Verification
 
@@ -126,6 +136,7 @@
 
 - The test-only local `user/password` login remains so existing security tests and local fallback keep working.
 - Real Google login needs valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; placeholder defaults only keep the app bootable.
+- In CloudFront + ALB deployments, do not register an `http://` CloudFront callback in Google Cloud Console. Use the HTTPS CloudFront callback and keep `/login*` routed from CloudFront to the ALB.
 - Do not call profile upsert from read-only service methods such as board feed,
   notifications, preference reads, or Agent catalog reads. PostgreSQL enforces
   read-only transactions and will reject UPDATE statements from those paths.
