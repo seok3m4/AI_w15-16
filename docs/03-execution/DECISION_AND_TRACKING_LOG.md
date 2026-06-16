@@ -68,7 +68,7 @@
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
 | FE 공통 골격 | 디자인·라우트 집계·API 클라이언트(1단계) | 대기 | | | |
-| P0-BE-4~7 | 게시물 CRUD·소유권 | 진행 | | | 2026-06-16: P0-BE-4 완료. `POST /api/v1/posts` 구현, 제목·본문으로 게시물 생성 및 `memory_status=pending` 반환. `tagNames`는 optional 요청 호환성과 중복 정리까지만 처리하고 실제 태그 저장은 P0-BE-10에서 진행. memory chunk/embedding job 연결은 P1-BE-4에서 진행. |
+| P0-BE-4~7 | 게시물 CRUD·소유권 | 진행 | | | 2026-06-16: P0-BE-4 완료. `POST /api/v1/posts` 구현, 제목·본문으로 게시물 생성 및 `memory_status=pending` 반환. `tagNames`는 optional 요청 호환성과 중복 정리까지만 처리하고 실제 태그 저장은 P0-BE-10에서 진행. memory chunk/embedding job 연결은 P1-BE-4에서 진행. 2026-06-16: P0-BE-5 완료. `GET /api/v1/posts` 기본 `scope=me` 목록과 `GET /api/v1/posts/{postId}` 본인 상세 조회 구현. 타 사용자/삭제 게시물은 404로 숨김. |
 | P0-BE-8~11 | 댓글·태그 | 대기 | | | |
 | P0-BE-12~13, P0-FE-2~5 | 페이징·검색·화면 | 대기 | | | |
 | P2-BE-6 | 친구 범위 검색 확장 | 대기 | | | |
@@ -84,7 +84,8 @@
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
 | P1-AI-1 | embedding endpoint(mock→real, 차원 1536) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/embeddings` 구현. `AI_PROVIDER=mock` deterministic 1536차원 vector와 `AI_PROVIDER=openai`(`text-embedding-3-small`) provider 호출, 검증 실패 400/ provider 실패 502 처리 추가. `cd ai-server && python -m pytest` 통과. |
-| P2-AI-1~2 | 요약·Capsule 보조 생성 | 대기 | | | |
+| P2-AI-1 | 요약 생성(근거 chunk 기반, 근거 출처 포함) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/memory-summaries` 구현. mock/OpenAI provider 전환, 입력 검증 400, provider 오류 502, source summary 포함 응답, OpenAPI 노출 확인까지 반영. `cd ai-server && python -m pytest` 통과. |
+| P2-AI-2 | Capsule 보조 생성(summary/keyFacts/tags) | 대기 | | | |
 | P3-AI-1~2 | Agent graph·Notion Client | 대기 | | | |
 | P4-X-2 | provider 전환·관측성 | 대기 | | | |
 

@@ -207,7 +207,7 @@ sequenceDiagram
 
     R->>S: POST /api/v1/memory-search/summarize
     S->>S: sourcePostIds 재검증
-    S->>F: 요약 생성 요청
+    S->>F: POST /internal/v1/memory-summaries (검증된 source만 전달)
     F-->>S: answer + source summary
     S-->>R: 근거 포함 AI 요약 반환
 ```
