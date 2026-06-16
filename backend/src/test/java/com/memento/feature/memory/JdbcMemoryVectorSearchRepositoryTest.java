@@ -59,6 +59,7 @@ class JdbcMemoryVectorSearchRepositoryTest {
                 POST_ID,
                 CHUNK_ID,
                 OWNER_ID,
+                "cutan",
                 "Retrospective",
                 "JWT Bearer decision",
                 MemorySourceKind.POST_CONTENT,
@@ -79,6 +80,7 @@ class JdbcMemoryVectorSearchRepositoryTest {
                 .contains("from memory_embeddings e")
                 .contains("join memory_chunks c on c.id = e.chunk_id")
                 .contains("join posts p on p.id = c.post_id")
+                .contains("join users u on u.id = c.owner_id")
                 .contains("c.owner_id = ?")
                 .contains("c.status = 'active'")
                 .contains("p.deleted_at is null")
@@ -95,6 +97,7 @@ class JdbcMemoryVectorSearchRepositoryTest {
         when(rs.getObject("post_id", UUID.class)).thenReturn(POST_ID);
         when(rs.getObject("chunk_id", UUID.class)).thenReturn(CHUNK_ID);
         when(rs.getObject("owner_id", UUID.class)).thenReturn(OWNER_ID);
+        when(rs.getString("owner_nickname")).thenReturn("cutan");
         when(rs.getString("title")).thenReturn("Retrospective");
         when(rs.getString("snippet")).thenReturn("JWT Bearer decision");
         when(rs.getString("source_kind")).thenReturn("post_content");

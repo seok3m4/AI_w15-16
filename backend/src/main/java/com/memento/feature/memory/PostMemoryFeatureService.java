@@ -2,6 +2,8 @@ package com.memento.feature.memory;
 
 import com.memento.feature.embedding.EmbeddingInputChunk;
 import com.memento.feature.embedding.MemoryEmbeddingJobEnqueuer;
+import com.memento.feature.embedding.QueryEmbedding;
+import com.memento.feature.embedding.QueryEmbeddingService;
 import com.memento.feature.jobs.AsyncJobCommandService;
 import com.memento.feature.jobs.AsyncJobRecord;
 import java.util.List;
@@ -15,18 +17,26 @@ import org.springframework.util.CollectionUtils;
 class PostMemoryFeatureService {
 
     private static final String DEFAULT_MANUAL_RETRY_REASON = "manual_retry";
+    private static final String SCOPE_ME = "me";
+    private static final int DEFAULT_MEMORY_SEARCH_LIMIT = 10;
 
     private final PostMemoryStatusRepository postMemoryStatusRepository;
     private final MemoryEmbeddingJobEnqueuer memoryEmbeddingJobEnqueuer;
     private final AsyncJobCommandService asyncJobCommandService;
+    private final JdbcMemoryVectorSearchRepository memoryVectorSearchRepository;
+    private final QueryEmbeddingService queryEmbeddingService;
 
     PostMemoryFeatureService(
             PostMemoryStatusRepository postMemoryStatusRepository,
             MemoryEmbeddingJobEnqueuer memoryEmbeddingJobEnqueuer,
-            AsyncJobCommandService asyncJobCommandService) {
+            AsyncJobCommandService asyncJobCommandService,
+            JdbcMemoryVectorSearchRepository memoryVectorSearchRepository,
+            QueryEmbeddingService queryEmbeddingService) {
         this.postMemoryStatusRepository = postMemoryStatusRepository;
         this.memoryEmbeddingJobEnqueuer = memoryEmbeddingJobEnqueuer;
         this.asyncJobCommandService = asyncJobCommandService;
+        this.memoryVectorSearchRepository = memoryVectorSearchRepository;
+        this.queryEmbeddingService = queryEmbeddingService;
     }
 
     @Transactional(readOnly = true)
@@ -79,6 +89,29 @@ class PostMemoryFeatureService {
                 .orElseThrow(() -> new JobNotFoundException(jobId));
     }
 
+    @Transactional(readOnly = true)
+    MemorySearchResponse searchMemories(UUID ownerId, MemorySearchRequest request) {
+        String query = normalizeQuery(request.query());
+        String scope = normalizeScope(request.scope());
+        int limit = normalizeLimit(request.limit());
+
+        QueryEmbedding queryEmbedding;
+        try {
+            queryEmbedding = queryEmbeddingService.create(query);
+        } catch (RuntimeException exception) {
+            throw new MemorySearchEmbeddingFailedException(exception);
+        }
+
+        List<MemoryVectorSearchCandidate> candidates = memoryVectorSearchRepository.searchMe(
+                ownerId,
+                queryEmbedding.vector(),
+                queryEmbedding.provider(),
+                queryEmbedding.model(),
+                queryEmbedding.dimension(),
+                limit);
+        return MemorySearchResponse.of(query, scope, candidates);
+    }
+
     private List<UUID> normalizePostIds(List<UUID> postIds) {
         if (postIds == null) {
             return List.of();
@@ -93,5 +126,31 @@ class PostMemoryFeatureService {
             return DEFAULT_MANUAL_RETRY_REASON;
         }
         return reason;
+    }
+
+    private String normalizeQuery(String query) {
+        String normalized = query.trim();
+        if (normalized.isEmpty()) {
+            throw new MemorySearchRequestInvalidException("query must not be blank.");
+        }
+        return normalized;
+    }
+
+    private String normalizeScope(String scope) {
+        if (scope == null || scope.isBlank()) {
+            return SCOPE_ME;
+        }
+        String normalized = scope.trim();
+        if (!SCOPE_ME.equals(normalized)) {
+            throw new MemorySearchRequestInvalidException("scope must be me for P1 memory search.");
+        }
+        return normalized;
+    }
+
+    private int normalizeLimit(Integer limit) {
+        if (limit == null) {
+            return DEFAULT_MEMORY_SEARCH_LIMIT;
+        }
+        return limit;
     }
 }

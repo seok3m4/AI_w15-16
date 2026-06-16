@@ -42,4 +42,11 @@ class PostMemoryController {
             @PathVariable UUID jobId) {
         return service.getJob(currentUser.userId(), jobId);
     }
+
+    @PostMapping("/api/v1/memory-search")
+    MemorySearchResponse searchMemories(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @Valid @RequestBody MemorySearchRequest request) {
+        return service.searchMemories(currentUser.userId(), request);
+    }
 }

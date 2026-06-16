@@ -36,6 +36,7 @@ class JdbcMemoryVectorSearchRepository {
                     p.id as post_id,
                     c.id as chunk_id,
                     c.owner_id,
+                    u.nickname as owner_nickname,
                     p.title,
                     c.content as snippet,
                     c.source_kind as source_kind,
@@ -44,6 +45,7 @@ class JdbcMemoryVectorSearchRepository {
                 FROM memory_embeddings e
                 JOIN memory_chunks c ON c.id = e.chunk_id
                 JOIN posts p ON p.id = c.post_id
+                JOIN users u ON u.id = c.owner_id
                 WHERE c.owner_id = ?
                   AND c.status = 'active'
                   AND p.deleted_at IS NULL
@@ -68,6 +70,7 @@ class JdbcMemoryVectorSearchRepository {
                 rs.getObject("post_id", UUID.class),
                 rs.getObject("chunk_id", UUID.class),
                 rs.getObject("owner_id", UUID.class),
+                rs.getString("owner_nickname"),
                 rs.getString("title"),
                 rs.getString("snippet"),
                 MemorySourceKind.fromDatabaseValue(rs.getString("source_kind")),

@@ -17,11 +17,12 @@ class PostMemoryExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleValidationError(MethodArgumentNotValidException exception, HttpServletRequest request) {
+        boolean memorySearch = isMemorySearch(request);
         return problem(
-                "Invalid reindex request",
+                memorySearch ? "Invalid memory search request" : "Invalid reindex request",
                 HttpStatus.BAD_REQUEST,
-                "INVALID_REINDEX_REQUEST",
-                "postIds must not be empty.",
+                memorySearch ? "INVALID_MEMORY_SEARCH_REQUEST" : "INVALID_REINDEX_REQUEST",
+                memorySearch ? "Memory search request is invalid." : "postIds must not be empty.",
                 request.getRequestURI(),
                 exception.getBindingResult()
                         .getFieldErrors()
@@ -30,6 +31,32 @@ class PostMemoryExceptionHandler {
                                 error.getField(),
                                 error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage()))
                         .toList());
+    }
+
+    @ExceptionHandler(MemorySearchRequestInvalidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ProblemDetailsResponse handleMemorySearchRequestInvalid(
+            MemorySearchRequestInvalidException exception,
+            HttpServletRequest request) {
+        return problem(
+                "Invalid memory search request",
+                HttpStatus.BAD_REQUEST,
+                "INVALID_MEMORY_SEARCH_REQUEST",
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of());
+    }
+
+    @ExceptionHandler(MemorySearchEmbeddingFailedException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    ProblemDetailsResponse handleMemorySearchEmbeddingFailed(HttpServletRequest request) {
+        return problem(
+                "Embedding provider unavailable",
+                HttpStatus.BAD_GATEWAY,
+                "EMBEDDING_PROVIDER_UNAVAILABLE",
+                "Embedding provider is temporarily unavailable.",
+                request.getRequestURI(),
+                List.of());
     }
 
     @ExceptionHandler(ReindexRequestInvalidException.class)
@@ -49,10 +76,11 @@ class PostMemoryExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleBadJson(HttpServletRequest request) {
+        boolean memorySearch = isMemorySearch(request);
         return problem(
                 "Invalid request",
                 HttpStatus.BAD_REQUEST,
-                "INVALID_REINDEX_REQUEST",
+                memorySearch ? "INVALID_MEMORY_SEARCH_REQUEST" : "INVALID_REINDEX_REQUEST",
                 "Request body is invalid.",
                 request.getRequestURI(),
                 List.of());
@@ -61,10 +89,11 @@ class PostMemoryExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleConstraintViolation(ConstraintViolationException exception, HttpServletRequest request) {
+        boolean memorySearch = isMemorySearch(request);
         return problem(
                 "Invalid request",
                 HttpStatus.BAD_REQUEST,
-                "INVALID_REINDEX_REQUEST",
+                memorySearch ? "INVALID_MEMORY_SEARCH_REQUEST" : "INVALID_REINDEX_REQUEST",
                 exception.getMessage(),
                 request.getRequestURI(),
                 List.of());
@@ -109,6 +138,10 @@ class PostMemoryExceptionHandler {
                 instance,
                 code,
                 errors);
+    }
+
+    private boolean isMemorySearch(HttpServletRequest request) {
+        return request.getRequestURI().contains("/api/v1/memory-search");
     }
 
     record ProblemDetailsResponse(
