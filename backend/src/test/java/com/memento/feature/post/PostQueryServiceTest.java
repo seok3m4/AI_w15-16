@@ -54,6 +54,14 @@ class PostQueryServiceTest {
                 .isInstanceOf(PostInvalidQueryException.class);
     }
 
+    @Test
+    void listRejectsPageValuesThatWouldOverflowOffset() {
+        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+
+        assertThatThrownBy(() -> service.list(USER_ID, "me", Integer.MAX_VALUE, 100, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+    }
+
     private static PostRecord postRecord(String title, String content) {
         return new PostRecord(
                 POST_ID,

@@ -23,7 +23,7 @@ class PostQueryService {
     PostListResponse list(UUID currentUserId, String scope, int page, int size, String sort) {
         validateListQuery(scope, page, size, sort);
 
-        int offset = page * size;
+        int offset = offset(page, size);
         List<PostSummaryResponse> items = postRepository.findPageByAuthor(currentUserId, size, offset)
                 .stream()
                 .map(record -> PostSummaryResponse.from(record, preview(record.content())))
@@ -54,6 +54,14 @@ class PostQueryService {
         if (!SUPPORTED_SORT.equals(sort)) {
             throw new PostInvalidQueryException("Only sort=createdAt,desc is supported in P0-BE-5.");
         }
+    }
+
+    private int offset(int page, int size) {
+        long offset = (long) page * size;
+        if (offset > Integer.MAX_VALUE) {
+            throw new PostInvalidQueryException("page is too large.");
+        }
+        return (int) offset;
     }
 
     private String preview(String content) {
