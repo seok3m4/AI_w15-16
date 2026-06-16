@@ -1,6 +1,6 @@
 # Memento 디자인 시스템 — Mono Notebook
 
-> **기준 산출물**: `docs/design/memento-style-preview.html` (v2 freeze 기준)  
+> **기준 산출물**: `docs/02-frontend/preview/memento-style-preview.html` (v2 freeze 기준)  
 > 이 문서의 모든 토큰·패턴은 HTML 미리보기를 통해 시각 검증된 값만 담는다.  
 > 구현 시 이 문서를 단일 출처(source of truth)로 삼는다.
 
@@ -15,9 +15,9 @@
 
 연관 문서:
 
-- `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md` — 기능 요구사항, 권한 원칙(§6.2)
-- `docs/API_SPEC_MVP_TEXT_MEMORY.md` — API path, 응답 스키마
-- `docs/SCREEN_FLOW_MVP_TEXT_MEMORY.md` — 화면별 상세 흐름
+- `docs/00-product/REQUIREMENTS.md` — 기능 요구사항, 권한 원칙(§6.2)
+- `docs/01-design/API_SPEC.md` — API path, 응답 스키마
+- `docs/02-frontend/SCREEN_FLOW.md` — 화면별 상세 흐름
 
 ---
 
@@ -62,7 +62,7 @@
 
 **프리뷰 표시 팔레트 — 중립 6 + 시맨틱 2**
 
-`docs/design/memento-style-preview.html`의 스타일 타일에 노출된 8개 칩을 기준으로 한다. `soft`, `bodytext`는 구현 편의를 위한 역할 토큰이며, 새로운 강조 hue가 아니다. 대기 상태도 별도 전용 색 토큰을 만들지 않고 `ink` alpha와 `raised` 조합으로 처리한다.
+`docs/02-frontend/preview/memento-style-preview.html`의 스타일 타일에 노출된 8개 칩을 기준으로 한다. `soft`, `bodytext`는 구현 편의를 위한 역할 토큰이며, 새로운 강조 hue가 아니다. 대기 상태도 별도 전용 색 토큰을 만들지 않고 `ink` alpha와 `raised` 조합으로 처리한다.
 
 | 이름 | hex | CSS 변수 | 용도 |
 |------|-----|----------|------|
@@ -200,7 +200,7 @@ border: 1px solid rgba(24,24,27,.25);      /* AI 배지 (ink/25) */
 
 ### 4.7 모션 (MOTION_INTENSITY 8)
 
-`docs/design/memento-style-preview.html` v2 기준값인 `8`을 고정한다. 체감은 풍부하게 유지하되 blur, rotate, 과한 overshoot 없이 `opacity`, `translate`, `scale`만 사용한다.
+`docs/02-frontend/preview/memento-style-preview.html` v2 기준값인 `8`을 고정한다. 체감은 풍부하게 유지하되 blur, rotate, 과한 overshoot 없이 `opacity`, `translate`, `scale`만 사용한다.
 
 ```css
 :root { --ease: cubic-bezier(0.16, 1, 0.3, 1); }

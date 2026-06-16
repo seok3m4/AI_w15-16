@@ -6,8 +6,8 @@
 
 기준 산출물:
 
-- `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md`
-- `docs/API_SPEC_MVP_TEXT_MEMORY.md`
+- `docs/00-product/REQUIREMENTS.md`
+- `docs/01-design/API_SPEC.md`
 
 ERD는 PostgreSQL과 pgvector를 전제로 한다. 모든 주요 리소스 ID는 UUID를 사용하고, 시간 컬럼은 UTC 기준 `timestamptz`를 사용한다.
 

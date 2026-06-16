@@ -1,10 +1,10 @@
 # 화면 흐름도 — 텍스트 기반 Memory MVP
 
 > **기준 산출물**:  
-> - 기능 요구사항: `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md` §7  
-> - API path: `docs/API_SPEC_MVP_TEXT_MEMORY.md`  
-> - 디자인 토큰/컴포넌트: `docs/DESIGN.md`  
-> - HTML 미리보기: `docs/design/memento-style-preview.html`
+> - 기능 요구사항: `docs/00-product/REQUIREMENTS.md` §7  
+> - API path: `docs/01-design/API_SPEC.md`  
+> - 디자인 토큰/컴포넌트: `docs/02-frontend/DESIGN_SYSTEM.md`  
+> - HTML 미리보기: `docs/02-frontend/preview/memento-style-preview.html`
 
 ---
 
@@ -19,7 +19,7 @@
 표기 규칙:
 
 - API path는 `/api/v1/` 접두어로 표기한다. (Base URL: `http://localhost:8080/api/v1`)
-- 요구사항 ID는 `REQUIREMENTS_MVP_TEXT_MEMORY.md §7`의 ID를 그대로 사용한다.
+- 요구사항 ID는 `REQUIREMENTS.md §7`의 ID를 그대로 사용한다.
 - 저충실도 블록 스케치는 ASCII 코드펜스로 표현한다.
 
 ---

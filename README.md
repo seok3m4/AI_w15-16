@@ -124,7 +124,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-로컬 Docker 실행 계획과 smoke check는 [로컬 Docker 실행 설계](docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md)를 따른다.
+로컬 Docker 실행 계획과 smoke check는 [배포 설계 — Track A 로컬](docs/04-deployment/DEPLOYMENT.md)를 따른다.
 
 ### 개별 실행
 
@@ -160,7 +160,7 @@ npm install
 npm run dev
 ```
 
-> 💡 AWS 배포는 Track B로 분리하며, [AWS 배포 설계](docs/DEPLOYMENT_AWS_MVP.md)를 참고한다.
+> 💡 AWS 배포는 Track B로 분리하며, [배포 설계 — Track B AWS](docs/04-deployment/DEPLOYMENT.md)를 참고한다.
 
 ---
 
@@ -171,6 +171,16 @@ npm run dev
 | Spring Boot | `GET http://localhost:8080/api/health` |
 | FastAPI     | `GET http://localhost:8000/health`     |
 | React       | `http://localhost:5173`                |
+
+---
+
+## 🧩 Development Process
+
+구현은 여러 에이전트 세션이 **기능별 세로 트랙 6개**(Auth · Content · Memory · AI · Social · Platform)로 병렬 진행한다. 트랙마다 서로 겹치지 않는 폴더를 소유해 merge conflict를 구조적으로 차단한다.
+
+- 📂 문서 지도(시작점): [docs/INDEX.md](docs/INDEX.md)
+- ⭐ 작업지시서 — 트랙·단계별 작업·충돌 규칙 단일 출처: [WORK_ORDER](docs/03-execution/WORK_ORDER.md)
+- 의사결정·트랙별 진행 추적·단계별 회고: [DECISION_AND_TRACKING_LOG](docs/03-execution/DECISION_AND_TRACKING_LOG.md)
 
 ---
 

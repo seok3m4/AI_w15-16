@@ -1,11 +1,11 @@
 # 프론트엔드 구현 계약서 — 텍스트 기반 Memory MVP
 
 > **기준 산출물**:
-> - 요구사항: `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md`
-> - API 명세: `docs/API_SPEC_MVP_TEXT_MEMORY.md`
-> - 화면 흐름도: `docs/SCREEN_FLOW_MVP_TEXT_MEMORY.md`
-> - 디자인 시스템: `docs/DESIGN.md`
-> - 시각 프리뷰: `docs/design/memento-style-preview.html`
+> - 요구사항: `docs/00-product/REQUIREMENTS.md`
+> - API 명세: `docs/01-design/API_SPEC.md`
+> - 화면 흐름도: `docs/02-frontend/SCREEN_FLOW.md`
+> - 디자인 시스템: `docs/02-frontend/DESIGN_SYSTEM.md`
+> - 시각 프리뷰: `docs/02-frontend/preview/memento-style-preview.html`
 
 ---
 
@@ -15,7 +15,7 @@
 
 - 구현자는 이 문서를 기준으로 라우트, 컴포넌트, API client, 상태 처리, 디자인 토큰을 일관되게 적용한다.
 - P0부터 P4까지 우선순위를 유지하되, 첫 구현은 P0 세로 슬라이스를 완성하는 순서로 진행한다.
-- 디자인은 `docs/design/memento-style-preview.html`의 Mono Notebook 톤과 `docs/DESIGN.md` 토큰을 따른다.
+- 디자인은 `docs/02-frontend/preview/memento-style-preview.html`의 Mono Notebook 톤과 `docs/02-frontend/DESIGN_SYSTEM.md` 토큰을 따른다.
 
 ---
 
@@ -197,7 +197,7 @@ frontend/src/mock/
 ## 8. 디자인 적용 계약
 
 - 서체는 Pretendard 단일. serif, secondary sans-serif 혼용 금지.
-- 색상은 `docs/DESIGN.md`의 CSS 변수와 `memento-style-preview.html`의 Tailwind 토큰을 기준으로 한다.
+- 색상은 `docs/02-frontend/DESIGN_SYSTEM.md`의 CSS 변수와 `memento-style-preview.html`의 Tailwind 토큰을 기준으로 한다.
 - AI 구분은 색이 아니라 `solar:magic-stars-*`, `border-ink/15`, `bg-soft`, citation 링크로 표현한다.
 - SNB는 desktop에서 212px ↔ 64px collapse를 지원하고, `< 640px`에서는 상단 헤더 + 햄버거 패턴을 별도 구현한다.
 - 모션은 `MOTION_INTENSITY 8`: reveal, lift, press, breathe, floaty만 사용하고 `prefers-reduced-motion`을 반드시 지원한다.

@@ -6,12 +6,12 @@
 
 기준 산출물:
 
-- `docs/PRODUCT_IDEATION.md`
-- `docs/REQUIREMENTS_MVP_TEXT_MEMORY.md`
-- `docs/API_SPEC_MVP_TEXT_MEMORY.md`
-- `docs/ERD_MVP_TEXT_MEMORY.md`
-- `docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md`
-- `docs/DEPLOYMENT_AWS_MVP.md`
+- `docs/00-product/PRODUCT_IDEATION.md`
+- `docs/00-product/REQUIREMENTS.md`
+- `docs/01-design/API_SPEC.md`
+- `docs/01-design/ERD.md`
+- `docs/04-deployment/DEPLOYMENT.md`
+- `docs/04-deployment/DEPLOYMENT.md`
 
 이 문서는 React, Spring Boot, FastAPI, PostgreSQL/pgvector, Agent, MCP의 책임 경계를 고정하고, 구현자가 서비스 간 데이터 흐름과 실패 처리를 같은 기준으로 해석하도록 돕는다.
 
@@ -551,7 +551,7 @@ Track B AWS 배포 smoke check:
 - 내부 API 명세: Spring Boot와 FastAPI 간 embedding, summarize, agent, export 요청/응답 스키마를 정의한다.
 - 마이그레이션 초안: ERD를 PostgreSQL DDL, pgvector extension, partial index, check constraint로 변환한다.
 - 화면 흐름도: 게시글, 친구, Memory Search, Capsule, Agent 승인, MCP 관리 UI를 연결한다.
-- OpenAPI YAML: `docs/API_SPEC_MVP_TEXT_MEMORY.md` 검토 이후 생성한다.
-- 로컬 Docker 실행 체크리스트: `docs/DEPLOYMENT_LOCAL_DOCKER_MVP.md`를 기반으로 compose service, env, health check를 구현한다.
-- AWS 배포 체크리스트: `docs/DEPLOYMENT_AWS_MVP.md`를 기반으로 실제 도메인, secret name, ECR repository, ECS service 이름을 채운다.
-- ERD 동기화: `docs/ERD_MVP_TEXT_MEMORY.md`의 구현 전 확인 항목 중 Spring/FastAPI write owner는 이 문서 기준으로 Spring Boot로 확정한다.
+- OpenAPI YAML: `docs/01-design/API_SPEC.md` 검토 이후 생성한다.
+- 로컬 Docker 실행 체크리스트: `docs/04-deployment/DEPLOYMENT.md`를 기반으로 compose service, env, health check를 구현한다.
+- AWS 배포 체크리스트: `docs/04-deployment/DEPLOYMENT.md`를 기반으로 실제 도메인, secret name, ECR repository, ECS service 이름을 채운다.
+- ERD 동기화: `docs/01-design/ERD.md`의 구현 전 확인 항목 중 Spring/FastAPI write owner는 이 문서 기준으로 Spring Boot로 확정한다.
