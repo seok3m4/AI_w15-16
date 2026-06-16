@@ -3,6 +3,7 @@
 ## 프로젝트 규범
 - 이 저장소는 Memento의 텍스트 기반 Memory MVP를 설계/구현하기 위한 작업 공간이다.
 - 변경 전 `README.md`와 `docs/*_MVP_TEXT_MEMORY.md`를 먼저 확인하고, 문서와 구현을 어긋나게 두지 않는다.
+- 단위별 작업 요청은 `docs/DEV_TASK_BREAKDOWN_MVP_TEXT_MEMORY.md`를 최우선 진입점으로 삼고, 해당 Task ID, DoD, 의존성을 기준으로 범위를 잡는다.
 - 현재 MVP는 텍스트 게시글, 댓글, 태그, memory chunk/embedding, RAG 검색, Capsule, Agent, MCP를 중심으로 한다.
 - 이미지 업로드, OCR, 이미지 캡션, 대규모 검색 인프라, 모바일 앱은 명시 전까지 범위 밖이다.
 - 우선순위는 `P0 -> P1 -> P2 -> P3 -> P4` 순서를 따른다.
