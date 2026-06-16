@@ -127,3 +127,14 @@ export type CreatePostRequest = {
   content: string;
   tagNames: string[];
 };
+
+export type TagResponse = {
+  id: string;
+  name: string;
+  postCount: number;
+};
+
+export type TagListResponse = {
+  items: TagResponse[];
+  page: PageResponse;
+};

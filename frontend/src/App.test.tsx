@@ -63,6 +63,18 @@ function postDetail(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function tagListResponse(items: Array<{ id: string; name: string; postCount: number }> = []) {
+  return {
+    items,
+    page: {
+      page: 0,
+      size: 50,
+      totalCount: items.length,
+      totalPages: items.length > 0 ? 1 : 0,
+    },
+  };
+}
+
 describe('App auth flow', () => {
   beforeEach(() => {
     sessionStorage.clear();
@@ -344,6 +356,9 @@ describe('App auth flow', () => {
           },
         });
       }
+      if (url.includes('/tags?')) {
+        return jsonResponse(tagListResponse());
+      }
       if (url.endsWith('/posts') && init?.method === 'POST') {
         expect(JSON.parse(String(init.body))).toEqual({
           title: '새 기록',
@@ -386,6 +401,82 @@ describe('App auth flow', () => {
     expect(await screen.findByRole('heading', { name: '새 기록' })).toBeInTheDocument();
   });
 
+  it('loads existing tag suggestions and saves selected tag names when creating a post', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 0,
+            totalPages: 0,
+          },
+        });
+      }
+      if (url.includes('/tags?')) {
+        return jsonResponse(
+          tagListResponse([
+            { id: '33333333-3333-3333-3333-333333333333', name: '회고', postCount: 2 },
+            { id: '44444444-4444-4444-4444-444444444444', name: '프로젝트', postCount: 1 },
+          ]),
+        );
+      }
+      if (url.endsWith('/posts') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: '태그 기록',
+          content: '태그 입력을 확인한다.',
+          tagNames: ['회고', '카페'],
+        });
+        return jsonResponse(
+          postDetail({
+            title: '태그 기록',
+            content: '태그 입력을 확인한다.',
+            tags: ['회고', '카페'],
+          }),
+          { status: 201 },
+        );
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(
+          postDetail({
+            title: '태그 기록',
+            content: '태그 입력을 확인한다.',
+            tags: ['회고', '카페'],
+          }),
+        );
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('link', { name: '첫 기록 작성' }));
+    fireEvent.click(await screen.findByRole('button', { name: /#회고/ }));
+    fireEvent.change(screen.getByLabelText('태그'), {
+      target: { value: '카페' },
+    });
+    fireEvent.keyDown(screen.getByLabelText('태그'), { key: 'Enter' });
+    expect(screen.getByRole('button', { name: '회고 태그 제거' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '카페 태그 제거' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('제목'), {
+      target: { value: '태그 기록' },
+    });
+    fireEvent.change(screen.getByLabelText('본문'), {
+      target: { value: '태그 입력을 확인한다.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe(`/app/posts/${FIRST_POST_ID}`));
+    expect(await screen.findByRole('heading', { name: '태그 기록' })).toBeInTheDocument();
+  });
+
   it('prefills, updates, and deletes an existing post', async () => {
     window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
     sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
@@ -395,6 +486,13 @@ describe('App auth flow', () => {
       const url = String(input);
       if (url.endsWith('/auth/me')) {
         return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/tags?')) {
+        return jsonResponse(
+          tagListResponse([
+            { id: '33333333-3333-3333-3333-333333333333', name: '회고', postCount: 1 },
+          ]),
+        );
       }
       if (url.endsWith(`/posts/${FIRST_POST_ID}`) && init?.method === 'PUT') {
         const body = JSON.parse(String(init.body));
