@@ -15,23 +15,21 @@ class DatabaseMigrationScriptTest {
     private static final Path MIGRATION_DIR = Path.of("src", "main", "resources", "db", "migration");
     private static final Pattern BASELINE_NAME =
             Pattern.compile("V\\d{12}__init_p0_p1_schema\\.sql");
+    private static final Pattern VECTOR_NULLABILITY_NAME =
+            Pattern.compile("V\\d{12}__relax_memory_embedding_vector_nullability\\.sql");
 
     @Test
     void baselineMigrationCreatesP0P1SchemaWith1536DimensionEmbedding() throws IOException {
         assertThat(MIGRATION_DIR).isDirectory();
 
-        List<Path> baselineMigrations = Files.list(MIGRATION_DIR)
-                .filter(path -> BASELINE_NAME.matcher(path.getFileName().toString()).matches())
-                .toList();
+        List<Path> baselineMigrations = findMigrations(BASELINE_NAME);
 
         assertThat(baselineMigrations).hasSize(1);
 
-        String sql = Files.readString(baselineMigrations.getFirst(), StandardCharsets.UTF_8)
-                .replaceAll("\\s+", " ")
-                .toLowerCase();
+        String sql = normalizedSql(baselineMigrations.getFirst());
 
         assertThat(sql).contains("create extension if not exists vector");
-        assertThat(sql).contains("embedding vector(1536) not null");
+        assertThat(sql).contains("embedding vector(1536)");
         assertThat(sql).doesNotContain(" using hnsw ");
         assertThat(sql).doesNotContain(" using ivfflat ");
 
@@ -48,5 +46,35 @@ class DatabaseMigrationScriptTest {
                 "create table async_jobs",
                 "create table memory_chunks",
                 "create table memory_embeddings");
+    }
+
+    @Test
+    void followUpMigrationAllowsPendingEmbeddingsWithoutVector() throws IOException {
+        assertThat(MIGRATION_DIR).isDirectory();
+
+        List<Path> migrations = findMigrations(VECTOR_NULLABILITY_NAME);
+
+        assertThat(migrations).hasSize(1);
+
+        String sql = normalizedSql(migrations.getFirst());
+
+        assertThat(sql).contains("alter table memory_embeddings alter column embedding drop not null");
+        assertThat(sql).contains("constraint ck_memory_embeddings_vector_matches_status");
+        assertThat(sql).contains("status = 'succeeded' and embedding is not null");
+        assertThat(sql).contains("status in ('pending', 'running', 'failed') and embedding is null");
+    }
+
+    private static List<Path> findMigrations(Pattern fileNamePattern) throws IOException {
+        try (var paths = Files.list(MIGRATION_DIR)) {
+            return paths
+                    .filter(path -> fileNamePattern.matcher(path.getFileName().toString()).matches())
+                    .toList();
+        }
+    }
+
+    private static String normalizedSql(Path migration) throws IOException {
+        return Files.readString(migration, StandardCharsets.UTF_8)
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
     }
 }

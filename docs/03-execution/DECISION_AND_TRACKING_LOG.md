@@ -24,6 +24,7 @@
 | D7 | **trunk-based + 작은 PR + 매일 머지** | 브랜치 수명 단축 → 충돌 표면적 축소 | 장수명 feature 브랜치 | 전 트랙 통합 |
 | D8 | **embedding 벡터 차원 = 1536** 지금 고정 | 차원은 DB 컬럼/스키마에 박힘, 후행 변경 시 재색인 | provider 확정까지 미루기 | P1-AI-1, P1-BE-5/6 |
 | D9 | **pgvector 인덱스는 P4로 지연**, 스키마(차원 포함)만 P0 확정 | 초기 데이터 적음, 스키마만 안정화 | 초기부터 hnsw/ivfflat | P0-INFRA-5, P1-BE-6 |
+| D18 | `memory_embeddings.embedding`은 nullable, `succeeded` 상태에서만 필수 | P1에서 pending/running/failed embedding row를 같은 테이블로 추적해야 함 | pending은 `async_jobs`/`posts.memory_status`에만 저장, 결과 전용 테이블 분리 | P0-INFRA-5, P1-BE-4~6 |
 
 ### A-2. 후행 결정 (해당 단계 진입 직전, 담당 트랙이 결정) — 상태: 보류
 
@@ -95,7 +96,7 @@
 ### T6 · Platform
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
-| INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료. P0-INFRA-2 완료: PostgreSQL+pgvector compose 및 `CREATE EXTENSION vector` 초기화 추가, `pg_extension` vector 조회와 vector 캐스팅 검증 통과. 검토 반영: 병렬 compose 실행을 위해 고정 `container_name` 제거. P0-INFRA-3 완료: Spring Boot `/api/health`, FastAPI `/health` 200 반환. P0-INFRA-4 완료: `.env.example` 및 서비스별 환경 변수 로딩 추가, `docker compose --env-file .env.local up -d`로 postgres/backend/ai-server/frontend 4개 서비스 동시 기동과 backend·ai-server health, frontend 200 응답 검증. P0-INFRA-5 완료: Spring Boot Flyway/PostgreSQL 의존성 및 timestamp baseline migration 추가, P0/P1 핵심 테이블과 `memory_embeddings.embedding vector(1536)` 생성 검증 통과. T1과 공동 |
+| INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료. P0-INFRA-2 완료: PostgreSQL+pgvector compose 및 `CREATE EXTENSION vector` 초기화 추가, `pg_extension` vector 조회와 vector 캐스팅 검증 통과. 검토 반영: 병렬 compose 실행을 위해 고정 `container_name` 제거. P0-INFRA-3 완료: Spring Boot `/api/health`, FastAPI `/health` 200 반환. P0-INFRA-4 완료: `.env.example` 및 서비스별 환경 변수 로딩 추가, `docker compose --env-file .env.local up -d`로 postgres/backend/ai-server/frontend 4개 서비스 동시 기동과 backend·ai-server health, frontend 200 응답 검증. P0-INFRA-5 완료: Spring Boot Flyway/PostgreSQL 의존성 및 timestamp baseline migration 추가, P0/P1 핵심 테이블과 `memory_embeddings.embedding vector(1536)` 생성 검증 통과. 보완: D18에 따라 `embedding` nullable + `succeeded` 상태 필수 제약 follow-up migration 추가. T1과 공동 |
 | P1-BE-3 | async_jobs 작업큐·worker | 대기 | | | T3가 사용 |
 | P3-BE-5~8 | Agent tool·실행·승인 게이트 | 대기 | | | |
 | P3-BE-9~13 | MCP Server/Client BE | 대기 | | | |

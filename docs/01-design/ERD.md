@@ -345,7 +345,7 @@ erDiagram
 | provider | varchar(50) | NOT NULL | embedding provider |
 | model | varchar(100) | NOT NULL | embedding model |
 | dimension | integer | NOT NULL | vector 차원 |
-| embedding | vector | NOT NULL | pgvector embedding |
+| embedding | vector | NULL | pgvector embedding. `succeeded` 상태에서만 필수 |
 | status | varchar(20) | NOT NULL | `pending`, `running`, `succeeded`, `failed` |
 | failure_reason | text | NULL | 실패 사유 요약 |
 | job_id | uuid | FK async_jobs.id, NULL | 생성/갱신 job |
@@ -361,6 +361,7 @@ erDiagram
 규칙:
 
 - MVP는 하나의 embedding model을 기본값으로 둔다.
+- `embedding`은 `status = 'succeeded'`일 때만 NOT NULL이어야 하며, `pending`, `running`, `failed` 상태에서는 NULL이어야 한다.
 - 게시글 수정으로 chunk가 바뀌면 기존 chunk/embedding은 `stale` 또는 재생성 대상으로 전환한다.
 
 ## 6. P2 확장 테이블
