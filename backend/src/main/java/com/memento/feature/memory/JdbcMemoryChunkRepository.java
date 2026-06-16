@@ -99,6 +99,42 @@ class JdbcMemoryChunkRepository implements MemoryChunkRepository {
                 batchArgs);
     }
 
+    @Override
+    public void markActiveChunksStale(UUID postId, UUID ownerId, java.time.Instant staleAt) {
+        Timestamp staleTimestamp = Timestamp.from(staleAt);
+        jdbcTemplate.update(
+                """
+                UPDATE memory_chunks
+                SET status = 'stale',
+                    updated_at = ?
+                WHERE post_id = ?
+                  AND owner_id = ?
+                  AND status = 'active'
+                """,
+                staleTimestamp,
+                postId,
+                ownerId);
+    }
+
+    @Override
+    public void markChunksDeleted(UUID postId, UUID ownerId, java.time.Instant deletedAt) {
+        Timestamp deletedTimestamp = Timestamp.from(deletedAt);
+        jdbcTemplate.update(
+                """
+                UPDATE memory_chunks
+                SET status = 'deleted',
+                    deleted_at = ?,
+                    updated_at = ?
+                WHERE post_id = ?
+                  AND owner_id = ?
+                  AND status <> 'deleted'
+                """,
+                deletedTimestamp,
+                deletedTimestamp,
+                postId,
+                ownerId);
+    }
+
     private PostMemorySourceRow mapPostMemorySourceRow(java.sql.ResultSet rs, int rowNum)
             throws java.sql.SQLException {
         return new PostMemorySourceRow(

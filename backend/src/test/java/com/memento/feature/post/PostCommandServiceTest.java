@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 class PostCommandServiceTest {
 
@@ -47,6 +48,21 @@ class PostCommandServiceTest {
     }
 
     @Test
+    void updatePublishesPostUpdatedEventForMemoryRefresh() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        CapturingEventPublisher eventPublisher = new CapturingEventPublisher();
+        PostCommandService service = new PostCommandService(repository, eventPublisher, CLOCK);
+
+        service.update(
+                USER_ID,
+                POST_ID,
+                new CreatePostRequest("Updated title", "Updated content", List.of("project")));
+
+        assertThat(eventPublisher.events)
+                .containsExactly(new PostUpdatedEvent(POST_ID, USER_ID));
+    }
+
+    @Test
     void updateHidesPostsOutsideCurrentUserScope() {
         CapturingPostRepository repository = new CapturingPostRepository();
         repository.updateResult = Optional.empty();
@@ -57,6 +73,22 @@ class PostCommandServiceTest {
                         POST_ID,
                         new CreatePostRequest("Updated title", "Updated content", List.of())))
                 .isInstanceOf(PostNotFoundException.class);
+    }
+
+    @Test
+    void updateDoesNotPublishMemoryRefreshEventWhenPostIsHidden() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.updateResult = Optional.empty();
+        CapturingEventPublisher eventPublisher = new CapturingEventPublisher();
+        PostCommandService service = new PostCommandService(repository, eventPublisher, CLOCK);
+
+        assertThatThrownBy(() -> service.update(
+                        USER_ID,
+                        POST_ID,
+                        new CreatePostRequest("Updated title", "Updated content", List.of())))
+                .isInstanceOf(PostNotFoundException.class);
+
+        assertThat(eventPublisher.events).isEmpty();
     }
 
     @Test
@@ -72,6 +104,18 @@ class PostCommandServiceTest {
     }
 
     @Test
+    void deletePublishesPostDeletedEventForMemoryExclusion() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        CapturingEventPublisher eventPublisher = new CapturingEventPublisher();
+        PostCommandService service = new PostCommandService(repository, eventPublisher, CLOCK);
+
+        service.delete(USER_ID, POST_ID);
+
+        assertThat(eventPublisher.events)
+                .containsExactly(new PostDeletedEvent(POST_ID, USER_ID));
+    }
+
+    @Test
     void deleteHidesPostsOutsideCurrentUserScope() {
         CapturingPostRepository repository = new CapturingPostRepository();
         repository.deleteResult = false;
@@ -79,6 +123,19 @@ class PostCommandServiceTest {
 
         assertThatThrownBy(() -> service.delete(USER_ID, POST_ID))
                 .isInstanceOf(PostNotFoundException.class);
+    }
+
+    @Test
+    void deleteDoesNotPublishMemoryDeleteEventWhenPostIsHidden() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.deleteResult = false;
+        CapturingEventPublisher eventPublisher = new CapturingEventPublisher();
+        PostCommandService service = new PostCommandService(repository, eventPublisher, CLOCK);
+
+        assertThatThrownBy(() -> service.delete(USER_ID, POST_ID))
+                .isInstanceOf(PostNotFoundException.class);
+
+        assertThat(eventPublisher.events).isEmpty();
     }
 
     private static class CapturingPostRepository implements PostRepository {
@@ -165,5 +222,15 @@ class PostCommandServiceTest {
                 "pending",
                 CREATED_AT,
                 updatedAt);
+    }
+
+    private static class CapturingEventPublisher implements ApplicationEventPublisher {
+
+        private final List<Object> events = new java.util.ArrayList<>();
+
+        @Override
+        public void publishEvent(Object event) {
+            events.add(event);
+        }
     }
 }

@@ -90,6 +90,54 @@ class JdbcMemoryChunkRepositoryTest {
                 .contains("'active'");
     }
 
+    @Test
+    void markActiveChunksStaleOnlyTouchesCurrentOwnersActivePostChunks() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcMemoryChunkRepository repository = new JdbcMemoryChunkRepository(jdbcTemplate);
+
+        repository.markActiveChunksStale(POST_ID, OWNER_ID, NOW);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).update(
+                sqlCaptor.capture(),
+                eq(Timestamp.from(NOW)),
+                eq(POST_ID),
+                eq(OWNER_ID));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("update memory_chunks")
+                .contains("set status = 'stale'")
+                .contains("updated_at = ?")
+                .contains("where post_id = ?")
+                .contains("and owner_id = ?")
+                .contains("and status = 'active'");
+    }
+
+    @Test
+    void markChunksDeletedExcludesPostChunksAndRecordsDeletedAt() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcMemoryChunkRepository repository = new JdbcMemoryChunkRepository(jdbcTemplate);
+
+        repository.markChunksDeleted(POST_ID, OWNER_ID, NOW);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).update(
+                sqlCaptor.capture(),
+                eq(Timestamp.from(NOW)),
+                eq(Timestamp.from(NOW)),
+                eq(POST_ID),
+                eq(OWNER_ID));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("update memory_chunks")
+                .contains("set status = 'deleted'")
+                .contains("deleted_at = ?")
+                .contains("updated_at = ?")
+                .contains("where post_id = ?")
+                .contains("and owner_id = ?")
+                .contains("and status <> 'deleted'");
+    }
+
     private ResultSet postSourceResultSet() throws Exception {
         ResultSet rs = mock(ResultSet.class);
         when(rs.getObject("post_id", UUID.class)).thenReturn(POST_ID);

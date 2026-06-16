@@ -2,6 +2,9 @@ package com.memento.feature.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.memento.feature.embedding.EmbeddingInputChunk;
+import com.memento.feature.embedding.MemoryEmbeddingJobEnqueuer;
+import com.memento.feature.jobs.AsyncJobRecord;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -84,6 +87,56 @@ class MemoryChunkCreateServiceTest {
     }
 
     @Test
+    void refreshForUpdatedPostStalesActiveChunksThenCreatesNewChunksAndEmbeddingJob() {
+        CapturingMemoryChunkRepository repository = new CapturingMemoryChunkRepository(Optional.of(
+                new PostMemorySource(
+                        POST_ID,
+                        OWNER_ID,
+                        "Updated title",
+                        "Updated content",
+                        List.of(new PostMemoryTagSource(TAG_ID, "project")))));
+        CapturingEmbeddingJobEnqueuer embeddingJobEnqueuer = new CapturingEmbeddingJobEnqueuer();
+        MemoryChunkCreateService service = new MemoryChunkCreateService(
+                repository,
+                embeddingJobEnqueuer,
+                new SequentialUuidSupplier(List.of(TITLE_CHUNK_ID, CONTENT_CHUNK_ID, TAG_CHUNK_ID)),
+                CLOCK);
+
+        service.refreshForUpdatedPost(POST_ID, OWNER_ID);
+
+        assertThat(repository.staledPostId).isEqualTo(POST_ID);
+        assertThat(repository.staledOwnerId).isEqualTo(OWNER_ID);
+        assertThat(repository.staledAt).isEqualTo(NOW);
+        assertThat(repository.savedChunks)
+                .extracting(NewMemoryChunk::content)
+                .containsExactly("Updated title", "Updated content", "project");
+        assertThat(embeddingJobEnqueuer.ownerId).isEqualTo(OWNER_ID);
+        assertThat(embeddingJobEnqueuer.postId).isEqualTo(POST_ID);
+        assertThat(embeddingJobEnqueuer.reason).isEqualTo("post_updated");
+        assertThat(embeddingJobEnqueuer.chunks)
+                .containsExactly(
+                        new EmbeddingInputChunk(TITLE_CHUNK_ID, "Updated title"),
+                        new EmbeddingInputChunk(CONTENT_CHUNK_ID, "Updated content"),
+                        new EmbeddingInputChunk(TAG_CHUNK_ID, "project"));
+    }
+
+    @Test
+    void markPostDeletedExcludesChunksFromFutureSearch() {
+        CapturingMemoryChunkRepository repository = new CapturingMemoryChunkRepository(Optional.empty());
+        MemoryChunkCreateService service = new MemoryChunkCreateService(
+                repository,
+                new SequentialUuidSupplier(List.of(TITLE_CHUNK_ID)),
+                CLOCK);
+
+        service.markPostDeleted(POST_ID, OWNER_ID);
+
+        assertThat(repository.deletedPostId).isEqualTo(POST_ID);
+        assertThat(repository.deletedOwnerId).isEqualTo(OWNER_ID);
+        assertThat(repository.deletedAt).isEqualTo(NOW);
+        assertThat(repository.savedChunks).isEmpty();
+    }
+
+    @Test
     void createForPostDoesNothingWhenPostIsNotAvailableInOwnerScope() {
         CapturingMemoryChunkRepository repository = new CapturingMemoryChunkRepository(Optional.empty());
         MemoryChunkCreateService service = new MemoryChunkCreateService(
@@ -103,6 +156,12 @@ class MemoryChunkCreateServiceTest {
         private final Optional<PostMemorySource> source;
         private UUID loadedPostId;
         private UUID loadedOwnerId;
+        private UUID staledPostId;
+        private UUID staledOwnerId;
+        private Instant staledAt;
+        private UUID deletedPostId;
+        private UUID deletedOwnerId;
+        private Instant deletedAt;
         private final List<NewMemoryChunk> savedChunks = new ArrayList<>();
 
         private CapturingMemoryChunkRepository(Optional<PostMemorySource> source) {
@@ -119,6 +178,41 @@ class MemoryChunkCreateServiceTest {
         @Override
         public void saveAll(List<NewMemoryChunk> chunks) {
             savedChunks.addAll(chunks);
+        }
+
+        @Override
+        public void markActiveChunksStale(UUID postId, UUID ownerId, Instant staleAt) {
+            staledPostId = postId;
+            staledOwnerId = ownerId;
+            staledAt = staleAt;
+        }
+
+        @Override
+        public void markChunksDeleted(UUID postId, UUID ownerId, Instant deletedAt) {
+            deletedPostId = postId;
+            deletedOwnerId = ownerId;
+            this.deletedAt = deletedAt;
+        }
+    }
+
+    private static class CapturingEmbeddingJobEnqueuer implements MemoryEmbeddingJobEnqueuer {
+
+        private UUID ownerId;
+        private UUID postId;
+        private List<EmbeddingInputChunk> chunks = List.of();
+        private String reason;
+
+        @Override
+        public Optional<AsyncJobRecord> enqueueForChunks(
+                UUID ownerId,
+                UUID postId,
+                List<EmbeddingInputChunk> chunks,
+                String reason) {
+            this.ownerId = ownerId;
+            this.postId = postId;
+            this.chunks = List.copyOf(chunks);
+            this.reason = reason;
+            return Optional.empty();
         }
     }
 

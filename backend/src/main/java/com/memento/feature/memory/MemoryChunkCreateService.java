@@ -49,6 +49,21 @@ class MemoryChunkCreateService {
 
     @Transactional
     void createForPost(UUID postId, UUID ownerId) {
+        createForPost(postId, ownerId, "post_created");
+    }
+
+    @Transactional
+    void refreshForUpdatedPost(UUID postId, UUID ownerId) {
+        memoryChunkRepository.markActiveChunksStale(postId, ownerId, clock.instant());
+        createForPost(postId, ownerId, "post_updated");
+    }
+
+    @Transactional
+    void markPostDeleted(UUID postId, UUID ownerId) {
+        memoryChunkRepository.markChunksDeleted(postId, ownerId, clock.instant());
+    }
+
+    private void createForPost(UUID postId, UUID ownerId, String reason) {
         Optional<PostMemorySource> source = memoryChunkRepository.findActivePostSource(postId, ownerId);
         if (source.isEmpty()) {
             return;
@@ -62,7 +77,7 @@ class MemoryChunkCreateService {
                 chunks.stream()
                         .map(chunk -> new EmbeddingInputChunk(chunk.id(), chunk.content()))
                         .toList(),
-                "post_created");
+                reason);
     }
 
     private List<NewMemoryChunk> toChunks(PostMemorySource source) {
