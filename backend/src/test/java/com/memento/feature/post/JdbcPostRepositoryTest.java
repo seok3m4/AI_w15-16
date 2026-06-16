@@ -102,13 +102,15 @@ class JdbcPostRepositoryTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
         String sql = sqlCaptor.getValue().toLowerCase();
         assertThat(sql)
+                .contains("?::varchar is null")
                 .contains("p.title ilike")
                 .contains("p.content ilike")
                 .contains("from comments c_search")
                 .contains("c_search.deleted_at is null")
                 .contains("from post_tags pt_search")
                 .contains("t_search.name ilike")
-                .contains("t_filter.normalized_name = ?");
+                .contains("?::varchar is null")
+                .contains("t_filter.normalized_name = ?::varchar");
     }
 
     private ResultSet postResultSet() throws Exception {

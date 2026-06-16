@@ -168,8 +168,8 @@ class JdbcAsyncJobRepository implements AsyncJobRepository {
                         WHEN retryable = true
                          AND ? = true
                          AND attempt_count < max_attempts
-                        THEN NULL
-                        ELSE ?
+                        THEN NULL::timestamptz
+                        ELSE ?::timestamptz
                     END,
                     error = ?::jsonb,
                     updated_at = ?
@@ -213,8 +213,8 @@ class JdbcAsyncJobRepository implements AsyncJobRepository {
                     completed_at = CASE
                         WHEN retryable = true
                          AND attempt_count < max_attempts
-                        THEN NULL
-                        ELSE ?
+                        THEN NULL::timestamptz
+                        ELSE ?::timestamptz
                     END,
                     error = ?::jsonb,
                     updated_at = ?

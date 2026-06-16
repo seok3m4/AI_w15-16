@@ -171,15 +171,15 @@ class JdbcPostRepository implements PostRepository {
                         WHERE p.author_id = ?
                           AND p.deleted_at IS NULL
                           AND (
-                              ? IS NULL
-                              OR p.title ILIKE ?
-                              OR p.content ILIKE ?
+                              ?::varchar IS NULL
+                              OR p.title ILIKE ?::varchar
+                              OR p.content ILIKE ?::varchar
                               OR EXISTS (
                                   SELECT 1
                                   FROM comments c_search
                                   WHERE c_search.post_id = p.id
                                     AND c_search.deleted_at IS NULL
-                                    AND c_search.content ILIKE ?
+                                    AND c_search.content ILIKE ?::varchar
                               )
                               OR EXISTS (
                                   SELECT 1
@@ -187,18 +187,18 @@ class JdbcPostRepository implements PostRepository {
                                   JOIN tags t_search ON t_search.id = pt_search.tag_id
                                   WHERE pt_search.post_id = p.id
                                     AND t_search.owner_id = ?
-                                    AND t_search.name ILIKE ?
+                                    AND t_search.name ILIKE ?::varchar
                               )
                           )
                           AND (
-                              ? IS NULL
+                              ?::varchar IS NULL
                               OR EXISTS (
                                   SELECT 1
                                   FROM post_tags pt_filter
                                   JOIN tags t_filter ON t_filter.id = pt_filter.tag_id
                                   WHERE pt_filter.post_id = p.id
                                     AND t_filter.owner_id = ?
-                                    AND t_filter.normalized_name = ?
+                                    AND t_filter.normalized_name = ?::varchar
                               )
                           )
                         ORDER BY p.created_at DESC, p.id DESC
@@ -231,15 +231,15 @@ class JdbcPostRepository implements PostRepository {
                 WHERE p.author_id = ?
                   AND p.deleted_at IS NULL
                   AND (
-                      ? IS NULL
-                      OR p.title ILIKE ?
-                      OR p.content ILIKE ?
+                      ?::varchar IS NULL
+                      OR p.title ILIKE ?::varchar
+                      OR p.content ILIKE ?::varchar
                       OR EXISTS (
                           SELECT 1
                           FROM comments c_search
                           WHERE c_search.post_id = p.id
                             AND c_search.deleted_at IS NULL
-                            AND c_search.content ILIKE ?
+                            AND c_search.content ILIKE ?::varchar
                       )
                       OR EXISTS (
                           SELECT 1
@@ -247,18 +247,18 @@ class JdbcPostRepository implements PostRepository {
                           JOIN tags t_search ON t_search.id = pt_search.tag_id
                           WHERE pt_search.post_id = p.id
                             AND t_search.owner_id = ?
-                            AND t_search.name ILIKE ?
+                            AND t_search.name ILIKE ?::varchar
                       )
                   )
                   AND (
-                      ? IS NULL
+                      ?::varchar IS NULL
                       OR EXISTS (
                           SELECT 1
                           FROM post_tags pt_filter
                           JOIN tags t_filter ON t_filter.id = pt_filter.tag_id
                           WHERE pt_filter.post_id = p.id
                             AND t_filter.owner_id = ?
-                            AND t_filter.normalized_name = ?
+                            AND t_filter.normalized_name = ?::varchar
                       )
                   )
                 """,
