@@ -76,6 +76,27 @@ class PostMemoryControllerTest {
     }
 
     @Test
+    void searchMemoriesReturnsEmptyResultsWhenNoCandidateExists() throws Exception {
+        MemorySearchRequest request = new MemorySearchRequest("jwt decision", "me", 5);
+        MemorySearchResponse response = new MemorySearchResponse("jwt decision", "me", List.of());
+        given(service.searchMemories(USER_ID, request)).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/memory-search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.query").value("jwt decision"))
+                .andExpect(jsonPath("$.scope").value("me"))
+                .andExpect(jsonPath("$.results").isArray())
+                .andExpect(jsonPath("$.results").isEmpty());
+
+        verify(service).searchMemories(USER_ID, request);
+    }
+
+    @Test
     void searchMemoriesRejectsBlankQuery() throws Exception {
         mockMvc.perform(post("/api/v1/memory-search")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -3,6 +3,7 @@ package com.memento.feature.embedding;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,7 +15,8 @@ public class QueryEmbeddingService {
     private final EmbeddingProperties properties;
     private final Supplier<UUID> uuidSupplier;
 
-    QueryEmbeddingService(FastApiEmbeddingClient embeddingClient, EmbeddingProperties properties) {
+    @Autowired
+    public QueryEmbeddingService(FastApiEmbeddingClient embeddingClient, EmbeddingProperties properties) {
         this(embeddingClient, properties, UUID::randomUUID);
     }
 

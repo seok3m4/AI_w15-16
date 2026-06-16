@@ -10,10 +10,11 @@ record MemorySearchResponse(
         List<MemorySearchResultItem> results) {
 
     static MemorySearchResponse of(String query, String scope, List<MemoryVectorSearchCandidate> candidates) {
+        List<MemoryVectorSearchCandidate> safeCandidates = candidates == null ? List.of() : candidates;
         return new MemorySearchResponse(
                 query,
                 scope,
-                candidates.stream()
+                safeCandidates.stream()
                         .map(MemorySearchResultItem::from)
                         .toList());
     }
