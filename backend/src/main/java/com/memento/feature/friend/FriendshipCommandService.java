@@ -74,6 +74,17 @@ class FriendshipCommandService {
         return transition(currentUserId, friendshipId, "rejected");
     }
 
+    void delete(UUID currentUserId, UUID friendshipId) {
+        Instant now = clock.instant();
+        if (friendshipRepository.cancelPendingForRequester(friendshipId, currentUserId, now).isPresent()) {
+            return;
+        }
+        if (friendshipRepository.removeAcceptedForParticipant(friendshipId, currentUserId, now).isPresent()) {
+            return;
+        }
+        throw new FriendshipNotFoundException();
+    }
+
     private FriendshipStatusResponse transition(UUID currentUserId, UUID friendshipId, String status) {
         return friendshipRepository
                 .updatePendingForAddressee(friendshipId, currentUserId, status, clock.instant())

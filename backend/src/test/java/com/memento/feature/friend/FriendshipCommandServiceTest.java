@@ -103,6 +103,37 @@ class FriendshipCommandServiceTest {
                 .isInstanceOf(FriendshipNotFoundException.class);
     }
 
+    @Test
+    void deleteCancelsPendingRequestForRequester() {
+        FakeFriendshipRepository repository = new FakeFriendshipRepository();
+        repository.cancelled = Optional.of(new FriendshipStatusRecord(FRIENDSHIP_ID, "cancelled", NOW));
+        FriendshipCommandService service = service(repository);
+
+        service.delete(USER_ID, FRIENDSHIP_ID);
+
+        assertThat(repository.lastCancelRequesterId).isEqualTo(USER_ID);
+        assertThat(repository.removeAcceptedAttempted).isFalse();
+    }
+
+    @Test
+    void deleteRemovesAcceptedFriendshipForParticipant() {
+        FakeFriendshipRepository repository = new FakeFriendshipRepository();
+        repository.removed = Optional.of(new FriendshipStatusRecord(FRIENDSHIP_ID, "removed", NOW));
+        FriendshipCommandService service = service(repository);
+
+        service.delete(USER_ID, FRIENDSHIP_ID);
+
+        assertThat(repository.lastRemoveParticipantId).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void deleteMissingOrUnsupportedFriendshipReturnsNotFound() {
+        FriendshipCommandService service = service(new FakeFriendshipRepository());
+
+        assertThatThrownBy(() -> service.delete(USER_ID, FRIENDSHIP_ID))
+                .isInstanceOf(FriendshipNotFoundException.class);
+    }
+
     private FriendshipCommandService service(FakeFriendshipRepository repository) {
         return new FriendshipCommandService(repository, Clock.fixed(NOW, ZoneOffset.UTC), () -> FRIENDSHIP_ID);
     }
@@ -114,8 +145,13 @@ class FriendshipCommandServiceTest {
         boolean activePairExists;
         NewFriendship inserted;
         Optional<FriendshipStatusRecord> statusUpdate = Optional.empty();
+        Optional<FriendshipStatusRecord> cancelled = Optional.empty();
+        Optional<FriendshipStatusRecord> removed = Optional.empty();
         UUID lastAddresseeId;
         String lastStatus;
+        UUID lastCancelRequesterId;
+        UUID lastRemoveParticipantId;
+        boolean removeAcceptedAttempted;
 
         @Override
         public Optional<FriendshipUserRecord> findActiveUserById(UUID userId) {
@@ -147,6 +183,39 @@ class FriendshipCommandServiceTest {
             lastAddresseeId = addresseeId;
             lastStatus = status;
             return statusUpdate;
+        }
+
+        @Override
+        public java.util.List<FriendshipListRecord> findPageByUserAndStatus(
+                UUID userId,
+                String status,
+                int limit,
+                int offset) {
+            return java.util.List.of();
+        }
+
+        @Override
+        public long countByUserAndStatus(UUID userId, String status) {
+            return 0;
+        }
+
+        @Override
+        public Optional<FriendshipStatusRecord> cancelPendingForRequester(
+                UUID friendshipId,
+                UUID requesterId,
+                Instant cancelledAt) {
+            lastCancelRequesterId = requesterId;
+            return cancelled;
+        }
+
+        @Override
+        public Optional<FriendshipStatusRecord> removeAcceptedForParticipant(
+                UUID friendshipId,
+                UUID participantId,
+                Instant removedAt) {
+            removeAcceptedAttempted = true;
+            lastRemoveParticipantId = participantId;
+            return removed;
         }
     }
 }

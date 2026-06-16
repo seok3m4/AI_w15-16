@@ -111,6 +111,117 @@ class JdbcFriendshipRepository implements FriendshipRepository {
         return records.stream().findFirst();
     }
 
+    @Override
+    public List<FriendshipListRecord> findPageByUserAndStatus(
+            UUID userId,
+            String status,
+            int limit,
+            int offset) {
+        return jdbcTemplate.query(
+                """
+                SELECT f.id,
+                       CASE WHEN f.requester_id = ? THEN f.addressee_id ELSE f.requester_id END AS user_id,
+                       u.nickname,
+                       f.status,
+                       CASE WHEN f.requester_id = ? THEN 'outgoing' ELSE 'incoming' END AS direction,
+                       f.requested_at,
+                       f.updated_at
+                FROM friendships f
+                JOIN users u
+                  ON u.id = CASE WHEN f.requester_id = ? THEN f.addressee_id ELSE f.requester_id END
+                WHERE (f.requester_id = ? OR f.addressee_id = ?)
+                  AND f.status = ?
+                ORDER BY f.updated_at DESC, f.requested_at DESC
+                LIMIT ? OFFSET ?
+                """,
+                (rs, rowNum) -> new FriendshipListRecord(
+                        rs.getObject("id", UUID.class),
+                        new FriendshipUserRecord(
+                                rs.getObject("user_id", UUID.class),
+                                rs.getString("nickname")),
+                        rs.getString("status"),
+                        rs.getString("direction"),
+                        rs.getTimestamp("requested_at").toInstant(),
+                        rs.getTimestamp("updated_at").toInstant()),
+                userId,
+                userId,
+                userId,
+                userId,
+                userId,
+                status,
+                limit,
+                offset);
+    }
+
+    @Override
+    public long countByUserAndStatus(UUID userId, String status) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM friendships
+                WHERE (requester_id = ? OR addressee_id = ?)
+                  AND status = ?
+                """,
+                Long.class,
+                userId,
+                userId,
+                status);
+        return count == null ? 0 : count;
+    }
+
+    @Override
+    public Optional<FriendshipStatusRecord> cancelPendingForRequester(
+            UUID friendshipId,
+            UUID requesterId,
+            Instant cancelledAt) {
+        List<FriendshipStatusRecord> records = jdbcTemplate.query(
+                """
+                UPDATE friendships
+                SET status = 'cancelled',
+                    updated_at = ?
+                WHERE id = ?
+                  AND requester_id = ?
+                  AND status = 'pending'
+                RETURNING id, status, updated_at
+                """,
+                (rs, rowNum) -> new FriendshipStatusRecord(
+                        rs.getObject("id", UUID.class),
+                        rs.getString("status"),
+                        rs.getTimestamp("updated_at").toInstant()),
+                Timestamp.from(cancelledAt),
+                friendshipId,
+                requesterId);
+        return records.stream().findFirst();
+    }
+
+    @Override
+    public Optional<FriendshipStatusRecord> removeAcceptedForParticipant(
+            UUID friendshipId,
+            UUID participantId,
+            Instant removedAt) {
+        List<FriendshipStatusRecord> records = jdbcTemplate.query(
+                """
+                UPDATE friendships
+                SET status = 'removed',
+                    removed_at = ?,
+                    updated_at = ?
+                WHERE id = ?
+                  AND (requester_id = ? OR addressee_id = ?)
+                  AND status = 'accepted'
+                RETURNING id, status, updated_at
+                """,
+                (rs, rowNum) -> new FriendshipStatusRecord(
+                        rs.getObject("id", UUID.class),
+                        rs.getString("status"),
+                        rs.getTimestamp("updated_at").toInstant()),
+                Timestamp.from(removedAt),
+                Timestamp.from(removedAt),
+                friendshipId,
+                participantId,
+                participantId);
+        return records.stream().findFirst();
+    }
+
     private UUID least(UUID userId, UUID otherUserId) {
         return userId.compareTo(otherUserId) <= 0 ? userId : otherUserId;
     }

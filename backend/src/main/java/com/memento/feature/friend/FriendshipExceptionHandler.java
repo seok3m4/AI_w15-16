@@ -23,6 +23,20 @@ class FriendshipExceptionHandler {
                 "VALIDATION_ERROR");
     }
 
+    @ExceptionHandler(FriendshipInvalidQueryException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ProblemDetailsResponse handleInvalidQuery(
+            FriendshipInvalidQueryException exception,
+            HttpServletRequest request) {
+        return problem(
+                "invalid-friendship-query",
+                "Invalid friendship query",
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request,
+                "INVALID_FRIENDSHIP_QUERY");
+    }
+
     @ExceptionHandler(CannotFriendSelfException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleCannotFriendSelf(HttpServletRequest request) {

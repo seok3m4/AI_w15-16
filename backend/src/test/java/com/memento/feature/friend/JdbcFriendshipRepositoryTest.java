@@ -132,6 +132,107 @@ class JdbcFriendshipRepositoryTest {
                 .contains("returning id, status, updated_at");
     }
 
+    @Test
+    void findPageByUserAndStatusReturnsCounterpartAndDirection() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(USER_ID), eq(USER_ID),
+                eq("accepted"), eq(20), eq(0)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<FriendshipListRecord> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(listResultSet(), 0));
+                });
+
+        List<FriendshipListRecord> records =
+                repository.findPageByUserAndStatus(USER_ID, "accepted", 20, 0);
+
+        assertThat(records).hasSize(1);
+        assertThat(records.get(0).user().id()).isEqualTo(FRIEND_ID);
+        assertThat(records.get(0).direction()).isEqualTo("outgoing");
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(USER_ID),
+                eq(USER_ID), eq("accepted"), eq(20), eq(0));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("join users")
+                .contains("requester_id = ? or f.addressee_id = ?")
+                .contains("and f.status = ?")
+                .contains("order by f.updated_at desc, f.requested_at desc");
+    }
+
+    @Test
+    void countByUserAndStatusUsesCurrentUserAndStatus() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
+        when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), eq(USER_ID), eq(USER_ID), eq("pending")))
+                .thenReturn(2L);
+
+        assertThat(repository.countByUserAndStatus(USER_ID, "pending")).isEqualTo(2);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), eq(Long.class), eq(USER_ID), eq(USER_ID),
+                eq("pending"));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("count(*)")
+                .contains("requester_id = ? or addressee_id = ?")
+                .contains("status = ?");
+    }
+
+    @Test
+    void cancelPendingForRequesterRequiresRequesterAndPendingStatus() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(Timestamp.from(NOW)),
+                eq(FRIENDSHIP_ID), eq(USER_ID)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<FriendshipStatusRecord> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(cancelledStatusResultSet(), 0));
+                });
+
+        FriendshipStatusRecord updated = repository
+                .cancelPendingForRequester(FRIENDSHIP_ID, USER_ID, NOW)
+                .orElseThrow();
+
+        assertThat(updated.status()).isEqualTo("cancelled");
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(Timestamp.from(NOW)),
+                eq(FRIENDSHIP_ID), eq(USER_ID));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("set status = 'cancelled'")
+                .contains("where id = ?")
+                .contains("and requester_id = ?")
+                .contains("and status = 'pending'");
+    }
+
+    @Test
+    void removeAcceptedForParticipantRequiresEitherPartyAndAcceptedStatus() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(Timestamp.from(NOW)),
+                eq(Timestamp.from(NOW)), eq(FRIENDSHIP_ID), eq(USER_ID), eq(USER_ID)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<FriendshipStatusRecord> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(removedStatusResultSet(), 0));
+                });
+
+        FriendshipStatusRecord updated = repository
+                .removeAcceptedForParticipant(FRIENDSHIP_ID, USER_ID, NOW)
+                .orElseThrow();
+
+        assertThat(updated.status()).isEqualTo("removed");
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(Timestamp.from(NOW)),
+                eq(Timestamp.from(NOW)), eq(FRIENDSHIP_ID), eq(USER_ID), eq(USER_ID));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("set status = 'removed'")
+                .contains("removed_at = ?")
+                .contains("where id = ?")
+                .contains("requester_id = ? or addressee_id = ?")
+                .contains("and status = 'accepted'");
+    }
+
     private ResultSet userResultSet() throws Exception {
         ResultSet rs = mock(ResultSet.class);
         when(rs.getObject("id", UUID.class)).thenReturn(USER_ID);
@@ -143,6 +244,30 @@ class JdbcFriendshipRepositoryTest {
         ResultSet rs = mock(ResultSet.class);
         when(rs.getObject("id", UUID.class)).thenReturn(FRIENDSHIP_ID);
         when(rs.getString("status")).thenReturn("accepted");
+        when(rs.getTimestamp("updated_at")).thenReturn(Timestamp.from(NOW));
+        return rs;
+    }
+
+    private ResultSet cancelledStatusResultSet() throws Exception {
+        ResultSet rs = statusResultSet();
+        when(rs.getString("status")).thenReturn("cancelled");
+        return rs;
+    }
+
+    private ResultSet removedStatusResultSet() throws Exception {
+        ResultSet rs = statusResultSet();
+        when(rs.getString("status")).thenReturn("removed");
+        return rs;
+    }
+
+    private ResultSet listResultSet() throws Exception {
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.getObject("id", UUID.class)).thenReturn(FRIENDSHIP_ID);
+        when(rs.getObject("user_id", UUID.class)).thenReturn(FRIEND_ID);
+        when(rs.getString("nickname")).thenReturn("friend");
+        when(rs.getString("status")).thenReturn("accepted");
+        when(rs.getString("direction")).thenReturn("outgoing");
+        when(rs.getTimestamp("requested_at")).thenReturn(Timestamp.from(NOW));
         when(rs.getTimestamp("updated_at")).thenReturn(Timestamp.from(NOW));
         return rs;
     }

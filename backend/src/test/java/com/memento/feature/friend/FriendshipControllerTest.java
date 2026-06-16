@@ -1,7 +1,10 @@
 package com.memento.feature.friend;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.memento.feature.auth.AuthenticatedUserPrincipal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -37,6 +41,9 @@ class FriendshipControllerTest {
 
     @MockitoBean
     private FriendshipCommandService friendshipCommandService;
+
+    @MockitoBean
+    private FriendshipQueryService friendshipQueryService;
 
     @Test
     void createRequestReturnsPendingFriendship() throws Exception {
@@ -122,6 +129,100 @@ class FriendshipControllerTest {
                 .willThrow(new FriendshipNotFoundException());
 
         mockMvc.perform(post("/api/v1/friendships/{friendshipId}/accept", FRIENDSHIP_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("FRIENDSHIP_NOT_FOUND"));
+    }
+
+    @Test
+    void listFriendshipsReturnsPagedItems() throws Exception {
+        FriendshipListResponse response = new FriendshipListResponse(
+                List.of(new FriendshipListItemResponse(
+                        FRIENDSHIP_ID,
+                        new FriendshipUserResponse(FRIEND_ID, "friend"),
+                        "accepted",
+                        "outgoing",
+                        NOW,
+                        NOW)),
+                new FriendshipPageResponse(0, 20, 1, 1));
+        given(friendshipQueryService.list(USER_ID, "accepted", 0, 20)).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/friendships")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value("33333333-3333-3333-3333-333333333333"))
+                .andExpect(jsonPath("$.items[0].user.id").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.items[0].user.nickname").value("friend"))
+                .andExpect(jsonPath("$.items[0].status").value("accepted"))
+                .andExpect(jsonPath("$.items[0].direction").value("outgoing"))
+                .andExpect(jsonPath("$.items[0].createdAt").value("2026-06-15T03:10:00Z"))
+                .andExpect(jsonPath("$.items[0].updatedAt").value("2026-06-15T03:10:00Z"))
+                .andExpect(jsonPath("$.page.page").value(0))
+                .andExpect(jsonPath("$.page.size").value(20))
+                .andExpect(jsonPath("$.page.totalCount").value(1))
+                .andExpect(jsonPath("$.page.totalPages").value(1));
+
+        verify(friendshipQueryService).list(USER_ID, "accepted", 0, 20);
+    }
+
+    @Test
+    void listFriendshipsSupportsQueryParameters() throws Exception {
+        FriendshipListResponse response = new FriendshipListResponse(
+                List.of(),
+                new FriendshipPageResponse(1, 10, 0, 0));
+        given(friendshipQueryService.list(USER_ID, "pending", 1, 10)).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/friendships")
+                        .param("status", "pending")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.page.page").value(1))
+                .andExpect(jsonPath("$.page.size").value(10));
+
+        verify(friendshipQueryService).list(USER_ID, "pending", 1, 10);
+    }
+
+    @Test
+    void listFriendshipsRejectsInvalidQuery() throws Exception {
+        given(friendshipQueryService.list(USER_ID, "removed", 0, 20))
+                .willThrow(new FriendshipInvalidQueryException("status must be one of pending, accepted, rejected."));
+
+        mockMvc.perform(get("/api/v1/friendships")
+                        .param("status", "removed")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_FRIENDSHIP_QUERY"));
+    }
+
+    @Test
+    void deleteFriendshipReturnsNoContent() throws Exception {
+        mockMvc.perform(delete("/api/v1/friendships/{friendshipId}", FRIENDSHIP_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNoContent());
+
+        verify(friendshipCommandService).delete(USER_ID, FRIENDSHIP_ID);
+    }
+
+    @Test
+    void deleteUnknownFriendshipReturnsNotFound() throws Exception {
+        doThrow(new FriendshipNotFoundException())
+                .when(friendshipCommandService)
+                .delete(USER_ID, FRIENDSHIP_ID);
+
+        mockMvc.perform(delete("/api/v1/friendships/{friendshipId}", FRIENDSHIP_ID)
                         .requestAttr(
                                 AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
                                 new AuthenticatedUserPrincipal(USER_ID)))
