@@ -2,8 +2,10 @@ package com.memento.feature.post;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,6 +42,9 @@ class PostControllerTest {
 
     @MockitoBean
     private PostQueryService postQueryService;
+
+    @MockitoBean
+    private PostCommandService postCommandService;
 
     @Test
     void createPostReturnsCreatedPostForCurrentUser() throws Exception {
@@ -168,6 +173,97 @@ class PostControllerTest {
         given(postQueryService.getDetail(USER_ID, POST_ID)).willThrow(new PostNotFoundException(POST_ID));
 
         mockMvc.perform(get("/api/v1/posts/{postId}", POST_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
+    }
+
+    @Test
+    void updatePostReturnsUpdatedPostForCurrentUser() throws Exception {
+        CreatePostRequest request = new CreatePostRequest(
+                "Updated title",
+                "Updated content",
+                List.of("Journal", "Project"));
+        PostResponse response = new PostResponse(
+                POST_ID,
+                new PostAuthorResponse(USER_ID, "cutan"),
+                "Updated title",
+                "Updated content",
+                List.of("Journal", "Project"),
+                0,
+                0,
+                false,
+                "me",
+                "pending",
+                NOW,
+                NOW);
+
+        given(postCommandService.update(USER_ID, POST_ID, request)).willReturn(response);
+
+        mockMvc.perform(put("/api/v1/posts/{postId}", POST_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.title").value("Updated title"))
+                .andExpect(jsonPath("$.content").value("Updated content"))
+                .andExpect(jsonPath("$.tags[0]").value("Journal"));
+
+        verify(postCommandService).update(USER_ID, POST_ID, request);
+    }
+
+    @Test
+    void updatePostRejectsBlankTitleAndContent() throws Exception {
+        mockMvc.perform(put("/api/v1/posts/{postId}", POST_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", " ",
+                                "content", ""))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void updatePostReturnsNotFoundWhenUserCannotAccessPost() throws Exception {
+        CreatePostRequest request = new CreatePostRequest("Updated title", "Updated content", List.of());
+        given(postCommandService.update(USER_ID, POST_ID, request)).willThrow(new PostNotFoundException(POST_ID));
+
+        mockMvc.perform(put("/api/v1/posts/{postId}", POST_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
+    }
+
+    @Test
+    void deletePostReturnsNoContentForCurrentUser() throws Exception {
+        mockMvc.perform(delete("/api/v1/posts/{postId}", POST_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNoContent());
+
+        verify(postCommandService).delete(USER_ID, POST_ID);
+    }
+
+    @Test
+    void deletePostReturnsNotFoundWhenUserCannotAccessPost() throws Exception {
+        org.mockito.BDDMockito.willThrow(new PostNotFoundException(POST_ID))
+                .given(postCommandService)
+                .delete(USER_ID, POST_ID);
+
+        mockMvc.perform(delete("/api/v1/posts/{postId}", POST_ID)
                         .requestAttr(
                                 AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
                                 new AuthenticatedUserPrincipal(USER_ID)))
