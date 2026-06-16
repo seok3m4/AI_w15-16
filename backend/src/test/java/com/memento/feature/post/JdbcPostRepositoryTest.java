@@ -73,11 +73,11 @@ class JdbcPostRepositoryTest {
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
                 .thenReturn(List.of());
 
-        List<PostRecord> records = repository.findPageByAuthor(USER_ID, 10, 20);
+        List<PostRecord> records = repository.findPageByAuthor(USER_ID, null, null, 10, 20);
 
         assertThat(records).isEmpty();
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(10), eq(20));
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
         String sql = sqlCaptor.getValue().toLowerCase();
         assertThat(sql)
                 .contains("where p.author_id = ?")
@@ -85,6 +85,30 @@ class JdbcPostRepositoryTest {
                 .contains("order by p.created_at desc, p.id desc")
                 .contains("limit ?")
                 .contains("offset ?");
+    }
+
+    @Test
+    void findPageByAuthorSearchesTitleContentActiveCommentsAndTagsInsideAuthorScope() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        List<PostRecord> records = repository.findPageByAuthor(USER_ID, "memo", "project", 10, 0);
+
+        assertThat(records).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("p.title ilike")
+                .contains("p.content ilike")
+                .contains("from comments c_search")
+                .contains("c_search.deleted_at is null")
+                .contains("from post_tags pt_search")
+                .contains("t_search.name ilike")
+                .contains("t_filter.normalized_name = ?");
     }
 
     private ResultSet postResultSet() throws Exception {

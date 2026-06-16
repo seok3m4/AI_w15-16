@@ -105,12 +105,17 @@ class PostCommandServiceTest {
         }
 
         @Override
-        public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+        public List<PostRecord> findPageByAuthor(
+                UUID authorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
             return List.of();
         }
 
         @Override
-        public long countByAuthor(UUID authorId) {
+        public long countByAuthor(UUID authorId, String keyword, String normalizedTag) {
             return 0;
         }
 

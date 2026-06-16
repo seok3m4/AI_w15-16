@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 class PostCreateServiceTest {
 
@@ -75,6 +76,27 @@ class PostCreateServiceTest {
         assertThat(repository.capturedTagNames).containsExactly("Java", "Spring");
     }
 
+    @Test
+    void createPublishesPostCreatedEventForMemoryChunkPipeline() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        CapturingEventPublisher eventPublisher = new CapturingEventPublisher();
+        PostCreateService service = new PostCreateService(
+                repository,
+                eventPublisher,
+                () -> POST_ID,
+                CLOCK);
+
+        service.create(
+                USER_ID,
+                new CreatePostRequest(
+                        "Memory source",
+                        "The post should feed chunk creation.",
+                        List.of("project")));
+
+        assertThat(eventPublisher.events)
+                .containsExactly(new PostCreatedEvent(POST_ID, USER_ID));
+    }
+
     private static class CapturingPostRepository implements PostRepository {
 
         private NewPost savedPost;
@@ -101,12 +123,17 @@ class PostCreateServiceTest {
         }
 
         @Override
-        public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+        public List<PostRecord> findPageByAuthor(
+                UUID authorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
             return List.of();
         }
 
         @Override
-        public long countByAuthor(UUID authorId) {
+        public long countByAuthor(UUID authorId, String keyword, String normalizedTag) {
             return 0;
         }
 
@@ -129,6 +156,16 @@ class PostCreateServiceTest {
         @Override
         public boolean softDeleteByAuthor(UUID postId, UUID authorId, Instant deletedAt) {
             return false;
+        }
+    }
+
+    private static class CapturingEventPublisher implements ApplicationEventPublisher {
+
+        private final List<Object> events = new java.util.ArrayList<>();
+
+        @Override
+        public void publishEvent(Object event) {
+            events.add(event);
         }
     }
 }

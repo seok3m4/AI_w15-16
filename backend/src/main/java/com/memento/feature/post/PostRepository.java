@@ -9,9 +9,9 @@ interface PostRepository {
 
     PostRecord save(NewPost post, List<String> tagNames);
 
-    List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset);
+    List<PostRecord> findPageByAuthor(UUID authorId, String keyword, String normalizedTag, int limit, int offset);
 
-    long countByAuthor(UUID authorId);
+    long countByAuthor(UUID authorId, String keyword, String normalizedTag);
 
     Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId);
 

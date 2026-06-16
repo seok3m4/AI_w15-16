@@ -158,12 +158,49 @@ class JdbcPostRepository implements PostRepository {
     }
 
     @Override
-    public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+    public List<PostRecord> findPageByAuthor(
+            UUID authorId,
+            String keyword,
+            String normalizedTag,
+            int limit,
+            int offset) {
+        String keywordPattern = keywordPattern(keyword);
         return jdbcTemplate.query(
                 POST_SELECT_COLUMNS
                         + """
                         WHERE p.author_id = ?
                           AND p.deleted_at IS NULL
+                          AND (
+                              ? IS NULL
+                              OR p.title ILIKE ?
+                              OR p.content ILIKE ?
+                              OR EXISTS (
+                                  SELECT 1
+                                  FROM comments c_search
+                                  WHERE c_search.post_id = p.id
+                                    AND c_search.deleted_at IS NULL
+                                    AND c_search.content ILIKE ?
+                              )
+                              OR EXISTS (
+                                  SELECT 1
+                                  FROM post_tags pt_search
+                                  JOIN tags t_search ON t_search.id = pt_search.tag_id
+                                  WHERE pt_search.post_id = p.id
+                                    AND t_search.owner_id = ?
+                                    AND t_search.name ILIKE ?
+                              )
+                          )
+                          AND (
+                              ? IS NULL
+                              OR EXISTS (
+                                  SELECT 1
+                                  FROM post_tags pt_filter
+                                  JOIN tags t_filter ON t_filter.id = pt_filter.tag_id
+                                  WHERE pt_filter.post_id = p.id
+                                    AND t_filter.owner_id = ?
+                                    AND t_filter.normalized_name = ?
+                              )
+                          )
                         ORDER BY p.created_at DESC, p.id DESC
                         LIMIT ?
                         OFFSET ?
@@ -171,21 +208,71 @@ class JdbcPostRepository implements PostRepository {
                 this::mapPost,
                 authorId,
                 authorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                authorId,
+                keywordPattern,
+                normalizedTag,
+                authorId,
+                normalizedTag,
                 limit,
                 offset);
     }
 
     @Override
-    public long countByAuthor(UUID authorId) {
+    public long countByAuthor(UUID authorId, String keyword, String normalizedTag) {
+        String keywordPattern = keywordPattern(keyword);
         Long count = jdbcTemplate.queryForObject(
                 """
                 SELECT count(*)
                 FROM posts p
                 WHERE p.author_id = ?
                   AND p.deleted_at IS NULL
+                  AND (
+                      ? IS NULL
+                      OR p.title ILIKE ?
+                      OR p.content ILIKE ?
+                      OR EXISTS (
+                          SELECT 1
+                          FROM comments c_search
+                          WHERE c_search.post_id = p.id
+                            AND c_search.deleted_at IS NULL
+                            AND c_search.content ILIKE ?
+                      )
+                      OR EXISTS (
+                          SELECT 1
+                          FROM post_tags pt_search
+                          JOIN tags t_search ON t_search.id = pt_search.tag_id
+                          WHERE pt_search.post_id = p.id
+                            AND t_search.owner_id = ?
+                            AND t_search.name ILIKE ?
+                      )
+                  )
+                  AND (
+                      ? IS NULL
+                      OR EXISTS (
+                          SELECT 1
+                          FROM post_tags pt_filter
+                          JOIN tags t_filter ON t_filter.id = pt_filter.tag_id
+                          WHERE pt_filter.post_id = p.id
+                            AND t_filter.owner_id = ?
+                            AND t_filter.normalized_name = ?
+                      )
+                  )
                 """,
                 Long.class,
-                authorId);
+                authorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                authorId,
+                keywordPattern,
+                normalizedTag,
+                authorId,
+                normalizedTag);
         return count == null ? 0 : count;
     }
 
@@ -312,5 +399,9 @@ class JdbcPostRepository implements PostRepository {
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to map post tags.", exception);
         }
+    }
+
+    private String keywordPattern(String keyword) {
+        return keyword == null ? null : "%" + keyword + "%";
     }
 }

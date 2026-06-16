@@ -98,13 +98,15 @@ class PostQueryServiceTest {
     }
 
     @Test
-    void listRejectsKeywordAndTagFiltersUntilSearchTaskExtendsIt() {
-        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+    void listPassesNormalizedSearchFiltersToRepository() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        PostQueryService service = new PostQueryService(repository);
 
-        assertThatThrownBy(() -> service.list(USER_ID, "me", "memo", null, 0, 20, "createdAt,desc"))
-                .isInstanceOf(PostInvalidQueryException.class);
-        assertThatThrownBy(() -> service.list(USER_ID, "me", null, "project", 0, 20, "createdAt,desc"))
-                .isInstanceOf(PostInvalidQueryException.class);
+        PostListResponse response = service.list(USER_ID, "me", "  Memo  ", "  Project  ", 0, 20, "createdAt,desc");
+
+        assertThat(response.items()).isEmpty();
+        assertThat(repository.capturedKeyword).isEqualTo("Memo");
+        assertThat(repository.capturedNormalizedTag).isEqualTo("project");
     }
 
     private static PostRecord postRecord(String title, String content) {
@@ -129,6 +131,8 @@ class PostQueryServiceTest {
         private List<PostRecord> pageRecords = List.of();
         private long totalCount;
         private UUID capturedAuthorId;
+        private String capturedKeyword;
+        private String capturedNormalizedTag;
         private int capturedLimit;
         private int capturedOffset;
         private UUID capturedDetailPostId;
@@ -140,15 +144,22 @@ class PostQueryServiceTest {
         }
 
         @Override
-        public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+        public List<PostRecord> findPageByAuthor(
+                UUID authorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
             capturedAuthorId = authorId;
+            capturedKeyword = keyword;
+            capturedNormalizedTag = normalizedTag;
             capturedLimit = limit;
             capturedOffset = offset;
             return pageRecords;
         }
 
         @Override
-        public long countByAuthor(UUID authorId) {
+        public long countByAuthor(UUID authorId, String keyword, String normalizedTag) {
             return totalCount;
         }
 

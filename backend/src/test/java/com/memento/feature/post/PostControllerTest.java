@@ -162,20 +162,6 @@ class PostControllerTest {
     }
 
     @Test
-    void listPostsReturnsBadRequestForUnsupportedSearchUntilP0Be13() throws Exception {
-        given(postQueryService.list(USER_ID, "me", "memo", null, 0, 20, "createdAt,desc"))
-                .willThrow(new PostInvalidQueryException("q search is supported from P0-BE-13."));
-
-        mockMvc.perform(get("/api/v1/posts")
-                        .param("q", "memo")
-                        .requestAttr(
-                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
-                                new AuthenticatedUserPrincipal(USER_ID)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_POST_QUERY"));
-    }
-
-    @Test
     void getPostReturnsCurrentUserPostDetail() throws Exception {
         PostDetailResponse response = new PostDetailResponse(
                 POST_ID,
