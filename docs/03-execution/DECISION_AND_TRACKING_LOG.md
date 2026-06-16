@@ -68,8 +68,8 @@
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
 | FE 공통 골격 | 디자인·라우트 집계·API 클라이언트(1단계) | 대기 | | | |
-| P0-BE-4~7 | 게시물 CRUD·소유권 | 진행 | | | 2026-06-16: P0-BE-4 완료. `POST /api/v1/posts` 구현, 제목·본문으로 게시물 생성 및 `memory_status=pending` 반환. `tagNames`는 optional 요청 호환성과 중복 정리까지만 처리하고 실제 태그 저장은 P0-BE-10에서 진행. memory chunk/embedding job 연결은 P1-BE-4에서 진행. 2026-06-16: P0-BE-5 완료. `GET /api/v1/posts` 기본 `scope=me` 목록과 `GET /api/v1/posts/{postId}` 본인 상세 조회 구현. 타 사용자/삭제 게시물은 404로 숨김. |
-| P0-BE-8~11 | 댓글·태그 | 대기 | | | |
+| P0-BE-4~7 | 게시물 CRUD·소유권 | 완료 | | | 2026-06-16: P0-BE-4 완료. `POST /api/v1/posts` 구현, 제목·본문으로 게시물 생성 및 `memory_status=pending` 반환. `tagNames`는 optional 요청 호환성과 중복 정리까지만 처리하고 실제 태그 저장은 P0-BE-10에서 진행. memory chunk/embedding job 연결은 P1-BE-4에서 진행. 2026-06-16: P0-BE-5 완료. `GET /api/v1/posts` 기본 `scope=me` 목록과 `GET /api/v1/posts/{postId}` 본인 상세 조회 구현. 타 사용자/삭제 게시물은 404로 숨김. 2026-06-16: P0-BE-6~7 완료. `PUT`/`DELETE /api/v1/posts/{postId}`는 작성자 조건으로만 수정·soft delete하고, 타 사용자/삭제/미존재 게시물은 `POST_NOT_FOUND` 404로 숨김. `PostRepository` 공개 계약에서 owner 없는 `findById`를 제거해 조회·변경 경로가 current user scope를 거치도록 보강. `cd backend; .\gradlew.bat --no-daemon test` 통과. |
+| P0-BE-8~11 | 댓글·태그 | 진행 | | | 2026-06-16: P0-BE-8 완료. `POST /api/v1/posts/{postId}/comments` 구현. 로그인 사용자가 본인 게시물에만 댓글을 작성할 수 있고, 비소유/삭제 게시물은 `POST_NOT_FOUND` 404로 은닉. `feature/comment` 패키지에 controller/service/repository/exception handler 추가, JDBC `INSERT ... SELECT`로 게시물 소유권을 저장 시점에 강제. `CommentControllerTest`, `CommentCreateServiceTest`, `JdbcCommentRepositoryTest` 추가 및 `cd backend && .\\gradlew.bat --no-daemon test --tests "com.memento.feature.comment.*"` 검증 통과. 2026-06-16: P0-BE-10 완료. `POST /api/v1/posts` 생성 시 `tagNames`를 사용자별 `tags`/`post_tags`로 upsert·연결하고, 중복 태그명은 `normalized_name` 기준으로 하나로 정리. 생성·목록·상세 조회 응답의 `tags` 배열에 저장 태그 반환. P0-BE-11 `GET /api/v1/tags`와 P0-BE-13 검색 연동은 대기. |
 | P0-BE-12~13, P0-FE-2~5 | 페이징·검색·화면 | 대기 | | | |
 | P2-BE-6 | 친구 범위 검색 확장 | 대기 | | | |
 
@@ -85,7 +85,7 @@
 |------|------|------|--------|--------|------|
 | P1-AI-1 | embedding endpoint(mock→real, 차원 1536) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/embeddings` 구현. `AI_PROVIDER=mock` deterministic 1536차원 vector와 `AI_PROVIDER=openai`(`text-embedding-3-small`) provider 호출, 검증 실패 400/ provider 실패 502 처리 추가. `cd ai-server && python -m pytest` 통과. |
 | P2-AI-1 | 요약 생성(근거 chunk 기반, 근거 출처 포함) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/memory-summaries` 구현. mock/OpenAI provider 전환, 입력 검증 400, provider 오류 502, source summary 포함 응답, OpenAPI 노출 확인까지 반영. `cd ai-server && python -m pytest` 통과. |
-| P2-AI-2 | Capsule 보조 생성(summary/keyFacts/tags) | 대기 | | | |
+| P2-AI-2 | Capsule 보조 생성(summary/keyFacts/tags) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/context-capsule-drafts` 구현. mock/OpenAI provider 전환, `purpose`/`sources` 입력 검증 400, provider 오류 502, `summary`·`keyFacts`·`tags` 구조화 응답, OpenAPI 노출 및 settings/env 기본값 추가 반영. `cd ai-server && python -m pytest -q` 통과. |
 | P3-AI-1~2 | Agent graph·Notion Client | 대기 | | | |
 | P4-X-2 | provider 전환·관측성 | 대기 | | | |
 

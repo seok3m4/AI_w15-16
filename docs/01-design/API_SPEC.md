@@ -271,6 +271,70 @@ Response `200 OK`:
 - provider refusal은 `502` 안전 오류로 변환한다.
 - API key, provider 원문 응답, raw prompt, 사용자 memory 원문 전체는 오류 응답이나 로그에 저장하지 않는다.
 
+### 2.11 Spring Boot → FastAPI 내부 Context Capsule Draft API
+
+이 API는 React가 직접 호출하지 않고, Spring Boot가 `sourcePostIds`와 접근 권한을 재검증한 뒤 FastAPI에 전달한다. FastAPI는 전달받은 근거 source만 사용해 Capsule 저장 전 초안(`summary`, `keyFacts`, `tags`)만 생성하며 DB를 직접 조회하거나 권한을 판정하지 않는다.
+
+```http
+POST /internal/v1/context-capsule-drafts
+```
+
+Request:
+
+```json
+{
+  "requestId": "req-uuid",
+  "jobId": "job-uuid",
+  "idempotencyKey": "capsule-draft-job-key",
+  "purpose": "외부 LLM에 전달할 프로젝트 맥락 묶음 생성",
+  "query": "최근 프로젝트 결정사항",
+  "scope": "me",
+  "maxSources": 5,
+  "sources": [
+    {
+      "postId": "post-uuid",
+      "chunkId": "chunk-uuid",
+      "ownerUserId": "user-uuid",
+      "ownerNickname": "cutan",
+      "title": "인증 구현 회고",
+      "snippet": "Bearer access JWT와 HttpOnly refresh token rotation을 선택했다.",
+      "sourceType": "post",
+      "createdAt": "2026-06-15T03:10:00Z"
+    }
+  ]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "provider": "mock",
+  "model": "gpt-5.4-mini",
+  "purpose": "외부 LLM에 전달할 프로젝트 맥락 묶음 생성",
+  "query": "최근 프로젝트 결정사항",
+  "summary": "Capsule for '외부 LLM에 전달할 프로젝트 맥락 묶음 생성' uses 1 verified source. Bearer access JWT와 HttpOnly refresh token rotation을 선택했다.",
+  "keyFacts": [
+    "Bearer access JWT와 HttpOnly refresh token rotation을 선택했다."
+  ],
+  "tags": ["auth", "project"],
+  "usedFriendContext": false,
+  "usage": {
+    "inputTokens": 12,
+    "outputTokens": 9,
+    "totalTokens": 21
+  }
+}
+```
+
+처리 규칙:
+
+- `AI_PROVIDER=mock`이면 외부 API 호출 없이 deterministic Capsule 초안을 반환한다.
+- `AI_PROVIDER=openai`이면 OpenAI Responses API에 `AI_CAPSULE_MODEL`을 사용하고, `store: false`와 `text.format.type=json_schema`로 구조화 출력만 허용한다. 기본값은 `gpt-5.4-mini`다.
+- 입력 검증 실패는 `400`, provider timeout·오류·응답 형식 불일치는 `502`로 반환한다.
+- provider refusal은 `502` 안전 오류로 변환한다.
+- API key, provider 원문 응답, raw prompt, 사용자 memory 원문 전체는 오류 응답이나 로그에 저장하지 않는다.
+
 ## 3. 공통 스키마
 
 ### 3.1 UserPublicSummary
