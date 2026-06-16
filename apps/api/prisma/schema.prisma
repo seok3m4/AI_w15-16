@@ -68,10 +68,12 @@ model Place {
   address   String?
   lat       Float
   lng       Float
+  day       Int      @default(1)
   order     Int
   createdAt DateTime @default(now())
 
   @@index([postId])
+  @@index([postId, day, order])
 }
 
 /// 게시글에 달리는 댓글.

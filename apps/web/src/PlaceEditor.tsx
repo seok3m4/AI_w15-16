@@ -1,90 +1,100 @@
 // 📌 게시글 작성/수정 화면에서 코스 경유지를 검색·추가·정렬하는 편집기.
-import { useState } from 'react'
-import { CourseMap } from './CourseMap'
-import { loadKakaoMaps } from './kakaoLoader'
+import { useState } from "react";
+import { CourseMap } from "./CourseMap";
+import { loadKakaoMaps } from "./kakaoLoader";
 
 // 작성 중인 경유지. (저장 전이라 DB id가 아직 없다)
 export type PlaceDraft = {
-  name: string
-  address?: string
-  lat: number
-  lng: number
-}
+  name: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  day: number;
+};
 
 // Kakao 장소 검색 결과 한 건에서 우리가 쓰는 필드.
 type KakaoPlace = {
-  place_name: string
-  address_name?: string
-  road_address_name?: string
-  x: string // 경도(lng)
-  y: string // 위도(lat)
-}
+  place_name: string;
+  address_name?: string;
+  road_address_name?: string;
+  x: string; // 경도(lng)
+  y: string; // 위도(lat)
+};
 
 type Props = {
-  places: PlaceDraft[]
-  onChange: (next: PlaceDraft[]) => void
-}
+  places: PlaceDraft[];
+  onChange: (next: PlaceDraft[]) => void;
+};
 
 export function PlaceEditor({ places, onChange }: Props) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<KakaoPlace[]>([])
-  const [error, setError] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<KakaoPlace[]>([]);
+  const [error, setError] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   // 입력한 키워드로 Kakao 장소 검색을 수행한다.
   async function handleSearch() {
-    const keyword = query.trim()
-    if (!keyword) return
+    const keyword = query.trim();
+    if (!keyword) return;
 
-    setError('')
-    setIsSearching(true)
+    setError("");
+    setIsSearching(true);
 
     try {
-      const kakao = await loadKakaoMaps()
-      const ps = new kakao.maps.services.Places()
+      const kakao = await loadKakaoMaps();
+      const ps = new kakao.maps.services.Places();
 
       ps.keywordSearch(keyword, (data: KakaoPlace[], status: string) => {
-        setIsSearching(false)
+        setIsSearching(false);
         if (status === kakao.maps.services.Status.OK) {
-          setResults(data.slice(0, 8))
+          setResults(data.slice(0, 8));
         } else {
-          setResults([])
-          setError('검색 결과가 없습니다.')
+          setResults([]);
+          setError("검색 결과가 없습니다.");
         }
-      })
+      });
     } catch (err) {
-      setIsSearching(false)
+      setIsSearching(false);
       setError(
-        err instanceof Error ? err.message : '장소 검색에 실패했습니다.',
-      )
+        err instanceof Error ? err.message : "장소 검색에 실패했습니다.",
+      );
     }
   }
 
   // 검색 결과를 코스 경유지 목록 끝에 추가하고, 선택 후 검색 결과 목록은 닫는다.
   function addPlace(result: KakaoPlace) {
+    const lastDay = places.at(-1)?.day ?? 1;
     const next: PlaceDraft = {
       name: result.place_name,
       address: result.road_address_name || result.address_name,
       lat: Number(result.y),
       lng: Number(result.x),
-    }
-    onChange([...places, next])
-    setResults([])
-    setQuery('')
-    setError('')
+      day: lastDay,
+    };
+    onChange([...places, next]);
+    setResults([]);
+    setQuery("");
+    setError("");
   }
 
   function removePlace(index: number) {
-    onChange(places.filter((_, i) => i !== index))
+    onChange(places.filter((_, i) => i !== index));
   }
 
   // 경유지를 위/아래로 옮겨 방문 순서를 조정한다.
   function move(index: number, direction: -1 | 1) {
-    const target = index + direction
-    if (target < 0 || target >= places.length) return
-    const next = [...places]
-    ;[next[index], next[target]] = [next[target], next[index]]
-    onChange(next)
+    const target = index + direction;
+    if (target < 0 || target >= places.length) return;
+    const next = [...places];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  // 경유지가 몇 일차 장소인지 바꾼다.
+  function updateDay(index: number, day: number) {
+    const next = [...places];
+    next[index] = { ...next[index], day: Math.max(1, day) };
+    onChange(next);
   }
 
   return (
@@ -95,9 +105,9 @@ export function PlaceEditor({ places, onChange }: Props) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              handleSearch()
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleSearch();
             }
           }}
           placeholder="장소 검색 (예: 성산일출봉, 에펠탑)"
@@ -108,7 +118,7 @@ export function PlaceEditor({ places, onChange }: Props) {
           onClick={handleSearch}
           disabled={isSearching}
         >
-          {isSearching ? '검색 중...' : '검색'}
+          {isSearching ? "검색 중..." : "검색"}
         </button>
       </div>
 
@@ -143,6 +153,17 @@ export function PlaceEditor({ places, onChange }: Props) {
                 <div className="place-course-info">
                   <strong>{place.name}</strong>
                   {place.address && <span>{place.address}</span>}
+                  <label className="place-day-control">
+                    <span>일차</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={place.day}
+                      onChange={(event) =>
+                        updateDay(index, Number(event.target.value))
+                      }
+                    />
+                  </label>
                 </div>
                 <div className="place-course-actions">
                   <button
@@ -181,5 +202,5 @@ export function PlaceEditor({ places, onChange }: Props) {
         </p>
       )}
     </div>
-  )
+  );
 }

@@ -29,6 +29,12 @@ export class PlaceInputDto {
   @Max(180)
   lng: number;
 
+  // 며칠차에 방문하는 장소인지. 입력하지 않으면 1일차로 저장한다.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  day?: number;
+
   // 코스 내에서의 방문 순서. 0부터 시작한다.
   @IsInt()
   @Min(0)

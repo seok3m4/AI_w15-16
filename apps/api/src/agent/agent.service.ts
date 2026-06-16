@@ -19,6 +19,16 @@ export type AgentAnswer = {
 // 무한 루프를 막기 위한 도구 호출 라운드 상한.
 const MAX_ROUNDS = 5;
 
+// 📌 Agent가 외부 장소 검색어를 만들 때 질문 속 지역 표현을 표준 도시명으로 바꾸기 위한 목록.
+const CITY_ALIASES: Record<string, string[]> = {
+  제주: ['제주', '제주도', '제주시', '서귀포', '서귀포시'],
+  서울: ['서울', '서울시'],
+  부산: ['부산', '부산시'],
+  강릉: ['강릉', '강릉시'],
+  경주: ['경주', '경주시'],
+  전주: ['전주', '전주시'],
+};
+
 // 모델에게 제공하는 도구 정의. (코스 검색 + 장소 검색)
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
@@ -53,7 +63,8 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           query: {
             type: 'string',
-            description: '검색할 장소 이름 (예: 광안리 해수욕장, 전주 한옥마을)',
+            description:
+              '검색할 장소 이름 (예: 광안리 해수욕장, 전주 한옥마을)',
           },
         },
         required: ['query'],
@@ -95,9 +106,10 @@ export class AgentService {
           '\n\n[답변 규칙]\n' +
           '1. 코스나 여행을 묻는 질문이면 반드시 먼저 search_similar_posts를 호출해서 게시판 코스를 찾아라. ' +
           '2. search_similar_posts가 코스를 하나라도 반환하면, 그 코스들이 질문과 관련 있다고 믿고 반드시 활용해라. 가장 잘 맞는 코스를 골라 제목·도시·경유지·후기 내용을 근거로 소개해라. 반환된 코스를 "딱 맞지 않다"며 버리지 마라. ' +
+          '코스를 추천할 때는 일차별 경유지 흐름을 우선 설명하고, 같은 날에는 가까운 권역끼리 묶인다는 점을 보여줘라. 동선이 불필요하게 길어 보이면 무리한 이동이라고 솔직하게 말하고 더 자연스러운 순서를 제안해라. ' +
           '단, 후기 본문을 그대로 베껴 쓰지 말고, 사용자가 물어본 핵심(예: 바다·맛집)에 초점을 맞춰 그 부분 위주로 정리해라. ' +
           '사용자가 교통·이동을 직접 묻지 않았다면, 교통수단이나 이동 편의(지하철·버스·차·뚜벅이 등)에 대한 내용은 답변에 절대 넣지 마라. ' +
-          '3. search_similar_posts가 아무 코스도 반환하지 않았을 때에만 "게시판에 관련 코스가 아직 없어요"라고 말해라. 그리고 게시판에 없는 코스를 일반 상식으로 지어내지 마라. ' +
+          '3. search_similar_posts가 아무 코스도 반환하지 않으면 거기서 끝내지 말고, place_search를 호출해서 외부 장소 후보를 찾아라. 이때 답변에는 "게시판 코스가 아니라 외부 장소 검색을 참고했다"는 점을 분명히 밝혀라. ' +
           '4. 답변에서 장소(해수욕장·시장·명소 등)를 언급할 때는 place_search로 확인해 정확한 이름으로 적어라(사용자가 카카오맵에서 찾을 수 있게). ' +
           '5. 특정 장소가 어디인지/어떤 곳인지만 묻는 질문이면 place_search로 답해라. ' +
           '\n한국어로 친근하지만 간결하게 답해. 마크다운 제목(#)이나 굵게(**)는 쓰지 말고 자연스러운 문장과 줄바꿈으로 써.',
@@ -139,6 +151,18 @@ export class AgentService {
       }
     }
 
+    // 모델이 게시판 0건 상황에서 place_search를 호출하지 못했을 때 코드가 한 번 더 외부 검색을 보완한다.
+    if (collectedPosts.size === 0 && collectedPlaces.length === 0) {
+      const places = await this.collectExternalFallbackPlaces(
+        question,
+        collectedPlaces,
+      );
+
+      if (places.length > 0) {
+        answer = await this.buildExternalFallbackAnswer(question, places);
+      }
+    }
+
     // 루프 안에 텍스트 답변을 못 받았으면 한 번 더 정리를 요청한다.
     if (!answer) {
       messages.push({
@@ -146,7 +170,9 @@ export class AgentService {
         content: '지금까지 찾은 정보로 질문에 대한 답변을 한국어로 정리해 줘.',
       });
       const final = await this.openai.chatWithTools(messages, TOOLS);
-      answer = final.content ?? '죄송해요, 답변을 정리하지 못했어요. 다시 질문해 주세요.';
+      answer =
+        final.content ??
+        '죄송해요, 답변을 정리하지 못했어요. 다시 질문해 주세요.';
     }
 
     return {
@@ -173,11 +199,19 @@ export class AgentService {
             .join(', ')}`,
         );
         posts.forEach((p) => collectedPosts.set(p.id, p));
+        if (posts.length === 0) {
+          return {
+            posts: [],
+            nextAction:
+              '게시판 검색 결과가 없습니다. place_search를 호출해서 외부 장소 후보를 찾고, 답변에는 외부 검색 참고 정보라고 밝혀 주세요.',
+          };
+        }
         // thumbnailUrl(base64)은 토큰을 폭증시키므로 제외하고 본문도 줄인다.
         return posts.map((p) => ({
           title: p.title,
           city: p.city,
           duration: p.duration,
+          route: this.formatPostRoute(p),
           summary: p.content.slice(0, 600),
         }));
       }
@@ -214,5 +248,103 @@ export class AgentService {
     } catch {
       return {};
     }
+  }
+
+  // 검색된 게시글의 경유지를 Agent가 읽기 쉬운 일차별 문자열로 바꾼다.
+  private formatPostRoute(post: SimilarPost): string[] {
+    const groups = new Map<number, string[]>();
+
+    for (const place of post.places) {
+      groups.set(place.day, [...(groups.get(place.day) ?? []), place.name]);
+    }
+
+    return [...groups.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([day, names]) => `${day}일차: ${names.join(' → ')}`);
+  }
+
+  // 게시판에 관련 코스가 없을 때 MCP 장소 검색으로 외부 후보를 보강한다.
+  private async collectExternalFallbackPlaces(
+    question: string,
+    collectedPlaces: PlaceResult[],
+  ): Promise<PlaceResult[]> {
+    const queries = this.buildFallbackPlaceQueries(question);
+
+    for (const query of queries) {
+      try {
+        const places = await this.mcp.searchPlaces(query, 5);
+        for (const place of places) {
+          if (!collectedPlaces.some((p) => p.name === place.name)) {
+            collectedPlaces.push(place);
+          }
+        }
+      } catch (err) {
+        this.logger.warn(
+          `외부 장소 fallback 검색 실패("${query}"): ${
+            err instanceof Error ? err.message : err
+          }`,
+        );
+      }
+    }
+
+    return collectedPlaces;
+  }
+
+  // 질문의 지역·테마를 보고 Kakao 장소 검색에 넣을 구체적인 검색어를 만든다.
+  private buildFallbackPlaceQueries(question: string): string[] {
+    const city = this.extractCity(question);
+
+    if (!city) {
+      return [question];
+    }
+
+    if (this.isFamilyQuestion(question)) {
+      return [
+        `${city} 가족 여행`,
+        `${city} 아이와 가볼만한 곳`,
+        `${city} 실내 관광지`,
+      ];
+    }
+
+    return [`${city} 여행 명소`, `${city} 맛집`, `${city} 카페`];
+  }
+
+  // 사용자의 자연어 질문에서 여행지를 뽑는다.
+  private extractCity(question: string): string | null {
+    for (const [city, aliases] of Object.entries(CITY_ALIASES)) {
+      if (aliases.some((alias) => question.includes(alias))) {
+        return city;
+      }
+    }
+
+    return null;
+  }
+
+  // 가족 여행 질문이면 장소 검색어를 가족/아이 친화적으로 만든다.
+  private isFamilyQuestion(question: string): boolean {
+    return ['가족', '아이', '부모님', '엄마', '아빠'].some((keyword) =>
+      question.includes(keyword),
+    );
+  }
+
+  // 외부 장소 검색 결과만 있을 때, 게시판 출처와 외부 참고 정보를 구분해서 답변을 생성한다.
+  private async buildExternalFallbackAnswer(
+    question: string,
+    places: PlaceResult[],
+  ): Promise<string> {
+    const placeContext = places
+      .slice(0, 8)
+      .map(
+        (place, index) =>
+          `[${index + 1}] ${place.name} / ${place.category} / ${place.address}`,
+      )
+      .join('\n');
+
+    return this.openai.chat(
+      '너는 여행 코스 공유 게시판의 AI 도우미야. 게시판에서 관련 코스를 찾지 못한 상황이므로, 아래 외부 장소 검색 결과만 참고해서 답해. ' +
+        '답변 첫 부분에 게시판 코스가 아니라 외부 장소 검색을 참고했다는 점을 밝혀. ' +
+        '장소 이름은 검색 결과에 있는 이름만 사용하고, 없는 세부 정보는 지어내지 마. 한국어로 간결하게 답해.',
+      `사용자 질문: ${question}\n\n외부 장소 검색 결과:\n${placeContext}`,
+    );
   }
 }

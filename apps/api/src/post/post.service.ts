@@ -27,9 +27,7 @@ function buildPostInclude(userId?: string): Prisma.PostInclude {
       },
     },
     places: {
-      orderBy: {
-        order: 'asc' as const,
-      },
+      orderBy: [{ day: 'asc' as const }, { order: 'asc' as const }],
     },
     // 저장된 횟수(saveCount) 계산용
     _count: {
@@ -348,8 +346,10 @@ export class PostService {
       return;
     }
 
-    // 보낸 순서(order) 기준으로 정렬해 0부터 다시 매겨 저장한다.
-    const sorted = [...places].sort((a, b) => a.order - b.order);
+    // 보낸 day/order 기준으로 정렬해 저장한다. day가 없으면 1일차로 본다.
+    const sorted = [...places].sort(
+      (a, b) => (a.day ?? 1) - (b.day ?? 1) || a.order - b.order,
+    );
 
     await this.prisma.place.createMany({
       data: sorted.map((place, index) => ({
@@ -358,6 +358,7 @@ export class PostService {
         address: place.address ?? null,
         lat: place.lat,
         lng: place.lng,
+        day: place.day ?? 1,
         order: index,
       })),
     });
@@ -389,7 +390,9 @@ export class PostService {
     }
 
     if (post.authorId !== userId) {
-      throw new ForbiddenException('게시글 작성자만 수정하거나 삭제할 수 있습니다.');
+      throw new ForbiddenException(
+        '게시글 작성자만 수정하거나 삭제할 수 있습니다.',
+      );
     }
   }
 

@@ -29,8 +29,14 @@ const USERS = [
   { id: 'seed_user_sohee', email: 'sohee@example.com', name: '한소희' },
 ];
 
-// 경유지 입력 타입 (order는 배열 순서로 자동 부여)
-type SeedPlace = { name: string; address: string; lat: number; lng: number };
+// 경유지 입력 타입 (day가 없으면 duration 기준으로 자동 배치, order는 배열 순서로 자동 부여)
+type SeedPlace = {
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  day?: number;
+};
 type SeedCourse = {
   id: string;
   title: string;
@@ -53,6 +59,21 @@ type SeedSavedPost = {
   user: string;
   postId: string;
 };
+
+// day를 직접 넣지 않은 기존 seed 장소도 1일차/2일차로 나뉘도록 보정한다.
+function inferPlaceDay(course: SeedCourse, place: SeedPlace, index: number) {
+  if (place.day) {
+    return place.day;
+  }
+
+  const duration = Math.max(1, course.duration);
+  if (duration === 1) {
+    return 1;
+  }
+
+  const chunkSize = Math.ceil(course.places.length / duration);
+  return Math.min(duration, Math.floor(index / chunkSize) + 1);
+}
 
 type SeedCommentLike = {
   user: string;
@@ -137,7 +158,7 @@ const COURSES: SeedCourse[] = [
     id: 'seed_post_jeju',
     title: '제주 2박 3일 자연과 가성비 코스',
     content:
-      '렌터카로 동쪽 해안도로와 오름을 중심으로 움직이는 2박 3일 코스입니다. 숙소는 제주시내권으로 잡아 비용을 아끼고, 낮에는 성산일출봉과 섭지코지 같은 자연 명소를 돌고 저녁에는 가성비 좋은 현지 식당에서 마무리합니다. 처음 제주를 여행하는 분께 무난한 코스입니다.',
+      '렌터카로 동쪽 권역을 중심으로 움직이는 2박 3일 코스입니다. 첫날은 공항 도착 후 제주시내 숙소에 짐을 두고 월정리 해변까지 가볍게 이동합니다. 둘째 날은 성산일출봉과 섭지코지를 같은 성산 권역으로 묶어 긴 왕복 이동을 줄이고, 셋째 날은 구좌 해안도로를 따라 공항으로 돌아오는 흐름입니다. 처음 제주를 여행하는 분도 하루 이동량을 예측하기 쉬운 코스입니다.',
     city: '제주',
     duration: 3,
     author: 'minji@example.com',
@@ -148,24 +169,42 @@ const COURSES: SeedCourse[] = [
         address: '제주시 공항로',
         lat: 33.5113,
         lng: 126.4929,
-      },
-      {
-        name: '성산일출봉',
-        address: '서귀포시 성산읍',
-        lat: 33.4581,
-        lng: 126.9425,
-      },
-      {
-        name: '섭지코지',
-        address: '서귀포시 성산읍 고성리',
-        lat: 33.4239,
-        lng: 126.9293,
+        day: 1,
       },
       {
         name: '월정리 카페거리',
         address: '제주시 구좌읍 월정리',
         lat: 33.5564,
         lng: 126.7953,
+        day: 1,
+      },
+      {
+        name: '성산일출봉',
+        address: '서귀포시 성산읍',
+        lat: 33.4581,
+        lng: 126.9425,
+        day: 2,
+      },
+      {
+        name: '섭지코지',
+        address: '서귀포시 성산읍 고성리',
+        lat: 33.4239,
+        lng: 126.9293,
+        day: 2,
+      },
+      {
+        name: '세화해변',
+        address: '제주시 구좌읍 세화리',
+        lat: 33.5263,
+        lng: 126.8584,
+        day: 3,
+      },
+      {
+        name: '동문시장',
+        address: '제주시 관덕로14길',
+        lat: 33.5116,
+        lng: 126.526,
+        day: 3,
       },
     ],
   },
@@ -1109,7 +1148,7 @@ const COURSES: SeedCourse[] = [
     id: 'seed_post_busan_rainy',
     title: '부산 비 오는 날 실내 위주 1박 2일 코스',
     content:
-      '부산 여행 날짜에 비 예보가 있을 때 쓰기 좋은 실내 중심 코스입니다. 첫날은 부산역에서 바로 이동하기 쉬운 영도 피아크와 흰여울문화마을의 실내 카페를 중심으로 잡고, 저녁에는 광안리 바다 전망 식당이나 카페에서 야경을 봅니다. 둘째 날은 센텀시티 신세계백화점과 영화의전당 주변으로 이동해 쇼핑·전시·식사를 한 번에 해결합니다. 해변 산책 비중을 줄이고 실내 대기 시간을 확보해서, 우천 취소 위험이 낮은 코스입니다.',
+      '부산 여행 날짜에 비 예보가 있을 때 쓰기 좋은 실내 중심 1박 2일 코스입니다. 첫날은 부산역에서 가까운 영도 권역으로 이동해 피아크와 흰여울문화마을 카페를 묶고, 저녁에는 숙소가 많은 광안리로 넘어가 야경만 짧게 봅니다. 둘째 날은 센텀시티와 영화의전당을 같은 블록으로 묶어 쇼핑·전시·식사를 한 번에 해결합니다. 해변 산책 비중을 줄이고 실내 대기 시간을 확보해서 우천 취소 위험이 낮습니다.',
     city: '부산',
     duration: 2,
     author: 'sohee@example.com',
@@ -1120,30 +1159,35 @@ const COURSES: SeedCourse[] = [
         address: '부산 동구 중앙대로',
         lat: 35.1151,
         lng: 129.0413,
+        day: 1,
       },
       {
         name: '피아크',
         address: '부산 영도구 해양로195번길',
         lat: 35.0851,
         lng: 129.0584,
+        day: 1,
       },
       {
         name: '광안리해수욕장',
         address: '부산 수영구 광안해변로',
         lat: 35.1532,
         lng: 129.1187,
+        day: 1,
       },
       {
         name: '센텀시티',
         address: '부산 해운대구 센텀남대로',
         lat: 35.169,
         lng: 129.129,
+        day: 2,
       },
       {
         name: '영화의전당',
         address: '부산 해운대구 수영강변대로',
         lat: 35.1711,
         lng: 129.127,
+        day: 2,
       },
     ],
   },
@@ -1187,29 +1231,32 @@ const COURSES: SeedCourse[] = [
     id: 'seed_post_jeju_rainy',
     title: '제주 비 오는 날 동쪽 실내·카페 코스',
     content:
-      '제주 동쪽을 잡았는데 비가 올 때 추천하는 대체 코스입니다. 오전에는 아르떼뮤지엄 제주처럼 실내 전시를 먼저 보고, 점심은 구좌읍 쪽에서 해산물이나 고기국수로 해결합니다. 오후에는 비자림을 짧게 걷되 비가 강하면 카페로 대체하고, 마지막은 세화해변 근처 오션뷰 카페에서 쉬어갑니다. 성산일출봉처럼 날씨 영향을 크게 받는 장소를 무리하게 넣지 않아 일정 실패 확률이 낮습니다.',
+      '제주 동쪽 숙소를 잡았는데 비가 올 때 쓰기 좋은 대체 코스입니다. 아르떼뮤지엄 제주는 애월 쪽이라 동쪽 일정에 넣으면 왕복 이동이 커서 제외하고, 구좌·성산 권역 안에서 비자림, 세화해변, 실내 카페를 짧게 묶습니다. 비가 강하면 비자림 산책을 줄이고 세화 주변 카페 체류 시간을 늘리면 됩니다. 성산일출봉처럼 날씨 영향을 크게 받는 장소를 무리하게 넣지 않아 일정 실패 확률이 낮습니다.',
     city: '제주',
     duration: 1,
     author: 'jiwoo@example.com',
     tags: ['카페', '힐링', '비오는날'],
     places: [
       {
-        name: '아르떼뮤지엄 제주',
-        address: '제주시 애월읍 어림비로',
-        lat: 33.3968,
-        lng: 126.345,
-      },
-      {
         name: '비자림',
         address: '제주시 구좌읍 비자숲길',
         lat: 33.4914,
         lng: 126.8114,
+        day: 1,
+      },
+      {
+        name: '카페 공작소',
+        address: '제주시 구좌읍 해맞이해안로',
+        lat: 33.5238,
+        lng: 126.8582,
+        day: 1,
       },
       {
         name: '세화해변',
         address: '제주시 구좌읍 세화리',
         lat: 33.5263,
         lng: 126.8584,
+        day: 1,
       },
     ],
   },
@@ -1217,7 +1264,7 @@ const COURSES: SeedCourse[] = [
     id: 'seed_post_jeju_family',
     title: '제주 가족 여행 3박 4일 서쪽·남쪽 여유 코스',
     content:
-      '부모님이나 아이와 함께 가는 제주 가족 여행은 하루에 많은 장소를 넣지 않는 것이 중요합니다. 첫날은 공항 도착 후 애월 해안도로와 숙소 체크인으로 가볍게 시작하고, 둘째 날은 협재해수욕장과 한림공원처럼 이동이 짧은 서쪽 코스를 봅니다. 셋째 날은 중문 권역으로 내려가 천제연폭포와 주상절리대를 보고, 마지막 날은 동문시장이나 공항 근처에서 기념품을 사는 흐름입니다. 렌터카 기준으로 무리 없는 일정이며, 휴식 시간이 충분한 가족형 코스입니다.',
+      '부모님이나 아이와 함께 가는 제주 가족 여행은 하루에 많은 장소를 넣지 않는 것이 중요합니다. 첫날은 공항 도착 후 애월 해안도로까지만 가볍게 보고 서쪽 숙소로 이동합니다. 둘째 날은 협재해수욕장과 한림공원을 같은 한림 권역으로 묶고, 셋째 날은 중문 권역의 천제연폭포와 주상절리대만 여유 있게 봅니다. 마지막 날은 제주시로 올라와 동문시장에서 기념품을 사고 공항으로 이동하는 흐름이라 왕복 이동이 적습니다.',
     city: '제주',
     duration: 4,
     author: 'seoyeon@example.com',
@@ -1228,36 +1275,49 @@ const COURSES: SeedCourse[] = [
         address: '제주시 공항로',
         lat: 33.5113,
         lng: 126.4929,
+        day: 1,
       },
       {
         name: '애월해안도로',
         address: '제주시 애월읍',
         lat: 33.4628,
         lng: 126.3094,
+        day: 1,
       },
       {
         name: '협재해수욕장',
         address: '제주시 한림읍 협재리',
         lat: 33.394,
         lng: 126.24,
+        day: 2,
       },
       {
         name: '한림공원',
         address: '제주시 한림읍 한림로',
         lat: 33.3898,
         lng: 126.2391,
+        day: 2,
+      },
+      {
+        name: '천제연폭포',
+        address: '서귀포시 천제연로',
+        lat: 33.2527,
+        lng: 126.4182,
+        day: 3,
       },
       {
         name: '주상절리대',
         address: '서귀포시 이어도로',
         lat: 33.2379,
         lng: 126.425,
+        day: 3,
       },
       {
         name: '동문시장',
         address: '제주시 관덕로14길',
         lat: 33.5116,
         lng: 126.526,
+        day: 4,
       },
     ],
   },
@@ -1276,30 +1336,35 @@ const COURSES: SeedCourse[] = [
         address: '강원 강릉시 난설헌로',
         lat: 37.7967,
         lng: 128.9021,
+        day: 1,
       },
       {
         name: '경포호',
         address: '강원 강릉시 저동',
         lat: 37.7951,
         lng: 128.8971,
+        day: 1,
       },
       {
         name: '초당순두부마을',
         address: '강원 강릉시 초당동',
         lat: 37.7912,
         lng: 128.9145,
+        day: 1,
       },
       {
         name: '오죽헌',
         address: '강원 강릉시 율곡로',
         lat: 37.7793,
         lng: 128.8784,
+        day: 2,
       },
       {
         name: '안목해변 커피거리',
         address: '강원 강릉시 창해로14번길',
         lat: 37.7714,
         lng: 128.9476,
+        day: 2,
       },
     ],
   },
@@ -1560,15 +1625,35 @@ const COMMENT_LIKES: SeedCommentLike[] = [
 ];
 
 async function main() {
-  // seed를 반복 실행해도 중복되지 않도록 게시판 데이터를 먼저 비운다.
-  await prisma.commentLike.deleteMany();
-  await prisma.savedPost.deleteMany();
-  await prisma.postTag.deleteMany();
-  await prisma.place.deleteMany();
-  await prisma.postEmbedding.deleteMany();
-  await prisma.comment.deleteMany();
-  await prisma.post.deleteMany();
-  await prisma.tag.deleteMany();
+  const seedPostIds = COURSES.map((course) => course.id);
+  const seedUserIds = USERS.map((user) => user.id);
+
+  // seed를 반복 실행해도 중복되지 않도록 샘플 데이터만 교체한다.
+  // 사용자가 직접 만든 게시글은 보존해야 하므로 전체 테이블을 비우지 않는다.
+  await prisma.commentLike.deleteMany({
+    where: {
+      OR: [
+        { userId: { in: seedUserIds } },
+        { comment: { postId: { in: seedPostIds } } },
+      ],
+    },
+  });
+  await prisma.savedPost.deleteMany({
+    where: {
+      OR: [{ userId: { in: seedUserIds } }, { postId: { in: seedPostIds } }],
+    },
+  });
+  await prisma.postTag.deleteMany({ where: { postId: { in: seedPostIds } } });
+  await prisma.place.deleteMany({ where: { postId: { in: seedPostIds } } });
+  await prisma.postEmbedding.deleteMany({
+    where: { postId: { in: seedPostIds } },
+  });
+  await prisma.comment.deleteMany({
+    where: {
+      OR: [{ postId: { in: seedPostIds } }, { authorId: { in: seedUserIds } }],
+    },
+  });
+  await prisma.post.deleteMany({ where: { id: { in: seedPostIds } } });
 
   // 샘플 작성자를 만든다. (인증 비밀번호는 더미값)
   await Promise.all(
@@ -1591,7 +1676,13 @@ async function main() {
   // 모든 코스에서 쓰인 태그 이름을 모아 한 번에 만든다.
   const tagNames = [...new Set(COURSES.flatMap((c) => c.tags))];
   const tags = await Promise.all(
-    tagNames.map((name) => prisma.tag.create({ data: { name } })),
+    tagNames.map((name) =>
+      prisma.tag.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      }),
+    ),
   );
   const tagIdByName = new Map(tags.map((t) => [t.name, t.id]));
 
@@ -1611,6 +1702,7 @@ async function main() {
             address: place.address,
             lat: place.lat,
             lng: place.lng,
+            day: inferPlaceDay(course, place, index),
             order: index,
           })),
         },

@@ -1177,6 +1177,26 @@
   white-space: nowrap;
 }
 
+.place-day-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.place-day-control input {
+  width: 56px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 8px;
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
 .place-course-actions {
   display: flex;
   gap: 4px;
@@ -1210,6 +1230,44 @@
 }
 
 /* 지도 영역 */
+.course-map-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.map-day-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.map-day-tabs button {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.map-day-tabs button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.map-day-tabs button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .course-map {
   width: 100%;
   border-radius: var(--radius-sm);
@@ -1234,6 +1292,23 @@
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+
+.course-days {
+  display: grid;
+  gap: 16px;
+}
+
+.course-day {
+  display: grid;
+  gap: 8px;
+}
+
+.course-day h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 16px;
+  font-weight: 700;
 }
 
 /* 지도 번호 마커 (Kakao CustomOverlay 안에서 사용) */
