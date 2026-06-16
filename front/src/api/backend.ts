@@ -97,12 +97,20 @@ export async function fetchBackendStatus(): Promise<BackendStatus> {
 }
 
 export async function fetchCurrentUser(): Promise<CurrentUser | null> {
-  const response = await fetch(`${apiBaseUrl}/api/me`, {
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/api/me`, {
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("로그인 상태 확인 API에 연결하지 못했습니다. 백엔드 서버와 Vite 프록시 상태를 확인해 주세요.");
+    }
+    throw error;
+  }
 
   if (response.status === 401) {
     return null;

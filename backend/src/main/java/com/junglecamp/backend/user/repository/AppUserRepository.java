@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -93,6 +94,50 @@ public class AppUserRepository {
 		return findByProviderAndProviderUserId("local", normalizedEmail).orElseThrow();
 	}
 
+	public AppUser createPendingLocalUser(String email) {
+		String normalizedEmail = requireText(email, "email").toLowerCase(Locale.ROOT);
+		jdbcTemplate.update("""
+				INSERT INTO app_users (
+					provider, provider_user_id, email, display_name, avatar_url, roles
+				) VALUES (
+					'local', ?, ?, ?, NULL, 'ROLE_USER'
+				)
+				""",
+				normalizedEmail,
+				normalizedEmail,
+				normalizedEmail);
+		return findByProviderAndProviderUserId("local", normalizedEmail).orElseThrow();
+	}
+
+	public AppUser completeLocalSignup(
+			Long userId,
+			String passwordHash,
+			String nickname,
+			boolean termsAccepted,
+			boolean privacyAccepted,
+			boolean marketingOptIn) {
+		String normalizedNickname = requireText(nickname, "nickname");
+		jdbcTemplate.update("""
+				UPDATE app_users
+				SET display_name = ?,
+					nickname = ?,
+					password_hash = ?,
+					terms_accepted_at = CASE WHEN ? THEN COALESCE(terms_accepted_at, CURRENT_TIMESTAMP) ELSE terms_accepted_at END,
+					privacy_accepted_at = CASE WHEN ? THEN COALESCE(privacy_accepted_at, CURRENT_TIMESTAMP) ELSE privacy_accepted_at END,
+					marketing_opt_in = ?,
+					updated_at = CURRENT_TIMESTAMP
+				WHERE id = ? AND provider = 'local'
+				""",
+				normalizedNickname,
+				normalizedNickname,
+				requireText(passwordHash, "passwordHash"),
+				termsAccepted,
+				privacyAccepted,
+				marketingOptIn,
+				userId);
+		return findById(userId).orElseThrow(() -> new EmptyResultDataAccessException(1));
+	}
+
 	public boolean nicknameExists(String nickname) {
 		if (!hasText(nickname)) {
 			return false;
@@ -164,6 +209,20 @@ public class AppUserRepository {
 		return users.stream().findFirst();
 	}
 
+	public Optional<AppUser> findByProviderAndEmail(String provider, String email) {
+		if (!hasText(provider) || !hasText(email)) {
+			return Optional.empty();
+		}
+		List<AppUser> users = jdbcTemplate.query("""
+				SELECT id, provider, provider_user_id, email, display_name, avatar_url, nickname,
+					email_verified_at, roles, suspended_at
+				FROM app_users
+				WHERE provider = ? AND LOWER(email) = ?
+				LIMIT 1
+				""", this::mapUser, provider.trim().toLowerCase(Locale.ROOT), email.trim().toLowerCase(Locale.ROOT));
+		return users.stream().findFirst();
+	}
+
 	public Optional<AppUser> findByEmail(String email) {
 		if (!hasText(email)) {
 			return Optional.empty();
@@ -219,73 +278,64 @@ public class AppUserRepository {
 	}
 
 	public List<AppUser> findUsers(String query, String role, String status, int limit, int offset) {
-		String normalizedQuery = hasText(query) ? "%" + query.trim().toLowerCase(Locale.ROOT) + "%" : null;
-		String roleFilter = hasText(role) ? role.trim() : null;
-		String statusFilter = hasText(status) ? status.trim() : null;
+		UserListFilter filter = userListFilter(query, role, status);
+		String whereSql = filter.whereClause().isEmpty() ? "" : "WHERE " + filter.whereClause();
+		List<Object> parameters = new ArrayList<>(filter.parameters());
+		parameters.add(limit);
+		parameters.add(offset);
 		return jdbcTemplate.query("""
 				SELECT id, provider, provider_user_id, email, display_name, avatar_url, nickname,
 					email_verified_at, roles, suspended_at
 				FROM app_users
-				WHERE (? IS NULL
-					OR LOWER(COALESCE(email, '')) LIKE ?
-					OR LOWER(display_name) LIKE ?
-					OR LOWER(COALESCE(nickname, '')) LIKE ?)
-				AND (? IS NULL OR roles LIKE ?)
-				AND (? IS NULL
-					OR (? = 'verified' AND email_verified_at IS NOT NULL)
-					OR (? = 'pending' AND provider = 'local' AND email_verified_at IS NULL)
-					OR (? = 'suspended' AND suspended_at IS NOT NULL)
-					OR (? = 'active' AND suspended_at IS NULL))
+				%s
 				ORDER BY id DESC
 				LIMIT ? OFFSET ?
-				""",
+				""".formatted(whereSql),
 				this::mapUser,
-				normalizedQuery,
-				normalizedQuery,
-				normalizedQuery,
-				normalizedQuery,
-				roleFilter,
-				roleFilter == null ? null : "%" + roleFilter + "%",
-				statusFilter,
-				statusFilter,
-				statusFilter,
-				statusFilter,
-				statusFilter,
-				limit,
-				offset);
+				parameters.toArray());
 	}
 
 	public long countUsers(String query, String role, String status) {
-		String normalizedQuery = hasText(query) ? "%" + query.trim().toLowerCase(Locale.ROOT) + "%" : null;
-		String roleFilter = hasText(role) ? role.trim() : null;
-		String statusFilter = hasText(status) ? status.trim() : null;
+		UserListFilter filter = userListFilter(query, role, status);
+		String whereSql = filter.whereClause().isEmpty() ? "" : "WHERE " + filter.whereClause();
 		Long count = jdbcTemplate.queryForObject("""
 				SELECT COUNT(*)
 				FROM app_users
-				WHERE (? IS NULL
-					OR LOWER(COALESCE(email, '')) LIKE ?
-					OR LOWER(display_name) LIKE ?
-					OR LOWER(COALESCE(nickname, '')) LIKE ?)
-				AND (? IS NULL OR roles LIKE ?)
-				AND (? IS NULL
-					OR (? = 'verified' AND email_verified_at IS NOT NULL)
-					OR (? = 'pending' AND provider = 'local' AND email_verified_at IS NULL)
-					OR (? = 'suspended' AND suspended_at IS NOT NULL)
-					OR (? = 'active' AND suspended_at IS NULL))
-				""",
+				%s
+				""".formatted(whereSql),
 				Long.class,
-				normalizedQuery,
-				normalizedQuery,
-				normalizedQuery,
-				normalizedQuery,
-				roleFilter,
-				roleFilter == null ? null : "%" + roleFilter + "%",
-				statusFilter,
-				statusFilter,
-				statusFilter,
-				statusFilter,
-				statusFilter);
+				filter.parameters().toArray());
 		return count == null ? 0 : count;
+	}
+
+	public static UserListFilter userListFilter(String query, String role, String status) {
+		List<String> clauses = new ArrayList<>();
+		List<Object> parameters = new ArrayList<>();
+		if (hasText(query)) {
+			String normalizedQuery = "%" + query.trim().toLowerCase(Locale.ROOT) + "%";
+			clauses.add("""
+					(LOWER(COALESCE(email, '')) LIKE ?
+						OR LOWER(display_name) LIKE ?
+						OR LOWER(COALESCE(nickname, '')) LIKE ?)
+					""".strip());
+			parameters.add(normalizedQuery);
+			parameters.add(normalizedQuery);
+			parameters.add(normalizedQuery);
+		}
+		if (hasText(role)) {
+			clauses.add("roles LIKE ?");
+			parameters.add("%" + role.trim() + "%");
+		}
+		if (hasText(status)) {
+			clauses.add(switch (status.trim().toLowerCase(Locale.ROOT)) {
+				case "verified" -> "email_verified_at IS NOT NULL";
+				case "pending" -> "provider = 'local' AND email_verified_at IS NULL";
+				case "suspended" -> "suspended_at IS NOT NULL";
+				case "active" -> "suspended_at IS NULL";
+				default -> "1 = 0";
+			});
+		}
+		return new UserListFilter(String.join(" AND ", clauses), List.copyOf(parameters));
 	}
 
 	private void update(Long id, String email, String displayName, String avatarUrl) {
@@ -333,7 +383,7 @@ public class AppUserRepository {
 		}
 		return Arrays.stream(roles.split(","))
 				.map(String::trim)
-				.filter(this::hasText)
+				.filter(AppUserRepository::hasText)
 				.distinct()
 				.toList();
 	}
@@ -362,10 +412,13 @@ public class AppUserRepository {
 		return value.trim();
 	}
 
-	private boolean hasText(String value) {
+	private static boolean hasText(String value) {
 		return value != null && !value.isBlank();
 	}
 
 	public record LocalCredentials(AppUser user, String passwordHash) {
+	}
+
+	public record UserListFilter(String whereClause, List<Object> parameters) {
 	}
 }

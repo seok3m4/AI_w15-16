@@ -29,12 +29,9 @@ public class SmtpVerificationEmailSender implements VerificationEmailSender {
 
 				인증 코드: %s
 
-				링크 인증을 선호한다면 아래 주소를 열어도 됩니다.
-
-				%s
-
 				요청한 적이 없다면 이 메일은 무시해도 됩니다.
-				""".formatted(verificationCode, verificationUrl));
+				본 메일은 발신 전용입니다. 답장하지 않아도 됩니다.
+				""".formatted(verificationCode));
 		mailSender.send(message);
 	}
 }

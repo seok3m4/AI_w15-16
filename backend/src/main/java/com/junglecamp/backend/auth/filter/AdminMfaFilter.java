@@ -35,7 +35,8 @@ public class AdminMfaFilter extends OncePerRequestFilter {
 			HttpServletRequest request,
 			HttpServletResponse response,
 			FilterChain filterChain) throws ServletException, IOException {
-		if (!request.getRequestURI().startsWith("/api/admin/")) {
+		String uri = request.getRequestURI();
+		if (!uri.startsWith("/api/")) {
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -46,13 +47,31 @@ public class AdminMfaFilter extends OncePerRequestFilter {
 		}
 		AppUser user = appUserService.currentUser(authentication);
 		String errorCode = adminMfaService.blockingErrorCode(user, request);
-		if (errorCode == null) {
+		if (errorCode == null || isAllowedPendingAdminMfaRequest(uri)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
-		response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+		response.setStatus(uri.startsWith("/api/admin/") ? HttpServletResponse.SC_FORBIDDEN : HttpServletResponse.SC_UNAUTHORIZED);
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		objectMapper.writeValue(response.getWriter(), new AuthError(errorCode, "Admin MFA verification is required"));
+	}
+
+	private boolean isAllowedPendingAdminMfaRequest(String uri) {
+		return uri.equals("/api/logout")
+				|| uri.equals("/api/status")
+				|| uri.startsWith("/api/auth/mfa/")
+				|| uri.equals("/api/auth/signup")
+				|| uri.equals("/api/auth/signup/complete")
+				|| uri.equals("/api/auth/login")
+				|| uri.equals("/api/auth/verify-email")
+				|| uri.equals("/api/auth/verify-email-code")
+				|| uri.equals("/api/auth/nickname-availability")
+				|| uri.equals("/api/auth/resend-verification")
+				|| uri.startsWith("/api/internal/agent-tools/")
+				|| uri.equals("/api/us-economy/dashboard")
+				|| uri.equals("/api/us-economy/data-sources")
+				|| uri.equals("/api/us-economy/market-indicators")
+				|| (uri.startsWith("/api/us-economy/metrics/") && uri.endsWith("/history"));
 	}
 
 	private record AuthError(String errorCode, String message) {

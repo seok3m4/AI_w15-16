@@ -53,18 +53,24 @@ public class EmailVerificationTokenRepository {
 				.findFirst();
 	}
 
-	public Optional<EmailVerificationToken> findActiveByUserAndCode(Long userId, String rawCode) {
+	public Optional<EmailVerificationToken> findLatestActiveByUserAndCode(Long userId, String rawCode) {
 		if (userId == null || rawCode == null || !rawCode.matches("\\d{6}")) {
 			return Optional.empty();
 		}
 		List<EmailVerificationToken> tokens = jdbcTemplate.query("""
 				SELECT id, user_id, expires_at, consumed_at, created_at, code_attempt_count
-				FROM email_verification_tokens
-				WHERE user_id = ? AND code_hash = ?
-				ORDER BY created_at DESC, id DESC
+				FROM (
+					SELECT id, user_id, expires_at, consumed_at, created_at, code_attempt_count, code_hash
+					FROM email_verification_tokens
+					WHERE user_id = ?
+						AND consumed_at IS NULL
+						AND expires_at > CURRENT_TIMESTAMP
+					ORDER BY created_at DESC, id DESC
+					LIMIT 1
+				) latest
+				WHERE code_hash = ?
 				""", this::mapToken, userId, TokenHashing.sha256(rawCode));
 		return tokens.stream()
-				.filter(this::isActive)
 				.filter(token -> token.codeAttemptCount() < MAX_CODE_ATTEMPTS)
 				.findFirst();
 	}

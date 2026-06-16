@@ -1,5 +1,7 @@
 package com.junglecamp.backend.auth.dto;
 
+import java.time.Instant;
+
 public final class AuthDtos {
 
 	private AuthDtos() {
@@ -7,9 +9,13 @@ public final class AuthDtos {
 
 	public record SignupRequest(
 			String email,
+			String captchaToken) {
+	}
+
+	public record SignupCompleteRequest(
+			String email,
 			String password,
 			String nickname,
-			String captchaToken,
 			Boolean termsAccepted,
 			Boolean privacyAccepted,
 			Boolean marketingOptIn) {
@@ -33,6 +39,9 @@ public final class AuthDtos {
 	public record TotpVerifyRequest(String code, String recoveryCode) {
 	}
 
-	public record SignupResult(String email, String status) {
+	public record SignupResult(String email, String status, Instant expiresAt) {
+	}
+
+	public record EmailVerificationResult(String email, String status) {
 	}
 }

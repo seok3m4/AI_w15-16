@@ -65,6 +65,11 @@ public class AuthRateLimitService {
 
 	@Transactional
 	public void recordSignupFailure(String email, String remoteIp) {
+		recordSignupAttempt(email, remoteIp);
+	}
+
+	@Transactional
+	public void recordSignupAttempt(String email, String remoteIp) {
 		recordFailure("signup", signupKeys(email, remoteIp), signupCaptchaThreshold, signupBlockThreshold);
 	}
 
@@ -103,19 +108,23 @@ public class AuthRateLimitService {
 			return;
 		}
 		Instant now = Instant.now();
+		boolean captchaVerified = false;
 		for (String key : keys) {
-			repository.find(key)
-					.filter(bucket -> !windowExpired(bucket, now))
-					.ifPresent(bucket -> ensureBucketAllowsRequest(action, bucket, captchaToken, remoteIp, now));
+			AuthRateLimitRepository.Bucket bucket = repository.find(key)
+					.filter(candidate -> !windowExpired(candidate, now))
+					.orElse(null);
+			if (bucket != null) {
+				captchaVerified = ensureBucketAllowsRequest(bucket, captchaToken, remoteIp, now, captchaVerified);
+			}
 		}
 	}
 
-	private void ensureBucketAllowsRequest(
-			String action,
+	private boolean ensureBucketAllowsRequest(
 			AuthRateLimitRepository.Bucket bucket,
 			String captchaToken,
 			String remoteIp,
-			Instant now) {
+			Instant now,
+			boolean captchaVerified) {
 		if (bucket.blockedUntil() != null && now.isBefore(bucket.blockedUntil())) {
 			long retryAfter = Math.max(1, Duration.between(now, bucket.blockedUntil()).toSeconds());
 			throw new AuthException(HttpStatus.TOO_MANY_REQUESTS, "auth_rate_limited", "Too many authentication attempts", retryAfter);
@@ -123,9 +132,13 @@ public class AuthRateLimitService {
 		if (captchaEnabled
 				&& bucket.captchaRequiredUntil() != null
 				&& now.isBefore(bucket.captchaRequiredUntil())
-				&& !captchaVerifier.verify(captchaToken, remoteIp)) {
-			throw new AuthException(HttpStatus.FORBIDDEN, "captcha_required", "CAPTCHA verification is required for this request");
+				&& !captchaVerified) {
+			if (!captchaVerifier.verify(captchaToken, remoteIp)) {
+				throw new AuthException(HttpStatus.FORBIDDEN, "captcha_required", "CAPTCHA verification is required for this request");
+			}
+			return true;
 		}
+		return captchaVerified;
 	}
 
 	private void recordFailure(String action, List<String> keys, int captchaThreshold, int blockThreshold) {

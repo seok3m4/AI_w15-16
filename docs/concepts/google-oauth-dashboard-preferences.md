@@ -13,10 +13,10 @@
 - `backend/src/test/java/com/junglecamp/backend/user/AppUserServiceTests.java`
 - `front/src/api/backend.ts`
 - `front/src/app/App.tsx`
-- `front/src/pages/HomePage.tsx`
-- `front/src/pages/HomePage.css`
-- `front/src/pages/MyPage.tsx`
-- `front/src/pages/MyPage.css`
+- `front/src/features/economy/pages/HomePage.tsx`
+- `front/src/features/economy/pages/HomePage.css`
+- `front/src/features/profile/pages/MyPage.tsx`
+- `front/src/features/profile/pages/MyPage.css`
 
 ## What Was Applied
 
@@ -32,6 +32,8 @@
 - Dashboard preferences are stored per user in `user_dashboard_preferences`.
 - The preference API stores only display choices. Economic data still comes from `/api/us-economy/dashboard`.
 - The frontend keeps `/home` public, adds `/mypage`, and filters home sections/items using saved preferences when a user is logged in.
+- `visibleSections` is a required non-empty list for saved preferences. The frontend keeps at least one section selected, and the backend rejects an empty list with `400 Bad Request`.
+- Home renders and exposes preference-aware sections only when `preferences.visibleSections.includes(...)` allows them. Hidden economic events, reports, and watchlist sections are also removed from the Home navigation.
 - React logout uses `POST /api/logout`, which invalidates the Spring Security session and returns `204 No Content` for API-style handling.
 - `NEWS_SEARCH_API_KEY` is not part of this flow.
 
@@ -66,6 +68,7 @@
 
 - Allowed `visibleSections`: `core-metrics`, `economic-events`, `reports`, `watchlist`.
 - Unknown section keys return `400 Bad Request`.
+- Empty `visibleSections` returns `400 Bad Request`; defaults are returned only when a user has no saved preference record yet.
 - Anonymous preference requests return `401 Unauthorized`.
 - `POST /api/logout`
   - Authenticated API logout.
@@ -81,16 +84,19 @@
   - `logoutCurrentUser()`
   - `fetchDashboardPreferences()`
   - `saveDashboardPreferences()`
-- `front/src/pages/HomePage.tsx`
+- `front/src/features/economy/pages/HomePage.tsx`
   - Fetches economy dashboard and current user.
   - Fetches preferences only when a user is logged in.
   - Filters core metrics, economic events, reports, and watchlist IDs on the client.
+  - Uses `visibleSections` to conditionally render the core metrics, economic events, reports, and watchlist areas.
+  - Removes hidden section workspaces from the Home navigation and sends direct hidden-section access back to Home with a personalization message.
   - Shows Google login when anonymous and a profile button when authenticated.
   - Shows a logout button when authenticated, then clears user and preference state after `POST /api/logout`.
-- `front/src/pages/MyPage.tsx`
+- `front/src/features/profile/pages/MyPage.tsx`
   - Requires login.
   - Loads current dashboard items and saved preferences.
   - Saves section visibility and item selections through the preference API.
+  - Disables the last checked visible-section checkbox so the saved configuration cannot become empty.
 
 ## Run Commands
 

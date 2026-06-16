@@ -10,6 +10,12 @@ export type { CurrentUser } from "../../../api/backend";
 export interface SignupResponse {
   email: string;
   status: "verification_required";
+  expiresAt: string;
+}
+
+export interface EmailVerificationResponse {
+  email: string;
+  status: "email_verified";
 }
 
 export interface NicknameAvailabilityResponse {
@@ -45,12 +51,7 @@ export function getGoogleLoginUrl() {
 
 export async function signupWithEmail(request: {
   email: string;
-  password: string;
-  nickname: string;
   captchaToken?: string;
-  termsAccepted: boolean;
-  privacyAccepted: boolean;
-  marketingOptIn: boolean;
 }): Promise<SignupResponse> {
   const response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
     method: "POST",
@@ -64,6 +65,28 @@ export async function signupWithEmail(request: {
   }
 
   return response.json() as Promise<SignupResponse>;
+}
+
+export async function completeSignupWithEmail(request: {
+  email: string;
+  password: string;
+  nickname: string;
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  marketingOptIn: boolean;
+}): Promise<CurrentUser> {
+  const response = await fetch(`${apiBaseUrl}/api/auth/signup/complete`, {
+    method: "POST",
+    credentials: "include",
+    headers: jsonHeaders(),
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw await requestError(response, `Signup request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<CurrentUser>;
 }
 
 export async function checkNicknameAvailability(
@@ -105,6 +128,21 @@ export async function loginWithEmail(request: {
   return response.json() as Promise<CurrentUser>;
 }
 
+export async function fetchAdminMfaSession(): Promise<CurrentUser> {
+  const response = await fetch(`${apiBaseUrl}/api/auth/mfa/session`, {
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw await requestError(response, `Admin MFA session request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<CurrentUser>;
+}
+
 export async function resendVerificationEmail(request: {
   email: string;
   captchaToken?: string;
@@ -126,7 +164,7 @@ export async function resendVerificationEmail(request: {
 export async function verifyEmailCode(request: {
   email: string;
   code: string;
-}): Promise<CurrentUser> {
+}): Promise<EmailVerificationResponse> {
   const response = await fetch(`${apiBaseUrl}/api/auth/verify-email-code`, {
     method: "POST",
     credentials: "include",
@@ -138,7 +176,7 @@ export async function verifyEmailCode(request: {
     throw await requestError(response, `Email code verification failed: ${response.status}`);
   }
 
-  return response.json() as Promise<CurrentUser>;
+  return response.json() as Promise<EmailVerificationResponse>;
 }
 
 export async function setupAdminTotp(): Promise<TotpSetupResponse> {

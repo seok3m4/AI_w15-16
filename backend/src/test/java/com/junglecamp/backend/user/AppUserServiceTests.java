@@ -11,10 +11,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -92,5 +94,29 @@ class AppUserServiceTests {
 		assertThat(current.email()).isEqualTo("stored@example.com");
 		assertThat(current.displayName()).isEqualTo("Stored Name");
 		assertThat(current.avatarUrl()).isEqualTo("https://example.com/stored.png");
+	}
+
+	@Test
+	void rejectsNewGoogleUserWhenEmailBelongsToLocalAccount() {
+		jdbcTemplate.update("""
+				INSERT INTO app_users (
+					provider, provider_user_id, email, display_name, avatar_url,
+					nickname, password_hash, roles, email_verified_at
+				) VALUES (
+					'local', 'local@example.com', 'local@example.com', 'local_user', NULL,
+					'local_user', 'encoded-password', 'ROLE_USER', CURRENT_TIMESTAMP
+				)
+				""");
+
+		assertThatThrownBy(() -> appUserService.upsertGoogleUser(
+						"google-new-123",
+						"local@example.com",
+						"Google Local",
+						"https://example.com/google.png"))
+				.isInstanceOfSatisfying(OAuth2AuthenticationException.class, exception ->
+						assertThat(exception.getError().getErrorCode()).isEqualTo("local_email_exists"));
+
+		Integer userCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_users", Integer.class);
+		assertThat(userCount).isEqualTo(1);
 	}
 }

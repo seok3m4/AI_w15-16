@@ -1,8 +1,10 @@
 package com.junglecamp.backend.auth.controller;
 
 import com.junglecamp.backend.auth.dto.AuthDtos.AuthErrorResponse;
+import com.junglecamp.backend.auth.dto.AuthDtos.EmailVerificationResult;
 import com.junglecamp.backend.auth.dto.AuthDtos.LoginRequest;
 import com.junglecamp.backend.auth.dto.AuthDtos.ResendVerificationRequest;
+import com.junglecamp.backend.auth.dto.AuthDtos.SignupCompleteRequest;
 import com.junglecamp.backend.auth.dto.AuthDtos.SignupRequest;
 import com.junglecamp.backend.auth.dto.AuthDtos.SignupResult;
 import com.junglecamp.backend.auth.dto.AuthDtos.TotpConfirmRequest;
@@ -70,19 +72,29 @@ public class AuthController {
 		String remoteIp = clientIp(servletRequest);
 		rateLimitService.beforeSignup(request.email(), request.captchaToken(), remoteIp);
 		try {
-			SignupResult result = authService.signup(
-					request.email(),
-					request.password(),
-					request.nickname(),
-					Boolean.TRUE.equals(request.termsAccepted()),
-					Boolean.TRUE.equals(request.privacyAccepted()),
-					Boolean.TRUE.equals(request.marketingOptIn()));
-			rateLimitService.resetSignup(request.email(), remoteIp);
+			SignupResult result = authService.signup(request.email());
+			rateLimitService.recordSignupAttempt(request.email(), remoteIp);
 			return result;
 		} catch (RuntimeException exception) {
 			rateLimitService.recordSignupFailure(request.email(), remoteIp);
 			throw exception;
 		}
+	}
+
+	@PostMapping("/signup/complete")
+	public CurrentUser completeSignup(
+			@RequestBody SignupCompleteRequest request,
+			HttpServletRequest servletRequest,
+			HttpServletResponse response) {
+		AuthService.IssuedAuth issuedAuth = authService.completeSignup(
+				request.email(),
+				request.password(),
+				request.nickname(),
+				Boolean.TRUE.equals(request.termsAccepted()),
+				Boolean.TRUE.equals(request.privacyAccepted()),
+				Boolean.TRUE.equals(request.marketingOptIn()));
+		cookieService.writeAuthCookies(response, issuedAuth.tokenIssue());
+		return currentUserProfileService.toCurrentUser(issuedAuth.user(), servletRequest);
 	}
 
 	@GetMapping("/nickname-availability")
@@ -124,13 +136,8 @@ public class AuthController {
 	}
 
 	@PostMapping("/verify-email-code")
-	public CurrentUser verifyEmailCode(
-			@RequestBody VerifyEmailCodeRequest request,
-			HttpServletRequest servletRequest,
-			HttpServletResponse response) {
-		AuthService.IssuedAuth issuedAuth = authService.verifyEmailCode(request.email(), request.code());
-		cookieService.writeAuthCookies(response, issuedAuth.tokenIssue());
-		return currentUserProfileService.toCurrentUser(issuedAuth.user(), servletRequest);
+	public EmailVerificationResult verifyEmailCode(@RequestBody VerifyEmailCodeRequest request) {
+		return authService.verifyEmailCode(request.email(), request.code());
 	}
 
 	@PostMapping("/resend-verification")
@@ -148,6 +155,11 @@ public class AuthController {
 	@PostMapping("/mfa/totp/setup")
 	public AdminMfaService.SetupResponse setupTotp(Authentication authentication) {
 		return adminMfaService.setup(appUserService.currentUser(authentication));
+	}
+
+	@GetMapping("/mfa/session")
+	public CurrentUser adminMfaSession(Authentication authentication, HttpServletRequest request) {
+		return currentUserProfileService.toCurrentUser(appUserService.currentUser(authentication), request);
 	}
 
 	@PostMapping("/mfa/totp/confirm")

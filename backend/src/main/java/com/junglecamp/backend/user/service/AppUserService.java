@@ -13,6 +13,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +35,13 @@ public class AppUserService {
 	}
 
 	public AppUser upsertGoogleUser(String providerUserId, String email, String displayName, String avatarUrl) {
+		boolean existingGoogleUser = repository.findByProviderAndProviderUserId("google", providerUserId).isPresent();
+		if (!existingGoogleUser && repository.findByProviderAndEmail("local", email).isPresent()) {
+			throw new OAuth2AuthenticationException(new OAuth2Error(
+					"local_email_exists",
+					"이미 일반 이메일 계정으로 가입된 이메일입니다. 계정 연결 기능은 이후 별도 화면에서 제공됩니다.",
+					null));
+		}
 		return applyBootstrapAdminRole(repository.upsert("google", providerUserId, email, displayName, avatarUrl));
 	}
 
