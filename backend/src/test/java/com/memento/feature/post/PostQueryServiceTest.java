@@ -1,0 +1,114 @@
+package com.memento.feature.post;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class PostQueryServiceTest {
+
+    private static final UUID USER_ID =
+            UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID POST_ID =
+            UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final Instant NOW = Instant.parse("2026-06-15T03:10:00Z");
+
+    @Test
+    void listReturnsOnlyCurrentUserPostsWithPageMetadata() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.pageRecords = List.of(postRecord("오늘의 회고", "첫 번째 줄\n두 번째 줄"));
+        repository.totalCount = 1;
+        PostQueryService service = new PostQueryService(repository);
+
+        PostListResponse response = service.list(USER_ID, "me", 0, 20, "createdAt,desc");
+
+        assertThat(repository.capturedAuthorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedLimit).isEqualTo(20);
+        assertThat(repository.capturedOffset).isZero();
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().contentPreview()).isEqualTo("첫 번째 줄 두 번째 줄");
+        assertThat(response.page()).isEqualTo(new PageResponse(0, 20, 1, 1));
+    }
+
+    @Test
+    void getDetailHidesPostsOutsideCurrentUserScope() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        PostQueryService service = new PostQueryService(repository);
+
+        assertThatThrownBy(() -> service.getDetail(USER_ID, POST_ID))
+                .isInstanceOf(PostNotFoundException.class);
+
+        assertThat(repository.capturedDetailAuthorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedDetailPostId).isEqualTo(POST_ID);
+    }
+
+    @Test
+    void listRejectsUnsupportedScopeUntilFriendSearchTasksExtendIt() {
+        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+
+        assertThatThrownBy(() -> service.list(USER_ID, "friends", 0, 20, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+    }
+
+    private static PostRecord postRecord(String title, String content) {
+        return new PostRecord(
+                POST_ID,
+                USER_ID,
+                "cutan",
+                title,
+                content,
+                List.of("회고"),
+                0,
+                0,
+                false,
+                "me",
+                "pending",
+                NOW,
+                NOW);
+    }
+
+    private static class CapturingPostRepository implements PostRepository {
+
+        private List<PostRecord> pageRecords = List.of();
+        private long totalCount;
+        private UUID capturedAuthorId;
+        private int capturedLimit;
+        private int capturedOffset;
+        private UUID capturedDetailPostId;
+        private UUID capturedDetailAuthorId;
+
+        @Override
+        public PostRecord save(NewPost post, List<String> tagNames) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<PostRecord> findById(UUID postId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+            capturedAuthorId = authorId;
+            capturedLimit = limit;
+            capturedOffset = offset;
+            return pageRecords;
+        }
+
+        @Override
+        public long countByAuthor(UUID authorId) {
+            return totalCount;
+        }
+
+        @Override
+        public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
+            capturedDetailPostId = postId;
+            capturedDetailAuthorId = authorId;
+            return Optional.empty();
+        }
+    }
+}

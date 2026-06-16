@@ -86,5 +86,20 @@ class PostCreateServiceTest {
         public Optional<PostRecord> findById(UUID postId) {
             return Optional.empty();
         }
+
+        @Override
+        public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
+            return List.of();
+        }
+
+        @Override
+        public long countByAuthor(UUID authorId) {
+            return 0;
+        }
+
+        @Override
+        public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
+            return Optional.empty();
+        }
     }
 }

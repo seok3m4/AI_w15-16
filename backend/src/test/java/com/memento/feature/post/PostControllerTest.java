@@ -1,6 +1,8 @@
 package com.memento.feature.post;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,6 +37,9 @@ class PostControllerTest {
 
     @MockitoBean
     private PostCreateService postCreateService;
+
+    @MockitoBean
+    private PostQueryService postQueryService;
 
     @Test
     void createPostReturnsCreatedPostForCurrentUser() throws Exception {
@@ -92,5 +97,81 @@ class PostControllerTest {
                                 "content", ""))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void listPostsReturnsCurrentUserFeed() throws Exception {
+        PostListResponse response = new PostListResponse(
+                List.of(new PostSummaryResponse(
+                        POST_ID,
+                        new PostAuthorResponse(USER_ID, "cutan"),
+                        "?ㅻ뒛???뚭퀬",
+                        "?ㅻ뒛 ?꾨줈?앺듃?먯꽌 諛곗슫 ??..",
+                        List.of("?뚭퀬"),
+                        0,
+                        0,
+                        false,
+                        "me",
+                        "pending",
+                        NOW,
+                        NOW)),
+                new PageResponse(0, 20, 1, 1));
+        given(postQueryService.list(USER_ID, "me", 0, 20, "createdAt,desc")).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/posts")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.items[0].contentPreview").value("?ㅻ뒛 ?꾨줈?앺듃?먯꽌 諛곗슫 ??.."))
+                .andExpect(jsonPath("$.items[0].accessScope").value("me"))
+                .andExpect(jsonPath("$.page.page").value(0))
+                .andExpect(jsonPath("$.page.size").value(20))
+                .andExpect(jsonPath("$.page.totalCount").value(1))
+                .andExpect(jsonPath("$.page.totalPages").value(1));
+
+        verify(postQueryService).list(USER_ID, "me", 0, 20, "createdAt,desc");
+    }
+
+    @Test
+    void getPostReturnsCurrentUserPostDetail() throws Exception {
+        PostDetailResponse response = new PostDetailResponse(
+                POST_ID,
+                new PostAuthorResponse(USER_ID, "cutan"),
+                "?ㅻ뒛???뚭퀬",
+                "?ㅻ뒛 ?꾨줈?앺듃?먯꽌 諛곗슫 ??..",
+                List.of("?뚭퀬"),
+                List.of(),
+                0,
+                0,
+                false,
+                "me",
+                "pending",
+                NOW,
+                NOW);
+        given(postQueryService.getDetail(USER_ID, POST_ID)).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/posts/{postId}", POST_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.content").value("?ㅻ뒛 ?꾨줈?앺듃?먯꽌 諛곗슫 ??.."))
+                .andExpect(jsonPath("$.recentComments").isArray())
+                .andExpect(jsonPath("$.accessScope").value("me"));
+    }
+
+    @Test
+    void getPostReturnsNotFoundWhenUserCannotAccessPost() throws Exception {
+        given(postQueryService.getDetail(USER_ID, POST_ID)).willThrow(new PostNotFoundException(POST_ID));
+
+        mockMvc.perform(get("/api/v1/posts/{postId}", POST_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
     }
 }
