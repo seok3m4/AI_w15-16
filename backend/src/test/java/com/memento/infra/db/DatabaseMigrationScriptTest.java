@@ -17,6 +17,8 @@ class DatabaseMigrationScriptTest {
             Pattern.compile("V\\d{12}__init_p0_p1_schema\\.sql");
     private static final Pattern VECTOR_NULLABILITY_NAME =
             Pattern.compile("V\\d{12}__relax_memory_embedding_vector_nullability\\.sql");
+    private static final Pattern ASYNC_JOB_ATTEMPTS_NAME =
+            Pattern.compile("V\\d{12}__add_async_job_attempt_limits\\.sql");
 
     @Test
     void baselineMigrationCreatesP0P1SchemaWith1536DimensionEmbedding() throws IOException {
@@ -62,6 +64,22 @@ class DatabaseMigrationScriptTest {
         assertThat(sql).contains("constraint ck_memory_embeddings_vector_matches_status");
         assertThat(sql).contains("status = 'succeeded' and embedding is not null");
         assertThat(sql).contains("status in ('pending', 'running', 'failed') and embedding is null");
+    }
+
+    @Test
+    void followUpMigrationAddsAsyncJobAttemptLimits() throws IOException {
+        assertThat(MIGRATION_DIR).isDirectory();
+
+        List<Path> migrations = findMigrations(ASYNC_JOB_ATTEMPTS_NAME);
+
+        assertThat(migrations).hasSize(1);
+
+        String sql = normalizedSql(migrations.getFirst());
+
+        assertThat(sql).contains("alter table async_jobs");
+        assertThat(sql).contains("add column attempt_count integer not null default 0");
+        assertThat(sql).contains("add column max_attempts integer not null default 1");
+        assertThat(sql).contains("constraint ck_async_jobs_attempts_non_negative");
     }
 
     private static List<Path> findMigrations(Pattern fileNamePattern) throws IOException {

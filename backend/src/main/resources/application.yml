@@ -8,6 +8,13 @@ spring:
     locations: classpath:db/migration
 
 memento:
+  jobs:
+    worker:
+      enabled: ${ASYNC_JOB_WORKER_ENABLED:true}
+      poll-interval: ${ASYNC_JOB_WORKER_POLL_INTERVAL:5s}
+      stale-timeout: ${ASYNC_JOB_STALE_TIMEOUT:60s}
+      claim-limit: ${ASYNC_JOB_CLAIM_LIMIT:1}
+      default-max-attempts: ${ASYNC_JOB_DEFAULT_MAX_ATTEMPTS:3}
   auth:
     email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64}
     email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID}
