@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 type SourcePost = {
@@ -74,12 +73,14 @@ export function RelatedPostSummaryPanel({
   }
 
   return (
-    <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="border-b border-[#edf1f7] bg-[#fbfcff]">
+      <div className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm font-black text-[#1f3470]">관련 글 요약</h2>
-          <p className="mt-1 text-xs text-[#667085]">
-            이 경기와 연결된 게시글을 모아 커뮤니티 반응을 요약합니다.
+          <p className="text-xs font-black text-[#1f3470]">
+            관련 글을 한 번에 보기
+          </p>
+          <p className="mt-1 text-xs leading-5 text-[#667085]">
+            아래 게시글들을 경기 흐름과 쟁점 중심으로 짧게 정리합니다.
           </p>
         </div>
         <button
@@ -88,18 +89,18 @@ export function RelatedPostSummaryPanel({
           onClick={() => void handleCreateSummary()}
           type="button"
         >
-          {isLoading ? "요약 중" : hasRequested ? "다시 요약" : "관련 글 요약"}
+          {isLoading ? "요약 중" : hasRequested ? "다시 요약" : "관련 글 요약하기"}
         </button>
       </div>
 
       {!hasRequested ? (
-        <p className="px-3 py-4 text-sm text-[#667085]">
-          버튼을 누르면 OpenAI를 호출해 요약을 생성합니다.
+        <p className="px-3 pb-3 text-xs text-[#667085]">
+          버튼을 누르면 이 경기와 연결된 게시글들을 읽고 요약합니다.
         </p>
       ) : null}
 
       {isLoading ? (
-        <p className="px-3 py-4 text-sm text-[#667085]">
+        <p className="px-3 pb-3 text-sm text-[#667085]">
           관련 글을 읽고 요약하는 중입니다.
         </p>
       ) : null}
@@ -111,7 +112,7 @@ export function RelatedPostSummaryPanel({
       ) : null}
 
       {!isLoading && data?.summary ? (
-        <div className="px-3 py-4">
+        <div className="px-3 pb-3">
           <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
             <p className="whitespace-pre-wrap text-sm leading-6 text-[#202632]">
               {data.summary}
@@ -120,28 +121,6 @@ export function RelatedPostSummaryPanel({
         </div>
       ) : null}
 
-      {!isLoading && data?.sources.length ? (
-        <div className="border-t border-[#edf1f7] px-3 py-3">
-          <p className="text-xs font-black text-[#667085]">요약에 사용한 글</p>
-          <div className="mt-2 grid gap-2">
-            {data.sources.map((post) => (
-              <Link
-                className="rounded-sm border border-[#d8deea] bg-white px-3 py-2 text-sm hover:border-[#2f4f9f] hover:bg-[#f8fafc]"
-                href={`/posts/${post.id}`}
-                key={post.id}
-              >
-                <span className="block truncate font-bold text-[#202632]">
-                  {post.title}
-                </span>
-                <span className="mt-1 block text-xs text-[#667085]">
-                  추천 {post.counts.voteScore} · 댓글 {post.counts.comments} ·
-                  조회 {post.counts.views}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </section>
+    </div>
   );
 }

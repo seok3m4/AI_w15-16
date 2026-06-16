@@ -442,18 +442,17 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
 
             <KboRecordBriefingPanel game={game} />
 
-            <RelatedPostSummaryPanel
-              description={summaryDescription}
-              tags={summaryTags}
-              title={summaryTitle}
-            />
-
             <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
               <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
                 <h2 className="text-sm font-black text-[#1f3470]">
-                  관련 글
+                  이 경기 관련 글
                 </h2>
               </div>
+              <RelatedPostSummaryPanel
+                description={summaryDescription}
+                tags={summaryTags}
+                title={summaryTitle}
+              />
               {isPostsLoading ? (
                 <p className="px-3 py-5 text-sm text-[#667085]">
                   관련 글을 불러오는 중입니다.
