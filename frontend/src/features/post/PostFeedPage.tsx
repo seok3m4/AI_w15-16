@@ -1,15 +1,29 @@
 import { Icon } from '@iconify/react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { listPosts, postQueryKeys } from '../../lib/api/posts';
 import { PostCard } from './PostCard';
 import { getErrorMessage, POST_PAGE_SIZE } from './utils';
 
 export function PostFeedPage() {
+  const navigate = useNavigate();
+  const [searchText, setSearchText] = useState('');
   const postsQuery = useQuery({
-    queryKey: postQueryKeys.list(0, POST_PAGE_SIZE),
-    queryFn: () => listPosts(0, POST_PAGE_SIZE),
+    queryKey: postQueryKeys.list({ page: 0, size: POST_PAGE_SIZE }),
+    queryFn: () => listPosts({ page: 0, size: POST_PAGE_SIZE }),
   });
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const keyword = searchText.trim();
+    if (!keyword) {
+      return;
+    }
+    const query = new URLSearchParams({ q: keyword });
+    navigate(`/app/search?${query.toString()}`);
+  }
 
   return (
     <section className="post-page" aria-labelledby="post-feed-title">
@@ -25,6 +39,26 @@ export function PostFeedPage() {
           </span>
         </Link>
       </div>
+
+      <form className="search-bar" onSubmit={submitSearch}>
+        <label className="sr-only" htmlFor="post-feed-search">
+          Search posts
+        </label>
+        <div className="search-input-shell">
+          <Icon icon="solar:magnifer-linear" aria-hidden="true" />
+          <input
+            aria-label="Search posts"
+            id="post-feed-search"
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search title, body, comments, or tags"
+            type="search"
+            value={searchText}
+          />
+        </div>
+        <button className="button button-secondary" type="submit">
+          Search
+        </button>
+      </form>
 
       {postsQuery.isLoading ? <PostListSkeleton /> : null}
 
@@ -63,7 +97,7 @@ export function PostFeedPage() {
   );
 }
 
-function PostListSkeleton() {
+export function PostListSkeleton() {
   return (
     <div className="post-grid" aria-label="게시글 로딩 중">
       {[0, 1, 2].map((item) => (

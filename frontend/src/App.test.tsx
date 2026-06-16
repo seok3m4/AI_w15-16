@@ -807,4 +807,118 @@ describe('App auth flow', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/app'));
     expect(await screen.findByText('아직 기록이 없어요')).toBeInTheDocument();
   });
+
+  it('navigates from the feed search box to keyword search results', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const postRequests: string[] = [];
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        postRequests.push(url);
+        const searchParams = new URL(url).searchParams;
+        const query = searchParams.get('q');
+        return jsonResponse({
+          items: query === 'memo' ? [postSummary({ title: 'Memo match' })] : [],
+          page: {
+            page: Number(searchParams.get('page') ?? '0'),
+            size: 20,
+            totalCount: query === 'memo' ? 1 : 0,
+            totalPages: query === 'memo' ? 1 : 0,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText('Search posts'), {
+      target: { value: 'memo' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe('/app/search'));
+    expect(new URLSearchParams(window.location.search).get('q')).toBe('memo');
+    expect(await screen.findByRole('link', { name: /Memo match/ })).toBeInTheDocument();
+    expect(
+      postRequests.some((url) => {
+        const searchParams = new URL(url).searchParams;
+        return (
+          searchParams.get('q') === 'memo' &&
+          searchParams.get('scope') === 'me' &&
+          searchParams.get('page') === '0'
+        );
+      }),
+    ).toBe(true);
+  });
+
+  it('keeps search query, tag filter, and page in the search URL and API request', async () => {
+    window.history.pushState({}, '', '/app/search?q=memo&tag=project');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const postRequests: string[] = [];
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        postRequests.push(url);
+        const searchParams = new URL(url).searchParams;
+        const page = Number(searchParams.get('page') ?? '0');
+        return jsonResponse({
+          items: [
+            postSummary({
+              id: `22222222-2222-2222-2222-${String(page + 1).padStart(12, '0')}`,
+              title: page === 0 ? 'First memo match' : 'Second memo match',
+              tags: ['project'],
+            }),
+          ],
+          page: {
+            page,
+            size: 20,
+            totalCount: 21,
+            totalPages: 2,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: /First memo match/ })).toBeInTheDocument();
+    expect(
+      postRequests.some((url) => {
+        const searchParams = new URL(url).searchParams;
+        return (
+          searchParams.get('q') === 'memo' &&
+          searchParams.get('tag') === 'project' &&
+          searchParams.get('scope') === 'me' &&
+          searchParams.get('page') === '0'
+        );
+      }),
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    await waitFor(() =>
+      expect(new URLSearchParams(window.location.search).get('page')).toBe('1'),
+    );
+    expect(await screen.findByRole('link', { name: /Second memo match/ })).toBeInTheDocument();
+    expect(
+      postRequests.some((url) => {
+        const searchParams = new URL(url).searchParams;
+        return (
+          searchParams.get('q') === 'memo' &&
+          searchParams.get('tag') === 'project' &&
+          searchParams.get('scope') === 'me' &&
+          searchParams.get('page') === '1'
+        );
+      }),
+    ).toBe(true);
+  });
 });

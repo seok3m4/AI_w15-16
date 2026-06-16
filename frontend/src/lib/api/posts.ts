@@ -6,19 +6,47 @@ import {
   PostResponse,
 } from './types';
 
+export type PostListParams = {
+  page?: number;
+  q?: string | null;
+  size?: number;
+  tag?: string | null;
+};
+
 export const postQueryKeys = {
   all: ['posts'] as const,
-  list: (page: number, size: number) => ['posts', 'list', page, size] as const,
+  list: (params: PostListParams = {}) =>
+    [
+      'posts',
+      'list',
+      {
+        page: params.page ?? 0,
+        q: cleanQueryValue(params.q),
+        size: params.size ?? 20,
+        tag: cleanQueryValue(params.tag),
+      },
+    ] as const,
   detail: (postId: string) => ['posts', 'detail', postId] as const,
 };
 
-export function listPosts(page = 0, size = 20): Promise<PostListResponse> {
+export function listPosts(params: PostListParams = {}): Promise<PostListResponse> {
+  const page = params.page ?? 0;
+  const size = params.size ?? 20;
   const query = new URLSearchParams({
     page: String(page),
     scope: 'me',
     size: String(size),
     sort: 'createdAt,desc',
   });
+  const keyword = cleanQueryValue(params.q);
+  const tag = cleanQueryValue(params.tag);
+
+  if (keyword) {
+    query.set('q', keyword);
+  }
+  if (tag) {
+    query.set('tag', tag);
+  }
 
   return apiRequest<PostListResponse>(`/posts?${query.toString()}`);
 }
@@ -45,4 +73,9 @@ export function deletePost(postId: string): Promise<void> {
   return apiRequest<void>(`/posts/${postId}`, {
     method: 'DELETE',
   });
+}
+
+function cleanQueryValue(value: string | null | undefined): string | undefined {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : undefined;
 }
