@@ -6,10 +6,11 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { LikeButton } from '../friend/LikeButton';
 import { me } from '../../lib/api/auth';
+import { getJob, getMemoryStatus, memoryQueryKeys, reindexMemories } from '../../lib/api/memory';
 import {
   commentQueryKeys,
   createComment,
@@ -18,7 +19,13 @@ import {
   updateComment,
 } from '../../lib/api/comments';
 import { deletePost, getPost, postQueryKeys } from '../../lib/api/posts';
-import { CommentListResponse, CommentResponse, PostDetailResponse } from '../../lib/api/types';
+import {
+  AsyncJobResponse,
+  CommentListResponse,
+  CommentResponse,
+  PostDetailResponse,
+  PostMemoryStatus,
+} from '../../lib/api/types';
 import {
   formatDate,
   getErrorMessage,
@@ -36,6 +43,8 @@ export function PostDetailPage() {
   const [commentContent, setCommentContent] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [activeReindexJobId, setActiveReindexJobId] = useState<string | null>(null);
+
   const commentsQueryKey = commentQueryKeys.list(postId ?? '', COMMENT_PAGE_SIZE);
   const userQuery = useQuery({
     queryKey: ['auth', 'me'],
@@ -55,6 +64,41 @@ export function PostDetailPage() {
     getNextPageParam: (lastPage) => {
       const nextPage = lastPage.page.page + 1;
       return nextPage < lastPage.page.totalPages ? nextPage : undefined;
+    },
+  });
+  const memoryStatusQuery = useQuery({
+    enabled: Boolean(postId) && detailQuery.data?.accessScope === 'me',
+    queryKey: memoryQueryKeys.status(postId ?? ''),
+    queryFn: () => getMemoryStatus(requiredPostId(postId)),
+  });
+  const jobQuery = useQuery({
+    enabled: Boolean(activeReindexJobId),
+    queryKey: activeReindexJobId
+      ? memoryQueryKeys.job(activeReindexJobId)
+      : ['memory', 'jobs', 'none'],
+    queryFn: () => getJob(activeReindexJobId ?? ''),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return isAsyncJobInProgress(status) ? 2000 : false;
+    },
+  });
+
+  const reindexMutation = useMutation({
+    mutationFn: () =>
+      reindexMemories({
+        postIds: [requiredPostId(postId)],
+        reason: 'manual-reindex',
+      }),
+    onSuccess: (job: AsyncJobResponse) => {
+      if (!postId) {
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: postQueryKeys.detail(postId) });
+      queryClient.invalidateQueries({ queryKey: memoryQueryKeys.status(postId) });
+      setActiveReindexJobId(job.id);
+      if (isAsyncJobTerminal(job.status)) {
+        setActiveReindexJobId(null);
+      }
     },
   });
   const createCommentMutation = useMutation({
@@ -145,9 +189,21 @@ export function PostDetailPage() {
       navigate('/app');
     },
   });
+
   const commentPages = commentsQuery.data?.pages ?? [];
   const comments = commentPages.flatMap((page) => page.items);
   const totalComments = commentPages[0]?.page.totalCount ?? comments.length;
+  const memoryStatus: PostMemoryStatus | null = memoryStatusQuery.data ?? null;
+  const activeJob: AsyncJobResponse | null = jobQuery.data ?? null;
+
+  useEffect(() => {
+    if (!postId || !activeReindexJobId || !activeJob || !isAsyncJobTerminal(activeJob.status)) {
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: postQueryKeys.detail(postId) });
+    queryClient.invalidateQueries({ queryKey: memoryQueryKeys.status(postId) });
+    setActiveReindexJobId(null);
+  }, [activeReindexJobId, activeJob?.status, postId, queryClient]);
 
   if (!postId) {
     return <PostNotFound />;
@@ -182,6 +238,16 @@ export function PostDetailPage() {
 
   const statusTone = memoryStatusTone(post.memoryStatus);
   const canManagePost = post.accessScope === 'me';
+  const canOpenReindex = post.accessScope === 'me';
+  const isReindexing = Boolean(activeReindexJobId) || isAsyncJobInProgress(activeJob?.status);
+  const chunkStatus = memoryStatus?.chunkStatus ?? post.memoryStatus ?? 'pending';
+  const embeddingStatus = memoryStatus?.embeddingStatus ?? post.memoryStatus ?? 'pending';
+  const memoryLastIndexedAt = memoryStatus?.lastIndexedAt
+    ? formatDate(memoryStatus.lastIndexedAt)
+    : 'Not indexed yet';
+  const memoryFailureReason = memoryStatus?.failureReason;
+  const memoryIsFailed = memoryStatus?.chunkStatus === 'failed' || memoryStatus?.embeddingStatus === 'failed';
+
   const handleCreateComment = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const content = commentContent.trim();
@@ -247,6 +313,42 @@ export function PostDetailPage() {
           {memoryStatusLabel(post.memoryStatus)}
         </span>
       </div>
+
+      <section className="memory-status-panel">
+        <div className="memory-status-grid">
+          <p className="memory-status-meta">Chunk status: {memoryStatusLabel(chunkStatus)}</p>
+          <p className="memory-status-meta">
+            Embedding status: {memoryStatusLabel(embeddingStatus)}
+          </p>
+          <p className="memory-status-meta">Last indexed: {memoryLastIndexedAt}</p>
+        </div>
+        {memoryFailureReason ? <p className="memory-error">{memoryFailureReason}</p> : null}
+        {memoryIsFailed && canOpenReindex ? (
+          <p className="memory-status-meta">
+            Reindexing may fix failed chunks and embeddings.
+          </p>
+        ) : null}
+        {reindexMutation.isError ? (
+          <p className="memory-error">
+            {getErrorMessage(reindexMutation.error, 'Failed to request memory reindex.')}
+          </p>
+        ) : null}
+        {activeJob || isReindexing ? (
+          <p className="memory-job-status">
+            Memory job: {formatAsyncJobStatus(activeJob?.status)} {activeJob ? `(${activeJob.progress}%)` : ''}
+          </p>
+        ) : null}
+        {canOpenReindex ? (
+          <button
+            className="button button-secondary"
+            disabled={isReindexing || reindexMutation.isPending}
+            onClick={() => reindexMutation.mutate()}
+            type="button"
+          >
+            {isReindexing || reindexMutation.isPending ? 'Reindexing...' : 'Reindex memory'}
+          </button>
+        ) : null}
+      </section>
 
       <h2 id="post-detail-title">{post.title}</h2>
       <div className="tag-row">
@@ -365,7 +467,7 @@ function CommentSection({
 
       {isLoading ? (
         <p className="comment-state" aria-live="polite">
-          댓글을 불러오고 있습니다.
+          댓글을 불러오는 중입니다.
         </p>
       ) : null}
 
@@ -510,6 +612,37 @@ function requiredPostId(postId: string | undefined): string {
     throw new Error('postId is required.');
   }
   return postId;
+}
+
+function requiredPostStatus(status?: string): string {
+  return status ?? 'unknown';
+}
+
+function isAsyncJobInProgress(status?: string): boolean {
+  return status === 'pending' || status === 'running';
+}
+
+function isAsyncJobTerminal(status?: string): boolean {
+  return !isAsyncJobInProgress(status);
+}
+
+function formatAsyncJobStatus(status?: string): string {
+  switch (requiredPostStatus(status)) {
+    case 'pending':
+      return 'Pending';
+    case 'running':
+      return 'Running';
+    case 'succeeded':
+      return 'Succeeded';
+    case 'failed':
+      return 'Failed';
+    case 'approval_required':
+      return 'Approval required';
+    case 'rejected':
+      return 'Rejected';
+    default:
+      return requiredPostStatus(status);
+  }
 }
 
 function PostNotFound() {

@@ -76,6 +76,56 @@ export type UserPublicSummary = {
 
 export type MemoryStatus = 'pending' | 'running' | 'succeeded' | 'failed' | string;
 
+export type PostMemoryStatus = {
+  postId: string;
+  chunkStatus: string;
+  embeddingStatus: string;
+  lastIndexedAt: string | null;
+  failureReason: string | null;
+};
+
+export type AsyncJobResponse = {
+  id: string;
+  type: string;
+  status: string;
+  progress: number;
+  retryable: boolean;
+  result: unknown;
+  error: unknown;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+};
+
+export type MemorySearchRequest = {
+  query: string;
+  scope?: string;
+  limit?: number;
+};
+
+export type MemorySearchResultItem = {
+  postId: string;
+  chunkId: string;
+  ownerUserId: string;
+  ownerNickname: string;
+  title: string;
+  snippet: string;
+  score: number;
+  sourceType: string;
+  createdAt: string;
+};
+
+export type MemorySearchResponse = {
+  query: string;
+  scope: string;
+  results: MemorySearchResultItem[];
+};
+
+export type ReindexMemoriesRequest = {
+  postIds: string[];
+  reason?: string | null;
+};
+
 export type PostSummaryResponse = {
   id: string;
   author: UserPublicSummary;

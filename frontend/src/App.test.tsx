@@ -26,6 +26,15 @@ function noContentResponse() {
   return new Response(null, { status: 204 });
 }
 
+function memorySearchResponse(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    query: 'meeting summary',
+    scope: 'me',
+    results: [],
+    ...overrides,
+  };
+}
+
 function authMeResponse() {
   return {
     id: USER_ID,
@@ -1122,5 +1131,163 @@ describe('App auth flow', () => {
 
     expect(await screen.findByText('AI 공유 동의를 켰습니다.')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: '친구 AI 공유 동의' })).toBeChecked();
+  });
+  it('shows the memory search empty state without query parameters', async () => {
+    window.history.pushState({}, '', '/app/memory-search');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Search your memory' })).toBeInTheDocument();
+    expect(screen.getByText('Start with a natural-language query')).toBeInTheDocument();
+  });
+
+  it('shows memory search results from /memory-search', async () => {
+    window.history.pushState({}, '', '/app/memory-search?q=meeting');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/memory-search')) {
+        expect(init?.method).toBe('POST');
+        return jsonResponse(
+          memorySearchResponse({
+            query: 'meeting',
+            results: [
+              {
+                postId: FIRST_POST_ID,
+                chunkId: 'chunk-1',
+                ownerUserId: USER_ID,
+                ownerNickname: 'cutan',
+                title: 'Meeting notes',
+                snippet: 'Discussed product risks and timeline.',
+                score: 0.8421,
+                sourceType: 'post',
+                createdAt: '2026-06-15T03:10:00Z',
+              },
+            ],
+          }),
+        );
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    const resultLink = await screen.findByRole('link', { name: 'Meeting notes' });
+    expect(await screen.findByRole('heading', { name: 'Search your memory' })).toBeInTheDocument();
+    expect(screen.getByText('Discussed product risks and timeline.')).toBeInTheDocument();
+    expect(screen.getByText('score 0.842')).toBeInTheDocument();
+    expect(resultLink).toHaveAttribute('href', `/app/posts/${FIRST_POST_ID}`);
+  });
+
+  it('falls back to keyword search when memory search returns no results', async () => {
+    window.history.pushState({}, '', '/app/memory-search?q=meeting');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/memory-search')) {
+        return jsonResponse(memorySearchResponse({ query: 'meeting' }));
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    const keywordLink = await screen.findByRole('link', { name: 'Search as keyword instead' });
+    fireEvent.click(keywordLink);
+
+    await waitFor(() => expect(window.location.pathname).toBe('/app/search'));
+    expect(new URLSearchParams(window.location.search).get('q')).toBe('meeting');
+  });
+
+  it('starts memory reindex and polls job status from post detail', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let jobCalls = 0;
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ memoryStatus: 'failed', accessScope: 'me' }));
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        return jsonResponse({
+          items: [],
+          page: { page: 0, size: 20, totalCount: 0, totalPages: 0 },
+        });
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}/memory-status`)) {
+        return jsonResponse({
+          postId: FIRST_POST_ID,
+          chunkStatus: 'failed',
+          embeddingStatus: 'failed',
+          lastIndexedAt: '2026-06-15T03:09:00Z',
+          failureReason: 'Initial embedding failed.',
+        });
+      }
+      if (url.endsWith('/memories/reindex') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          postIds: [FIRST_POST_ID],
+          reason: 'manual-reindex',
+        });
+        return jsonResponse({
+          id: 'job-1',
+          type: 'memory_reindex',
+          status: 'running',
+          progress: 5,
+          retryable: false,
+          result: null,
+          error: null,
+          createdAt: '2026-06-15T03:10:00Z',
+          updatedAt: '2026-06-15T03:10:00Z',
+          completedAt: null,
+        });
+      }
+      if (url.endsWith('/jobs/job-1')) {
+        jobCalls += 1;
+        return jsonResponse({
+          id: 'job-1',
+          type: 'memory_reindex',
+          status: jobCalls > 2 ? 'succeeded' : 'running',
+          progress: jobCalls > 2 ? 100 : 50,
+          retryable: false,
+          result: null,
+          error: null,
+          createdAt: '2026-06-15T03:10:00Z',
+          updatedAt: '2026-06-15T03:10:10Z',
+          completedAt: jobCalls > 2 ? '2026-06-15T03:10:10Z' : null,
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    const reindexButton = await screen.findByRole('button', { name: 'Reindex memory' });
+    fireEvent.click(reindexButton);
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/memories/reindex'),
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(await screen.findByText(/Memory job:/)).toBeInTheDocument();
+    await waitFor(() => expect(jobCalls).toBeGreaterThanOrEqual(1));
   });
 });

@@ -6,6 +6,7 @@ import { PostDetailPage } from './PostDetailPage';
 import { PostEditorPage } from './PostEditorPage';
 import { PostFeedPage } from './PostFeedPage';
 import { PostSearchPage } from './PostSearchPage';
+import { MemorySearchPage } from '../memory-search/MemorySearchPage';
 
 export const postRoutes = (
   <>
@@ -13,6 +14,7 @@ export const postRoutes = (
     <Route path="friends" element={<FriendsPage />} />
     <Route path="friends/feed" element={<FriendFeedPage />} />
     <Route path="search" element={<PostSearchPage />} />
+    <Route path="memory-search" element={<MemorySearchPage />} />
     <Route path="settings" element={<SettingsPage />} />
     <Route path="posts/new" element={<PostEditorPage mode="create" />} />
     <Route path="posts/:postId" element={<PostDetailPage />} />
