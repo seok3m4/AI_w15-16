@@ -96,14 +96,17 @@ export function HotPostsPanel({ selectedTeam }: HotPostsPanelProps) {
   }, [queryString]);
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-      <div className="border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white">
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#f87171]">
-          Hot
-        </p>
-        <h2 className="text-sm font-black">
-          {selectedTeam ? `${selectedTeam} 인기글` : "인기글"}
-        </h2>
+    <section className="community-panel">
+      <div className="community-panel-header">
+        <div>
+          <h2 className="text-sm font-black text-[#1f3470]">
+            {selectedTeam ? `${selectedTeam} 인기글` : "인기글"}
+          </h2>
+          <p className="mt-0.5 text-[11px] text-[#667085]">
+            지금 많이 보는 글
+          </p>
+        </div>
+        <span className="text-[11px] font-black text-[#d71920]">조회순</span>
       </div>
 
       {isLoading ? (
@@ -126,24 +129,24 @@ export function HotPostsPanel({ selectedTeam }: HotPostsPanelProps) {
         <div className="divide-y divide-[#edf1f7]">
           {posts.map((post, index) => (
             <Link
-              className="block px-3 py-2.5 hover:bg-[#f8fafc]"
+              className="block px-3 py-3 hover:bg-[#f8fafc]"
               href={`/posts/${post.id}`}
               key={post.id}
             >
-              <div className="flex items-center gap-2">
-                <span className="w-5 shrink-0 text-center text-xs font-black text-[#2f4f9f]">
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#eef3ff] text-[11px] font-black text-[#2f4f9f]">
                   {index + 1}
                 </span>
-                <p className="min-w-0 flex-1 truncate text-sm font-bold text-[#202632]">
+                <p className="min-w-0 flex-1 break-words text-sm font-bold leading-5 text-[#202632]">
                   {post.title}
                 </p>
-                <span className="shrink-0 text-xs font-black text-[#2f4f9f]">
-                  {post.counts.views}
+                <span className="shrink-0 rounded-sm bg-[#f6f8fc] px-2 py-1 text-[11px] font-black text-[#2f4f9f]">
+                  조회 {post.counts.views}
                 </span>
               </div>
-              <p className="mt-1 truncate pl-7 text-xs text-[#8a94a6]">
-                {post.author.nickname} · 조회 {post.counts.views} · 댓글{" "}
-                {post.counts.comments} · {formatDate(post.createdAt)}
+              <p className="mt-2 pl-7 text-xs text-[#8a94a6]">
+                {post.author.nickname} · 댓글 {post.counts.comments} ·{" "}
+                {formatDate(post.createdAt)}
               </p>
             </Link>
           ))}

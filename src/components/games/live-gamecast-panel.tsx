@@ -130,6 +130,13 @@ function getCurrentPlayerText(game: KboGame): string {
     .join(" / ");
 }
 
+function getLiveSummaryText(game: KboGame): string[] {
+  const summary = [getCurrentPlayerText(game), getRunnerText(game), getCountText(game)]
+    .filter(Boolean);
+
+  return summary;
+}
+
 function buildGamecastItems(game: KboGame): GamecastItem[] {
   const inningText = getInningText(game);
   const countText = getCountText(game);
@@ -216,6 +223,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
   }`;
   const items = buildGamecastItems(game);
   const liveState = game.liveState;
+  const liveSummary = getLiveSummaryText(game);
   const hasRelayResponse = relayState?.requestKey === requestKey;
   const relayGroups =
     hasRelayResponse
@@ -287,8 +295,8 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
   }, [game.gameDate, game.gameId, game.status, requestKey, selectedInning]);
 
   return (
-    <section className="mt-4 overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#071a3d] px-3 py-3 text-white sm:flex-row sm:items-center sm:justify-between">
+    <section className="community-panel mt-4">
+      <div className="community-title-bar flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-black">실시간 중계</h2>
           <p className="mt-1 text-xs text-white/70">
@@ -298,7 +306,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
         <div className="flex flex-wrap items-center gap-2">
           {relaySource ? (
             <a
-              className="rounded-sm border border-white/20 bg-white/10 px-2 py-1 text-xs font-black text-white hover:bg-white/20"
+              className="community-chip community-chip-inverse"
               href={relaySource}
               rel="noreferrer"
               target="_blank"
@@ -308,10 +316,10 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
           ) : null}
           <span
             className={[
-              "w-fit rounded-sm px-2 py-1 text-xs font-black",
+              "community-chip w-fit",
               game.status === "live"
-                ? "bg-[#d71920] text-white"
-                : "bg-white/10 text-white",
+                ? "community-chip-accent"
+                : "community-chip-inverse",
             ].join(" ")}
           >
             {game.status === "live" ? "LIVE" : getStatusLabel(game.status)}
@@ -321,7 +329,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
 
       <div className="grid gap-0 md:grid-cols-[220px_minmax(0,1fr)]">
         <div className="border-b border-[#d8deea] bg-[#f6f8fc] p-3 md:border-b-0 md:border-r">
-          <div className="rounded-sm border border-[#d8deea] bg-white p-3 text-center">
+          <div className="community-subpanel bg-white p-3 text-center">
             <p className="text-xs font-black text-[#667085]">
               {getInningText(game) || getStatusLabel(game.status)}
             </p>
@@ -335,7 +343,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
             ) : null}
           </div>
 
-          <div className="mt-3 rounded-sm border border-[#d8deea] bg-white p-3">
+          <div className="community-subpanel mt-3 bg-white p-3">
             <p className="text-xs font-black text-[#667085]">루상 상황</p>
             <div className="mt-2 flex justify-center gap-2">
               <BaseIndicator
@@ -355,9 +363,22 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
               {getRunnerText(game) || "경기 상황 대기"}
             </p>
           </div>
+
+          {liveSummary.length > 0 ? (
+            <div className="community-subpanel mt-3 bg-white p-3">
+              <p className="text-xs font-black text-[#667085]">현재 흐름</p>
+              <div className="mt-2 grid gap-1.5">
+                {liveSummary.map((item) => (
+                  <p className="text-xs font-bold leading-5 text-[#202632]" key={item}>
+                    {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <div className="border-b border-[#edf1f7] bg-[#fbfcff] px-3 py-3">
             <p className="text-xs font-black text-[#667085]">이닝 선택</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -391,7 +412,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
             </div>
           </div>
 
-          <div className="divide-y divide-[#edf1f7]">
+          <div className="divide-y divide-[#edf1f7] lg:max-h-[720px] lg:overflow-y-auto">
             {relayGroups.length > 0 ? (
               relayGroups.map((group) => (
                 <div className="px-3 py-3" key={group.id}>
@@ -408,7 +429,7 @@ export function LiveGamecastPanel({ game }: LiveGamecastPanelProps) {
                       <div className="mt-2 grid gap-1.5">
                         {group.events.map((event) => (
                           <div
-                            className="rounded-sm border border-[#edf1f7] bg-[#fbfcff] px-3 py-2"
+                            className="community-subpanel bg-[#fbfcff] px-3 py-2"
                             key={event.id}
                           >
                             <p className="text-sm font-bold leading-6 text-[#202632]">

@@ -129,29 +129,32 @@ export function KboGamesPanel() {
   }
 
   return (
-    <section className="kbo-panel overflow-hidden">
-      <div className="border-b border-[#d7dde8] bg-white px-5 py-4">
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d71920]">
-          Game Data
-        </p>
-        <h2 className="mt-1 text-base font-black text-[#071a3d]">
+    <section className="community-panel overflow-hidden">
+      <div className="community-panel-header">
+        <div>
+          <p className="text-[11px] font-black tracking-[0.12em] text-[#d71920]">
+            경기 정보
+          </p>
+          <h2 className="mt-1 text-base font-black text-[#071a3d]">
           KBO 공식 경기 데이터
         </h2>
-        <p className="mt-1 text-sm leading-6 text-[#64748b]">
+          <p className="mt-0.5 text-xs leading-5 text-[#667085]">
           KBO 공식 일정/결과 데이터를 조회합니다.
-        </p>
+          </p>
+        </div>
+        <span className="community-chip">KBO</span>
       </div>
 
-      <form className="grid gap-3 bg-[#f8fafc] p-5" onSubmit={handleSubmit}>
+      <form className="grid gap-3 p-4" onSubmit={handleSubmit}>
         <input
-          className="h-10 rounded-md border border-[#c8d3df] bg-white px-3 text-sm outline-none focus:border-[#d71920] focus:ring-2 focus:ring-[#d71920]/10"
+          className="community-input text-sm"
           onChange={(event) => setDate(event.target.value)}
           type="date"
           value={date}
         />
 
         <select
-          className="h-10 rounded-md border border-[#c8d3df] bg-white px-3 text-sm outline-none focus:border-[#d71920] focus:ring-2 focus:ring-[#d71920]/10"
+          className="community-input text-sm"
           onChange={(event) => setTeam(event.target.value)}
           value={team}
         >
@@ -163,7 +166,7 @@ export function KboGamesPanel() {
         </select>
 
         <button
-          className="h-10 rounded-md bg-[#071a3d] px-4 text-sm font-bold text-white hover:bg-[#102a56] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+          className="community-button-primary px-4"
           disabled={isLoading || !date}
           type="submit"
         >
@@ -172,20 +175,20 @@ export function KboGamesPanel() {
       </form>
 
       {data?.message ? (
-        <p className="mx-5 mt-4 rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+        <p className="mx-4 mt-1 rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
           {data.message}
         </p>
       ) : null}
 
       {data?.result ? (
-        <div className="space-y-3 p-5 pt-4">
+        <div className="space-y-3 p-4 pt-1">
           <div className="flex items-center justify-between gap-3 text-xs font-bold text-[#64748b]">
             <span>
               {data.result.date}
               {data.result.team ? ` · ${data.result.team}` : ""}
             </span>
             <a
-              className="font-black text-[#d71920] hover:underline"
+              className="community-chip community-chip-link px-2"
               href={data.result.source}
               rel="noreferrer"
               target="_blank"
@@ -198,14 +201,14 @@ export function KboGamesPanel() {
             <div className="grid gap-2">
               {data.result.games.map((game) => (
                 <article
-                  className="rounded-md border border-[#d7dde8] bg-white p-3"
+                  className="community-subpanel bg-white p-3"
                   key={`${game.gameDate}-${game.awayTeam}-${game.homeTeam}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-black text-[#071a3d]">
                       {game.awayTeam} vs {game.homeTeam}
                     </p>
-                    <span className="rounded-md bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
+                    <span className="community-chip community-chip-accent px-2">
                       {getStatusLabel(game.status)}
                     </span>
                   </div>
@@ -230,20 +233,20 @@ export function KboGamesPanel() {
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
                     <Link
-                      className="rounded-sm bg-[#071a3d] px-2 py-1 text-white hover:bg-[#102a56]"
+                      className="community-button-primary community-button-compact"
                       href={getGameRoomHref(game)}
                     >
                       경기방
                     </Link>
                     <Link
-                      className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#071a3d] hover:border-[#d71920] hover:text-[#d71920]"
+                      className="community-button-secondary community-button-compact"
                       href={getWriteReviewHref(game)}
                     >
                       리뷰 쓰기
                     </Link>
                     {game.reviewUrl ? (
                       <a
-                        className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#d71920] hover:bg-[#fff1f2]"
+                        className="community-button-secondary community-button-compact text-[#d71920] hover:bg-[#fff1f2] hover:text-[#d71920]"
                         href={game.reviewUrl}
                         rel="noreferrer"
                         target="_blank"
@@ -253,7 +256,7 @@ export function KboGamesPanel() {
                     ) : null}
                     {game.highlightUrl ? (
                       <a
-                        className="rounded-sm border border-[#d7dde8] bg-white px-2 py-1 text-[#d71920] hover:bg-[#fff1f2]"
+                        className="community-button-secondary community-button-compact text-[#d71920] hover:bg-[#fff1f2] hover:text-[#d71920]"
                         href={game.highlightUrl}
                         rel="noreferrer"
                         target="_blank"
@@ -266,7 +269,7 @@ export function KboGamesPanel() {
               ))}
             </div>
           ) : (
-            <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3 text-sm text-[#64748b]">
+            <p className="community-subpanel p-3 text-sm text-[#64748b]">
               선택한 조건의 KBO 경기 일정/결과가 없습니다.
             </p>
           )}

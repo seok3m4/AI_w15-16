@@ -495,8 +495,8 @@ export function PostCreateForm({
 
   if (isAuthLoading) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-5 text-sm text-[#5e6a7d]">
+      <section className="page-shell">
+        <div className="community-panel p-5 text-sm text-[#667085]">
           로그인 상태를 확인하는 중입니다.
         </div>
       </section>
@@ -505,14 +505,16 @@ export function PostCreateForm({
 
   if (!currentUser) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-6">
-          <h2 className="text-xl font-semibold">로그인이 필요합니다.</h2>
-          <p className="mt-2 text-sm text-[#5e6a7d]">
+      <section className="page-shell">
+        <div className="community-panel p-6">
+          <h2 className="text-xl font-black text-[#071a3d]">
+            로그인이 필요합니다.
+          </h2>
+          <p className="mt-2 text-sm text-[#667085]">
             게시글 작성은 로그인한 사용자만 사용할 수 있습니다.
           </p>
           <Link
-            className="mt-5 inline-flex rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59]"
+            className="community-button-primary mt-5"
             href="/login"
           >
             로그인
@@ -523,20 +525,25 @@ export function PostCreateForm({
   }
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div>
-        <div className="border-b border-[#d9e2ec] pb-4">
-          <h2 className="text-xl font-semibold">새 게시글 작성</h2>
-          <p className="mt-2 text-sm text-[#5e6a7d]">
-            {currentUser.nickname} 님의 야구 이야기로 게시판을 채워주세요.
-          </p>
+    <section className="page-shell grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="community-panel min-w-0 p-5 sm:p-6">
+        <div className="community-panel-header -mx-5 -mt-5 mb-5 px-5 py-3 sm:-mx-6 sm:-mt-6 sm:px-6">
+          <div>
+            <h2 className="text-base font-black text-[#071a3d]">새 게시글 작성</h2>
+            <p className="mt-0.5 text-[11px] text-[#667085]">
+              {currentUser.nickname} 님의 야구 이야기로 게시판을 채워주세요.
+            </p>
+          </div>
+          <Link className="community-button-secondary community-button-compact" href="/">
+            목록으로
+          </Link>
         </div>
 
-        <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+        <form className="grid gap-5" onSubmit={handleSubmit}>
+          <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
             제목
             <input
-              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+              className="community-input community-input-large text-sm font-normal"
               maxLength={120}
               minLength={2}
               onChange={(event) => setTitle(event.target.value)}
@@ -546,10 +553,10 @@ export function PostCreateForm({
             />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+          <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
             본문
             <textarea
-              className="min-h-60 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm font-normal leading-6 outline-none focus:border-[#0f766e]"
+              className="community-textarea min-h-72 resize-y text-sm font-normal leading-6"
               maxLength={20000}
               onChange={(event) => setContent(event.target.value)}
               required
@@ -557,10 +564,10 @@ export function PostCreateForm({
             />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
+          <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
             태그
             <input
-              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+              className="community-input community-input-large text-sm font-normal"
               onChange={(event) => setTags(event.target.value)}
               placeholder="kbo, 불펜, 경기리뷰"
               type="text"
@@ -568,7 +575,7 @@ export function PostCreateForm({
             />
           </label>
 
-          <section className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-4">
+          <section className="community-subpanel p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-sm font-black text-[#071a3d]">기존 태그</p>
@@ -576,7 +583,7 @@ export function PostCreateForm({
                   클릭하면 태그 입력창에 추가됩니다.
                 </p>
               </div>
-              <span className="rounded-md bg-white px-2.5 py-1 text-xs font-bold text-[#64748b]">
+              <span className="community-chip">
                 {existingTags.length}개
               </span>
             </div>
@@ -585,7 +592,7 @@ export function PostCreateForm({
               <div className="mt-3 flex flex-wrap gap-2 border-t border-[#d7dde8] pt-3">
                 {selectedTagNames.map((tagName) => (
                   <button
-                    className="rounded-md bg-[#fff1f2] px-2.5 py-1 text-xs font-bold text-[#d71920] hover:bg-[#ffe4e6]"
+                    className="community-chip community-chip-accent hover:bg-[#ffe4e6]"
                     key={tagName}
                     onClick={() => handleRemoveTag(tagName)}
                     type="button"
@@ -613,7 +620,7 @@ export function PostCreateForm({
             ) : null}
 
             {existingTags.length > 0 ? (
-              <div className="mt-3 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+              <div className="no-scrollbar mt-3 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
                 {existingTags.map((tag) => {
                   const isSelected = selectedTagNames.some(
                     (tagName) =>
@@ -624,8 +631,8 @@ export function PostCreateForm({
                     <button
                       className={
                         isSelected
-                          ? "rounded-md border border-[#d71920] bg-[#fff1f2] px-2.5 py-1 text-xs font-black text-[#d71920]"
-                          : "rounded-md border border-[#d7dde8] bg-white px-2.5 py-1 text-xs font-bold text-[#475569] hover:border-[#d71920] hover:text-[#d71920]"
+                          ? "community-chip community-chip-accent border-[#d71920] font-black"
+                          : "community-chip text-[#475569] hover:border-[#d71920] hover:text-[#d71920]"
                       }
                       disabled={isSelected}
                       key={tag.id}
@@ -640,7 +647,7 @@ export function PostCreateForm({
             ) : null}
           </section>
 
-          <section className="rounded-md border border-[#d7dde8] bg-white p-4">
+          <section className="community-subpanel bg-white p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-black text-[#071a3d]">
@@ -652,7 +659,7 @@ export function PostCreateForm({
                 </p>
               </div>
               <button
-                className="h-10 rounded-md bg-[#071a3d] px-4 text-sm font-bold text-white hover:bg-[#102a56] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                className="community-button-primary disabled:cursor-not-allowed disabled:bg-[#94a3b8] sm:self-start"
                 disabled={
                   isRagLoading ||
                   title.trim().length < 2 ||
@@ -677,7 +684,7 @@ export function PostCreateForm({
             ) : null}
 
             {hasRequestedRag && !isDuplicateCheckCurrent ? (
-              <p className="mt-3 rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+              <p className="mt-3 rounded-sm border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
                 작성 내용이 바뀌었습니다. 현재 내용 기준으로 중복 글을 다시
                 확인해주세요.
               </p>
@@ -690,7 +697,7 @@ export function PostCreateForm({
             ) : null}
 
             {!isRagLoading && draftSimilarPosts?.message ? (
-              <p className="mt-3 rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+              <p className="mt-3 rounded-sm border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
                 {draftSimilarPosts.message}
               </p>
             ) : null}
@@ -699,7 +706,7 @@ export function PostCreateForm({
             isDuplicateCheckCurrent &&
             draftSimilarPosts?.duplicateWarning ? (
               <div
-                className={`mt-3 rounded-md border px-3 py-3 text-sm ${getDuplicateRiskClassName(
+                className={`mt-3 rounded-sm border px-3 py-3 text-sm ${getDuplicateRiskClassName(
                   draftSimilarPosts.duplicateRisk,
                 )}`}
               >
@@ -708,7 +715,7 @@ export function PostCreateForm({
                     {getDuplicateRiskLabel(draftSimilarPosts.duplicateRisk)}
                   </p>
                   {draftSimilarPosts.topSimilarity !== null ? (
-                    <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black">
+                    <span className="rounded-sm bg-white/70 px-2 py-1 text-xs font-black">
                       최고 유사도{" "}
                       {formatSimilarity(draftSimilarPosts.topSimilarity)}
                     </span>
@@ -719,7 +726,7 @@ export function PostCreateForm({
                 </p>
                 {isBlockingDuplicateRisk(draftSimilarPosts.duplicateRisk) ? (
                   <button
-                    className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-black text-[#071a3d] hover:bg-[#f8fafc]"
+                    className="community-button-secondary community-button-compact mt-3"
                     onClick={() =>
                       setAcknowledgedDuplicateFingerprint(draftFingerprint)
                     }
@@ -737,7 +744,7 @@ export function PostCreateForm({
             ) : null}
 
             {!isRagLoading && draftSimilarPosts?.summary ? (
-              <div className="mt-3 rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3">
+              <div className="community-subpanel mt-3 p-3">
                 <p className="text-xs font-black uppercase text-[#64748b]">
                   요약
                 </p>
@@ -759,7 +766,7 @@ export function PostCreateForm({
               <div className="mt-3 grid gap-3">
                 {draftSimilarPosts.similarPosts.map((post) => (
                   <article
-                    className="rounded-md border border-[#d7dde8] bg-[#f8fafc] p-3"
+                    className="community-subpanel p-3"
                     key={post.id}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -769,7 +776,7 @@ export function PostCreateForm({
                       >
                         {post.title}
                       </Link>
-                      <span className="rounded-md bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
+                      <span className="community-chip community-chip-accent px-2">
                         유사도 {formatSimilarity(post.similarity)}
                       </span>
                     </div>
@@ -780,14 +787,14 @@ export function PostCreateForm({
                       {post.tags.length > 0 ? (
                         post.tags.map((tag) => (
                           <span
-                            className="rounded-md bg-white px-2 py-1 text-xs font-bold text-[#64748b]"
+                            className="community-chip px-2"
                             key={tag.id}
                           >
                             #{tag.name}
                           </span>
                         ))
                       ) : (
-                        <span className="rounded-md bg-white px-2 py-1 text-xs font-bold text-[#64748b]">
+                        <span className="community-chip px-2">
                           태그 없음
                         </span>
                       )}
@@ -799,20 +806,20 @@ export function PostCreateForm({
           </section>
 
           {isModerating ? (
-            <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+            <p className="rounded-sm border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
               운영 정책을 점검하는 중입니다.
             </p>
           ) : null}
 
           {isModerationCheckCurrent && moderationResult ? (
             <section
-              className={`rounded-md border px-3 py-3 text-sm ${getModerationClassName(
+              className={`rounded-sm border px-3 py-3 text-sm ${getModerationClassName(
                 moderationResult.verdict,
               )}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-black">운영 정책 점검</p>
-                <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black">
+                <span className="rounded-sm bg-white/70 px-2 py-1 text-xs font-black">
                   {moderationResult.verdict === "allow"
                     ? "통과"
                     : moderationResult.verdict === "warn"
@@ -840,7 +847,7 @@ export function PostCreateForm({
               ) : null}
               {moderationResult.verdict === "warn" ? (
                 <button
-                  className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-black text-[#071a3d] hover:bg-[#f8fafc]"
+                  className="community-button-secondary community-button-compact mt-3"
                   onClick={() =>
                     setAcknowledgedModerationFingerprint(moderationFingerprint)
                   }
@@ -860,7 +867,7 @@ export function PostCreateForm({
 
           {message ? (
             <p
-              className={`rounded-md border px-3 py-2 text-sm ${
+              className={`rounded-sm border px-3 py-2 text-sm ${
                 messageType === "success"
                   ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]"
                   : "border-[#fecaca] bg-[#fff1f2] text-[#b91c1c]"
@@ -871,32 +878,32 @@ export function PostCreateForm({
           ) : null}
 
           {needsDuplicateCheck ? (
-            <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+            <p className="rounded-sm border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
               게시글 등록 전 현재 내용 기준으로 중복 글 확인을 진행해주세요.
             </p>
           ) : null}
 
           {hasBlockingDuplicateRisk ? (
-            <p className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+            <p className="rounded-sm border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
               중복 가능성이 있는 글을 확인한 뒤 확인하고 등록 진행을 눌러주세요.
             </p>
           ) : null}
 
           {hasModerationWarning ? (
-            <p className="rounded-md border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
+            <p className="rounded-sm border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-sm text-[#92400e]">
               운영 정책 점검 안내를 확인한 뒤 확인하고 등록 진행을 눌러주세요.
             </p>
           ) : null}
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 border-t border-[#d8deea] pt-4 sm:flex-row sm:items-center sm:justify-end">
             <Link
-              className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
+              className="community-button-secondary w-full sm:w-auto"
               href="/"
             >
               취소
             </Link>
             <button
-              className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+              className="community-button-primary w-full disabled:cursor-not-allowed disabled:bg-[#94a3b8] sm:w-auto"
               disabled={
                 isSubmitting ||
                 isModerating ||
@@ -912,7 +919,42 @@ export function PostCreateForm({
         </form>
       </div>
 
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+      <aside className="grid gap-4 xl:sticky xl:top-28 xl:self-start">
+        <section className="community-panel">
+          <div className="community-panel-header">
+            <h3 className="text-sm font-black text-[#071a3d]">작성 상태</h3>
+            <span className="text-[11px] font-bold text-[#667085]">
+              실시간 요약
+            </span>
+          </div>
+          <div className="grid gap-2 px-3 py-3 text-sm">
+            <div className="community-stat-row">
+              <span className="text-[#667085]">제목</span>
+              <span className="font-black text-[#202632]">
+                {title.trim().length}자
+              </span>
+            </div>
+            <div className="community-stat-row">
+              <span className="text-[#667085]">본문</span>
+              <span className="font-black text-[#202632]">
+                {content.trim().length}자
+              </span>
+            </div>
+            <div className="community-stat-row">
+              <span className="text-[#667085]">선택 태그</span>
+              <span className="font-black text-[#202632]">
+                {selectedTagNames.length}개
+              </span>
+            </div>
+            <div className="rounded-sm bg-[#f8fafc] px-3 py-2 text-xs leading-5 text-[#667085]">
+              {needsDuplicateCheck
+                ? "등록 전 중복 글 확인이 필요합니다."
+                : hasBlockingDuplicateRisk
+                  ? "비슷한 글을 먼저 확인해보는 것을 권장합니다."
+                  : "현재 작성 내용으로 등록 준비가 진행 중입니다."}
+            </div>
+          </div>
+        </section>
         <ReviewAgentPanel onApplyDraft={handleApplyAgentDraft} />
       </aside>
     </section>

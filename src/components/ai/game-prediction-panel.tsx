@@ -66,16 +66,16 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
   }
 
   return (
-    <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className="community-panel mt-4">
+      <div className="community-panel-header community-panel-header-stack">
         <div>
           <h2 className="text-sm font-black text-[#1f3470]">승부 예측</h2>
           <p className="mt-1 text-xs text-[#667085]">
-            순위, 최근 흐름, 홈원정, 선발, 공개된 타자 라인업을 바탕으로 경기 관전 포인트를 예측합니다.
+            순위, 선발, 라인업 기준 관전 포인트
           </p>
         </div>
         <button
-          className="h-9 rounded-sm bg-[#2f4f9f] px-3 text-xs font-black text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+          className="community-button-primary shrink-0 px-3 text-xs"
           disabled={isLoading}
           onClick={() => void handlePredictGame()}
           type="button"
@@ -90,7 +90,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
 
       {!hasRequested ? (
         <p className="px-3 py-4 text-sm text-[#667085]">
-          버튼을 누르면 KBO 공식 순위, 경기 데이터, 공개된 타자 라인업을 기준으로 예측을 생성합니다.
+          경기 전력과 공개된 라인업을 기준으로 참고용 예측을 봅니다.
         </p>
       ) : null}
 
@@ -108,7 +108,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
 
       {!isLoading && data?.result ? (
         <div className="space-y-3 px-3 py-4">
-          <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
+          <div className="community-subpanel bg-[#fbfcff] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-xs font-black text-[#667085]">예측 우세</p>
@@ -116,15 +116,15 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
                   {data.result.predictedTeam}
                 </p>
               </div>
-              <span className="rounded-sm bg-[#071a3d] px-2 py-1 text-xs font-black text-white">
+              <span className="community-chip community-chip-dark">
                 신뢰도 {data.result.confidence}
               </span>
               <span
                 className={[
-                  "rounded-sm px-2 py-1 text-xs font-black",
+                  "community-chip",
                   data.result.lineupApplied
-                    ? "bg-[#ecfdf3] text-[#027a48]"
-                    : "bg-[#eef2f7] text-[#667085]",
+                    ? "community-chip-success"
+                    : "community-chip-muted",
                 ].join(" ")}
               >
                 {data.result.lineupApplied ? "라인업 반영" : "라인업 미공개"}
@@ -172,7 +172,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
           </div>
 
           {data.result.lineupSummary.length > 0 ? (
-            <div className="rounded-sm border border-[#d8deea] bg-white p-3">
+            <div className="community-subpanel bg-white p-3">
               <p className="text-xs font-black text-[#667085]">라인업 반영</p>
               <div className="mt-2 grid gap-1.5">
                 {data.result.lineupSummary.map((lineup) => (
@@ -187,8 +187,8 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
             </div>
           ) : null}
 
-          <div className="grid gap-2 md:grid-cols-2">
-            <div className="rounded-sm border border-[#d8deea] bg-white p-3">
+          <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_260px]">
+            <div className="community-subpanel bg-white p-3">
               <p className="text-xs font-black text-[#667085]">근거</p>
               <ul className="mt-2 grid gap-1.5 text-sm leading-6 text-[#202632]">
                 {data.result.factors.map((factor) => (
@@ -203,10 +203,10 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
                   <li key={caveat}>- {caveat}</li>
                 ))}
               </ul>
-              <p className="mt-3 text-xs font-bold text-[#92400e]">
+              <p className="mt-3 border-t border-[#f5d48f] pt-3 text-xs font-bold text-[#92400e]">
                 {data.result.modelUsed
-                  ? "OpenAI로 설명 문장을 생성했습니다."
-                  : "OpenAI 키가 없어 계산 기반 문장을 사용했습니다."}
+                  ? "자료를 바탕으로 관전 포인트를 정리했습니다."
+                  : "현재는 계산 기반 참고 문장을 사용했습니다."}
               </p>
             </div>
           </div>

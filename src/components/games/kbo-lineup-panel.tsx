@@ -137,17 +137,17 @@ export function KboLineupPanel({ game }: KboLineupPanelProps) {
   }, [queryString]);
 
   return (
-    <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex items-center justify-between gap-3 border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
+    <section className="community-panel mt-4">
+      <div className="community-panel-header">
         <div>
           <h2 className="text-sm font-black text-[#1f3470]">라인업</h2>
           <p className="mt-1 text-xs text-[#667085]">
-            KBO 공식 경기센터의 선발 타순과 WAR를 확인합니다.
+            선발 타순과 WAR
           </p>
         </div>
         {data?.result?.source ? (
           <a
-            className="shrink-0 rounded-sm border border-[#b9c3d7] bg-white px-2 py-1 text-xs font-bold text-[#1f3470] hover:bg-[#eef3ff]"
+            className="community-chip community-chip-link shrink-0 px-2"
             href={data.result.source}
             rel="noreferrer"
             target="_blank"
@@ -156,6 +156,32 @@ export function KboLineupPanel({ game }: KboLineupPanelProps) {
           </a>
         ) : null}
       </div>
+
+      {!isLoading && data?.result ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#edf1f7] bg-white px-3 py-2 text-xs font-bold text-[#667085]">
+          <span
+            className={[
+              "community-chip",
+              data.result.lineupReady
+                ? "community-chip-success"
+                : "community-chip-muted",
+            ].join(" ")}
+          >
+            {data.result.lineupReady ? "라인업 공개" : "라인업 미공개"}
+          </span>
+          {data.result.away?.totalWar !== null &&
+          data.result.away?.totalWar !== undefined ? (
+            <span>{data.result.away?.team} WAR {formatWar(data.result.away.totalWar)}</span>
+          ) : null}
+          {data.result.home?.totalWar !== null &&
+          data.result.home?.totalWar !== undefined ? (
+            <>
+              <span>·</span>
+              <span>{data.result.home?.team} WAR {formatWar(data.result.home.totalWar)}</span>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <p className="px-3 py-4 text-sm text-[#667085]">

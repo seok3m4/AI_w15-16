@@ -9,13 +9,29 @@ type TeamTabsProps = {
 
 export function TeamTabs({ selectedTeam, onSelectTeam }: TeamTabsProps) {
   return (
-    <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex items-center gap-1 overflow-x-auto px-3 py-2">
+    <div className="community-panel">
+      <div className="community-panel-header">
+        <div>
+          <h2 className="text-sm font-black text-[#1f3470]">팀 게시판</h2>
+        </div>
+        {selectedTeam ? (
+          <button
+            className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline"
+            onClick={() => onSelectTeam("")}
+            type="button"
+          >
+            전체로
+          </button>
+        ) : (
+          <span className="text-[11px] font-black text-[#667085]">전체 팀</span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-1.5 px-3 py-3">
         <button
           className={
             selectedTeam
-              ? "shrink-0 rounded-sm px-3 py-1.5 text-sm font-bold text-[#475569] hover:bg-[#eef3ff] hover:text-[#1f3470]"
-              : "shrink-0 rounded-sm bg-[#2f4f9f] px-3 py-1.5 text-sm font-black text-white"
+              ? "community-button-secondary community-button-compact col-span-2 w-full"
+              : "community-button-primary community-button-compact col-span-2 w-full"
           }
           onClick={() => onSelectTeam("")}
           type="button"
@@ -29,8 +45,8 @@ export function TeamTabs({ selectedTeam, onSelectTeam }: TeamTabsProps) {
             <button
               className={
                 isSelected
-                  ? "shrink-0 rounded-sm bg-[#2f4f9f] px-3 py-1.5 text-sm font-black text-white"
-                  : "shrink-0 rounded-sm px-3 py-1.5 text-sm font-bold text-[#475569] hover:bg-[#eef3ff] hover:text-[#1f3470]"
+                  ? "community-button-primary community-button-compact w-full"
+                  : "community-button-secondary community-button-compact w-full"
               }
               key={teamName}
               onClick={() => onSelectTeam(isSelected ? "" : teamName)}

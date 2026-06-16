@@ -171,27 +171,26 @@ export function TodayGameHub({
   const games = data?.result?.games ?? [];
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-      <div className="flex flex-col gap-3 border-b border-[#172554] bg-[#071a3d] px-4 py-3 text-white md:flex-row md:items-center md:justify-between">
+    <section className="community-panel">
+      <div className="community-panel-header community-panel-header-stack">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#f87171]">
-            Scoreboard
-          </p>
-          <h2 className="mt-0.5 text-lg font-black">오늘의 경기</h2>
-          <p className="mt-1 text-xs text-white/70">
-            일정, 선발투수, 경기방을 한 번에 확인합니다.
+          <h2 className="text-base font-black text-[#071a3d]">오늘의 경기</h2>
+          <p className="mt-1 text-xs text-[#667085]">
+            일정, 선발투수, 경기방
+            {selectedTeam ? ` · ${selectedTeam} 필터` : ""}
+            {!isLoading && games.length > 0 ? ` · ${games.length}경기` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <input
-            className="h-9 rounded-sm border border-white/20 bg-white px-2 text-sm text-[#071a3d] outline-none focus:border-white"
+            className="community-input text-sm"
             onChange={(event) => setDate(event.target.value)}
             type="date"
             value={date}
           />
           {data?.result?.source ? (
             <a
-              className="inline-flex h-9 items-center rounded-sm border border-white/20 bg-white/10 px-3 text-xs font-bold text-white hover:bg-white/20"
+              className="community-button-secondary community-button-compact"
               href={data.result.source}
               rel="noreferrer"
               target="_blank"
@@ -221,91 +220,94 @@ export function TodayGameHub({
       ) : null}
 
       {!isLoading && games.length > 0 ? (
-        <div className="grid gap-2 bg-[#eef2f7] p-2 md:grid-cols-2 xl:grid-cols-3">
-          {games.map((game) => {
-            const startingPitcherText = getStartingPitcherText(game);
-            const decisionPitcherText = getDecisionPitcherText(game);
+        <div className="bg-[#f3f6fa] p-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {games.map((game) => {
+              const startingPitcherText = getStartingPitcherText(game);
+              const decisionPitcherText = getDecisionPitcherText(game);
 
-            return (
-              <article
-                className="overflow-hidden rounded-sm border border-[#c8d3df] bg-white hover:border-[#2f4f9f]"
-                key={`${game.gameDate}-${game.awayTeam}-${game.homeTeam}`}
-              >
-                <div className="flex items-center justify-between gap-2 border-b border-[#edf1f7] bg-[#f8fafc] px-3 py-2">
-                  <span className="rounded-sm bg-[#d71920] px-2 py-1 text-xs font-black text-white">
-                    {getStatusLabel(game.status)}
-                  </span>
-                  <span className="truncate text-xs font-bold text-[#667085]">
-                    {[game.time || "시간 미정", game.stadium]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </div>
-
-                <div className="grid min-h-20 grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] items-center gap-2 px-3 py-3">
-                  <button
-                    className="truncate text-left text-base font-black text-[#071a3d] hover:text-[#2f4f9f] hover:underline"
-                    onClick={() => onSelectTeam(game.awayTeam)}
-                    type="button"
-                  >
-                    {game.awayTeam}
-                  </button>
-                  <span className="flex h-10 items-center justify-center rounded-sm bg-[#202632] px-2 text-sm font-black text-white">
-                    {getScoreText(game)}
-                  </span>
-                  <button
-                    className="truncate text-right text-base font-black text-[#071a3d] hover:text-[#2f4f9f] hover:underline"
-                    onClick={() => onSelectTeam(game.homeTeam)}
-                    type="button"
-                  >
-                    {game.homeTeam}
-                  </button>
-                </div>
-
-                {game.status === "live" && getLiveStateText(game) ? (
-                  <div className="border-t border-[#edf1f7] bg-[#fff7ed] px-3 py-2">
-                    <p className="truncate text-xs font-black text-[#b45309]">
-                      {getLiveStateText(game)}
-                    </p>
+              return (
+                <article
+                  className="w-[252px] shrink-0 overflow-hidden rounded-sm border border-[#c8d3df] bg-white hover:border-[#2f4f9f]"
+                  key={`${game.gameDate}-${game.awayTeam}-${game.homeTeam}`}
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-[#edf1f7] bg-[#f8fafc] px-2.5 py-1.5">
+                    <span className="community-chip community-chip-accent px-1.5 py-0.5 text-[11px]">
+                      {getStatusLabel(game.status)}
+                    </span>
+                    <span className="truncate text-[11px] font-bold text-[#667085]">
+                      {[game.time || "시간 미정", game.stadium]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
                   </div>
-                ) : null}
 
-                <div className="space-y-1 border-t border-[#edf1f7] px-3 py-2">
-                  {startingPitcherText ? (
-                    <p className="truncate text-xs font-bold text-[#202632]">
-                      <span className="mr-1 text-[#667085]">선발</span>
-                      {startingPitcherText}
+                  <div className="px-2.5 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        className="min-w-0 flex-1 truncate text-left text-sm font-black text-[#071a3d] hover:text-[#2f4f9f] hover:underline"
+                        onClick={() => onSelectTeam(game.awayTeam)}
+                        type="button"
+                      >
+                        {game.awayTeam}
+                      </button>
+                      <span className="flex h-8 min-w-16 items-center justify-center rounded-sm bg-[#202632] px-2 text-xs font-black text-white">
+                        {getScoreText(game)}
+                      </span>
+                      <button
+                        className="min-w-0 flex-1 truncate text-right text-sm font-black text-[#071a3d] hover:text-[#2f4f9f] hover:underline"
+                        onClick={() => onSelectTeam(game.homeTeam)}
+                        type="button"
+                      >
+                        {game.homeTeam}
+                      </button>
+                    </div>
+
+                    {game.status === "live" && getLiveStateText(game) ? (
+                      <p className="mt-2 truncate rounded-sm bg-[#fff7ed] px-2 py-1 text-[11px] font-black text-[#b45309]">
+                        {getLiveStateText(game)}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-2 space-y-1">
+                      {startingPitcherText ? (
+                        <p className="truncate text-[11px] font-bold text-[#202632]">
+                          <span className="mr-1 text-[#667085]">선발</span>
+                          {startingPitcherText}
+                        </p>
+                      ) : null}
+
+                      {decisionPitcherText ? (
+                        <p className="truncate text-[11px] font-bold text-[#d71920]">
+                          <span className="mr-1 text-[#667085]">기록</span>
+                          {decisionPitcherText}
+                        </p>
+                      ) : null}
+
+                      {!startingPitcherText && !decisionPitcherText ? (
+                        <p className="text-[11px] text-[#667085]">
+                          투수 정보 업데이트 전입니다.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-[#edf1f7] px-2.5 py-2">
+                    <p className="min-w-0 flex-1 truncate text-[11px] text-[#667085]">
+                      {[game.tv, game.note].filter(Boolean).join(" · ") ||
+                        "중계 정보 미정"}
                     </p>
-                  ) : null}
-
-                  {decisionPitcherText ? (
-                    <p className="truncate text-xs font-bold text-[#d71920]">
-                      <span className="mr-1 text-[#667085]">기록</span>
-                      {decisionPitcherText}
-                    </p>
-                  ) : null}
-
-                  {!startingPitcherText && !decisionPitcherText ? (
-                    <p className="text-xs text-[#667085]">
-                      투수 정보 업데이트 전입니다.
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="flex items-center justify-between gap-2 border-t border-[#edf1f7] px-3 py-2">
-                  <p className="min-w-0 truncate text-xs text-[#667085]">
-                    {[game.tv, game.note].filter(Boolean).join(" · ") || "중계 정보 미정"}
-                  </p>
-                  <Link
-                    className="inline-flex h-8 shrink-0 items-center rounded-sm bg-[#2f4f9f] px-3 text-xs font-black text-white hover:bg-[#1f3470]"
-                    href={getGameRoomHref(game)}
-                  >
-                    경기방
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
+                    <Link
+                      className="community-button-primary community-button-compact shrink-0"
+                      href={getGameRoomHref(game)}
+                    >
+                      경기방
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </section>

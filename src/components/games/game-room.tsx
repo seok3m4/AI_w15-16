@@ -95,6 +95,20 @@ function getStartingPitcherText(game: KboGame): string {
     .join(" vs ");
 }
 
+function getDecisionPitcherText(game: KboGame): string {
+  if (game.status === "scheduled" || game.status === "live") {
+    return "";
+  }
+
+  return [
+    game.winningPitcher ? `승 ${game.winningPitcher.name}` : "",
+    game.losingPitcher ? `패 ${game.losingPitcher.name}` : "",
+    game.savePitcher ? `세 ${game.savePitcher.name}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 function canPredictGame(game: KboGame): boolean {
   return game.status === "scheduled" || game.status === "live";
 }
@@ -238,8 +252,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
 
   if (isGamesLoading) {
     return (
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-sm border border-[#b9c3d7] bg-white px-4 py-8 text-center text-sm text-[#667085]">
+      <section className="page-shell pt-5">
+        <div className="community-panel px-4 py-8 text-center text-sm text-[#667085]">
           경기방을 불러오는 중입니다.
         </div>
       </section>
@@ -250,8 +264,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
 
   if (gamesData?.message || !game) {
     return (
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-sm border border-[#b9c3d7] bg-white p-5">
+      <section className="page-shell pt-5">
+        <div className="community-panel p-5">
           <h1 className="text-xl font-black text-[#1f3470]">
             {gamesData?.message
               ? "경기 데이터를 불러오지 못했습니다."
@@ -265,13 +279,13 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <input
-              className="h-9 rounded-sm border border-[#c8d3df] bg-white px-2 text-sm outline-none focus:border-[#2f4f9f]"
+              className="community-input text-sm"
               onChange={(event) => setDate(event.target.value)}
               type="date"
               value={date}
             />
             <Link
-              className="inline-flex h-9 items-center rounded-sm bg-[#2f4f9f] px-3 text-sm font-bold text-white hover:bg-[#1f3470]"
+              className="community-button-primary px-3 text-sm"
               href="/"
             >
               홈으로
@@ -282,7 +296,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
             <div className="mt-5 grid gap-2 sm:grid-cols-2">
               {gamesForSelectedDate.map((candidate) => (
                 <Link
-                  className="block rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3 hover:border-[#2f4f9f] hover:bg-white"
+                  className="community-subpanel block bg-[#fbfcff] p-3 hover:border-[#2f4f9f] hover:bg-white"
                   href={getGameRoomHref(candidate)}
                   key={getGameKey(candidate)}
                 >
@@ -290,7 +304,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                     <p className="truncate text-sm font-black text-[#202632]">
                       {candidate.awayTeam} VS {candidate.homeTeam}
                     </p>
-                    <span className="shrink-0 rounded-sm bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
+                    <span className="community-chip community-chip-accent shrink-0 px-2">
                       {getStatusLabel(candidate.status)}
                     </span>
                   </div>
@@ -317,6 +331,13 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
   }
 
   const winnerTeam = getWinnerTeam(game);
+  const otherGames = gamesForSelectedDate.filter((candidate) => {
+    const candidateKey = getGameKey(candidate);
+
+    return candidateKey !== getGameKey(game) && candidate.gameId !== game.gameId;
+  });
+  const startingPitcherText = getStartingPitcherText(game);
+  const decisionPitcherText = getDecisionPitcherText(game);
   const resultText =
     game.status === "live"
       ? "경기 진행 중"
@@ -339,10 +360,10 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
     .join(" · ");
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-5">
-      <div className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-4 py-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <section className="page-shell pt-5">
+      <div className="community-panel">
+        <div className="community-panel-header community-panel-header-stack px-4 py-3">
+          <div className="w-full">
             <div>
               <p className="text-xs font-black text-[#d71920]">
                 {game.displayDate || game.gameDate} · {game.stadium || "경기장 미정"}
@@ -350,82 +371,122 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               <h1 className="mt-1 text-2xl font-black text-[#1f3470]">
                 {game.awayTeam} VS {game.homeTeam}
               </h1>
+              <p className="mt-2 text-sm font-bold text-[#667085]">
+                {resultText} · {getScoreText(game)}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <input
-                className="h-9 rounded-sm border border-[#c8d3df] bg-white px-2 text-sm outline-none focus:border-[#2f4f9f]"
+                className="community-input text-sm"
                 onChange={(event) => setDate(event.target.value)}
                 type="date"
                 value={date}
               />
-              <Link
-                className="inline-flex h-9 items-center rounded-sm bg-[#2f4f9f] px-3 text-sm font-black text-white hover:bg-[#1f3470]"
-                href={getWriteReviewHref(game)}
-              >
-                경기 리뷰 쓰기
-              </Link>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-4">
-            <div className="grid rounded-sm border border-[#d8deea] bg-white sm:grid-cols-[1fr_160px_1fr]">
-              <div className="px-4 py-5 text-center">
-                <p className="text-xl font-black text-[#1f3470]">
-                  {game.awayTeam}
-                </p>
-                <p className="mt-1 text-xs font-bold text-[#667085]">
-                  선발 {getPitcherName(game.awayStartingPitcher)}
-                </p>
-                <p className="mt-2 text-4xl font-black text-[#202632]">
-                  {game.awayScore ?? "-"}
-                </p>
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-4 p-4">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="community-subpanel grid bg-white sm:grid-cols-[1fr_160px_1fr]">
+                <div className="px-4 py-5 text-center">
+                  <p className="text-xl font-black text-[#1f3470]">
+                    {game.awayTeam}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-[#667085]">
+                    선발 {getPitcherName(game.awayStartingPitcher)}
+                  </p>
+                  <p className="mt-2 text-4xl font-black text-[#202632]">
+                    {game.awayScore ?? "-"}
+                  </p>
+                </div>
+                <div className="border-y border-[#d8deea] bg-[#f6f8fc] px-4 py-5 text-center sm:border-x sm:border-y-0">
+                  <span className="community-chip community-chip-accent px-2">
+                    {getStatusLabel(game.status)}
+                  </span>
+                  <p className="mt-3 text-sm font-black text-[#1f3470]">
+                    {getScoreText(game)}
+                  </p>
+                  <p className="mt-1 text-xs text-[#667085]">
+                    {game.time || "시간 미정"}
+                  </p>
+                </div>
+                <div className="px-4 py-5 text-center">
+                  <p className="text-xl font-black text-[#1f3470]">
+                    {game.homeTeam}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-[#667085]">
+                    선발 {getPitcherName(game.homeStartingPitcher)}
+                  </p>
+                  <p className="mt-2 text-4xl font-black text-[#202632]">
+                    {game.homeScore ?? "-"}
+                  </p>
+                </div>
               </div>
-              <div className="border-y border-[#d8deea] bg-[#f6f8fc] px-4 py-5 text-center sm:border-x sm:border-y-0">
-                <span className="rounded-sm bg-[#fff1f2] px-2 py-1 text-xs font-black text-[#d71920]">
-                  {getStatusLabel(game.status)}
-                </span>
-                <p className="mt-3 text-sm font-black text-[#1f3470]">
-                  {getScoreText(game)}
-                </p>
-                <p className="mt-1 text-xs text-[#667085]">
-                  {game.time || "시간 미정"}
-                </p>
-              </div>
-              <div className="px-4 py-5 text-center">
-                <p className="text-xl font-black text-[#1f3470]">
-                  {game.homeTeam}
-                </p>
-                <p className="mt-1 text-xs font-bold text-[#667085]">
-                  선발 {getPitcherName(game.homeStartingPitcher)}
-                </p>
-                <p className="mt-2 text-4xl font-black text-[#202632]">
-                  {game.homeScore ?? "-"}
-                </p>
+
+              <div className="grid gap-3">
+                <div className="community-subpanel bg-[#fbfcff] p-3">
+                  <p className="text-xs font-bold text-[#667085]">지금 상황</p>
+                  <p className="mt-1 text-sm font-black text-[#202632]">
+                    {resultText}
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-[#667085]">
+                    {game.time || "시간 미정"} · {game.stadium || "구장 미정"}
+                  </p>
+                </div>
+
+                <div className="community-subpanel bg-[#fbfcff] p-3">
+                  <p className="text-xs font-bold text-[#667085]">투수 흐름</p>
+                  <p className="mt-1 text-sm font-black leading-6 text-[#202632]">
+                    {startingPitcherText || "선발 정보 미정"}
+                  </p>
+                  {decisionPitcherText ? (
+                    <p className="mt-2 text-xs font-bold leading-5 text-[#d71920]">
+                      {decisionPitcherText}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    className="community-button-primary text-xs"
+                    href={getWriteReviewHref(game)}
+                  >
+                    리뷰 쓰기
+                  </Link>
+                  <Link
+                    className="community-button-secondary text-xs"
+                    href="/"
+                  >
+                    홈으로
+                  </Link>
+                </div>
               </div>
             </div>
 
             <div
               className={[
-                "mt-3 grid gap-3",
-                shouldShowGameNote ? "md:grid-cols-3" : "md:grid-cols-2",
+                "grid gap-3",
+                shouldShowGameNote
+                  ? "xl:grid-cols-3 md:grid-cols-2"
+                  : "xl:grid-cols-2 md:grid-cols-2",
               ].join(" ")}
             >
-              <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
-                <p className="text-xs font-bold text-[#667085]">결과</p>
-                <p className="mt-1 text-sm font-black text-[#202632]">
-                  {resultText}
-                </p>
-              </div>
-              <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
+              <div className="community-subpanel bg-[#fbfcff] p-3">
                 <p className="text-xs font-bold text-[#667085]">중계</p>
                 <p className="mt-1 text-sm font-black text-[#202632]">
                   {game.tv || "정보 없음"}
                 </p>
               </div>
+              <div className="community-subpanel bg-[#fbfcff] p-3">
+                <p className="text-xs font-bold text-[#667085]">구장</p>
+                <p className="mt-1 text-sm font-black leading-6 text-[#202632]">
+                  {game.stadium || "정보 없음"}
+                </p>
+              </div>
               {shouldShowGameNote ? (
-                <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
+                <div className="community-subpanel bg-[#fbfcff] p-3">
                   <p className="text-xs font-bold text-[#667085]">비고</p>
                   <p className="mt-1 text-sm font-black text-[#202632]">
                     {gameNote}
@@ -440,10 +501,8 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
 
             {canPredictGame(game) ? <GamePredictionPanel game={game} /> : null}
 
-            <KboRecordBriefingPanel game={game} />
-
-            <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
-              <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
+            <section className="community-panel mt-4">
+              <div className="community-panel-header">
                 <h2 className="text-sm font-black text-[#1f3470]">
                   이 경기 관련 글
                 </h2>
@@ -492,15 +551,55 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 </div>
               ) : null}
             </section>
+
+            <KboRecordBriefingPanel game={game} />
           </div>
 
-          <aside className="border-t border-[#d8deea] bg-[#fbfcff] p-4 lg:border-l lg:border-t-0">
-            <section className="rounded-sm border border-[#d8deea] bg-white p-3">
+          <aside className="border-t border-[#d8deea] bg-[#fbfcff] p-4 lg:sticky lg:top-28 lg:self-start lg:border-l lg:border-t-0">
+            <section className="community-subpanel bg-white p-3">
+              <h2 className="text-sm font-black text-[#1f3470]">경기 정보</h2>
+              <dl className="mt-3 grid gap-2 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="shrink-0 text-xs font-bold text-[#667085]">상태</dt>
+                  <dd className="text-right font-black text-[#202632]">
+                    {getStatusLabel(game.status)}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="shrink-0 text-xs font-bold text-[#667085]">시간</dt>
+                  <dd className="text-right font-black text-[#202632]">
+                    {game.time || "시간 미정"}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="shrink-0 text-xs font-bold text-[#667085]">구장</dt>
+                  <dd className="text-right font-black text-[#202632]">
+                    {game.stadium || "정보 없음"}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="shrink-0 text-xs font-bold text-[#667085]">선발</dt>
+                  <dd className="text-right font-black leading-5 text-[#202632]">
+                    {startingPitcherText || "미정"}
+                  </dd>
+                </div>
+                {decisionPitcherText ? (
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-xs font-bold text-[#667085]">결정</dt>
+                    <dd className="text-right font-black leading-5 text-[#202632]">
+                      {decisionPitcherText}
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </section>
+
+            <section className="community-subpanel mt-3 bg-white p-3">
               <h2 className="text-sm font-black text-[#1f3470]">공식 기록</h2>
               <div className="mt-3 grid gap-2">
                 {game.reviewUrl ? (
                   <a
-                    className="rounded-sm border border-[#b9c3d7] bg-white px-3 py-2 text-sm font-bold text-[#1f3470] hover:bg-[#eef3ff]"
+                    className="community-link-button"
                     href={game.reviewUrl}
                     rel="noreferrer"
                     target="_blank"
@@ -510,7 +609,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 ) : null}
                 {game.highlightUrl ? (
                   <a
-                    className="rounded-sm border border-[#b9c3d7] bg-white px-3 py-2 text-sm font-bold text-[#1f3470] hover:bg-[#eef3ff]"
+                    className="community-link-button"
                     href={game.highlightUrl}
                     rel="noreferrer"
                     target="_blank"
@@ -520,7 +619,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 ) : null}
                 {gamesData?.result?.source ? (
                   <a
-                    className="rounded-sm border border-[#b9c3d7] bg-white px-3 py-2 text-sm font-bold text-[#1f3470] hover:bg-[#eef3ff]"
+                    className="community-link-button"
                     href={gamesData.result.source}
                     rel="noreferrer"
                     target="_blank"
@@ -531,12 +630,48 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               </div>
             </section>
 
-            <section className="mt-3 rounded-sm border border-[#d8deea] bg-white p-3">
+            {otherGames.length > 0 ? (
+              <section className="community-subpanel mt-3 bg-white p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-black text-[#1f3470]">
+                    같은 날짜 다른 경기
+                  </h2>
+                  <span className="community-chip px-2">
+                    {otherGames.length}경기
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2">
+                  {otherGames.map((candidate) => (
+                    <Link
+                      className="community-subpanel bg-[#fbfcff] px-3 py-2 hover:border-[#2f4f9f] hover:bg-white"
+                      href={getGameRoomHref(candidate)}
+                      key={getGameKey(candidate)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-black text-[#202632]">
+                          {candidate.awayTeam} VS {candidate.homeTeam}
+                        </p>
+                        <span className="shrink-0 text-xs font-black text-[#d71920]">
+                          {getScoreText(candidate)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-[#667085]">
+                        {[getStatusLabel(candidate.status), candidate.stadium]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="community-subpanel mt-3 bg-white p-3">
               <h2 className="text-sm font-black text-[#1f3470]">태그</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {getReviewTags(game).map((tagName) => (
                   <Link
-                    className="rounded-sm bg-[#eef3ff] px-2 py-1 text-xs font-black text-[#2f4f9f] hover:bg-[#d8e5ff]"
+                    className="community-chip community-chip-link px-2"
                     href={`/?tag=${encodeURIComponent(tagName)}`}
                     key={tagName}
                   >

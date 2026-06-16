@@ -99,18 +99,18 @@ export function KboRecordBriefingPanel({
   }
 
   return (
-    <section className="mt-4 rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex flex-col gap-2 border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className="community-panel mt-4">
+      <div className="community-panel-header">
         <div>
           <h2 className="text-sm font-black text-[#1f3470]">
             공식 기록 브리핑
           </h2>
           <p className="mt-1 text-xs text-[#667085]">
-            KBO 공식 기록 페이지를 MCP로 조회해 경기 포인트를 정리합니다.
+            공식 기록 기준 경기 포인트
           </p>
         </div>
         <button
-          className="h-9 rounded-sm bg-[#2f4f9f] px-3 text-xs font-black text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+          className="community-button-primary community-button-compact disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
           disabled={isLoading}
           onClick={() => void handleCreateBriefing()}
           type="button"
@@ -125,8 +125,7 @@ export function KboRecordBriefingPanel({
 
       {!hasRequested ? (
         <p className="px-3 py-4 text-sm text-[#667085]">
-          현재 스코어는 {getScoreText(game)}입니다. 버튼을 누르면 KBO 공식
-          리뷰/하이라이트 링크를 기준으로 기록을 조회합니다.
+          {getScoreText(game)} 기준으로 기록 포인트를 확인합니다.
         </p>
       ) : null}
 
@@ -144,7 +143,7 @@ export function KboRecordBriefingPanel({
 
       {!isLoading && data?.result ? (
         <div className="space-y-3 px-3 py-4">
-          <div className="rounded-sm border border-[#d8deea] bg-[#fbfcff] p-3">
+          <div className="community-subpanel bg-[#fbfcff] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-black text-[#667085]">
                 {getSourceLabel(data.result.sourceType)}
@@ -169,7 +168,7 @@ export function KboRecordBriefingPanel({
             <div className="grid gap-2">
               {data.result.recordItems.map((item, index) => (
                 <p
-                  className="rounded-sm border border-[#d8deea] bg-white px-3 py-2 text-sm leading-6 text-[#202632]"
+                  className="community-subpanel bg-white px-3 py-2 text-sm leading-6 text-[#202632]"
                   key={`${item}-${index}`}
                 >
                   {item}
@@ -180,7 +179,7 @@ export function KboRecordBriefingPanel({
 
           {data.result.recordItems.length === 0 &&
           data.result.officialExcerpt ? (
-            <p className="rounded-sm border border-[#d8deea] bg-white px-3 py-2 text-sm leading-6 text-[#667085]">
+            <p className="community-subpanel bg-white px-3 py-2 text-sm leading-6 text-[#667085]">
               {data.result.officialExcerpt}
             </p>
           ) : null}

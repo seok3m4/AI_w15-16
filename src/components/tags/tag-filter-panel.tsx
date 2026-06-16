@@ -96,9 +96,16 @@ export function TagFilterPanel({
   );
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#b9c3d7] bg-white">
-      <div className="flex items-center justify-between border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
-        <h2 className="text-sm font-black text-[#1f3470]">태그</h2>
+    <section className="community-panel">
+      <div className="community-panel-header">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-black text-[#1f3470]">태그</h2>
+          {selectedTags.length > 0 ? (
+            <span className="community-chip community-chip-link px-1.5 py-0.5 text-[11px]">
+              {selectedTags.length}
+            </span>
+          ) : null}
+        </div>
         {selectedTags.length > 0 ? (
           <button
             className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline"
@@ -111,6 +118,21 @@ export function TagFilterPanel({
       </div>
 
       <div className="p-2">
+        {selectedTags.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-1.5 border-b border-[#edf1f7] pb-2">
+            {selectedTags.map((tagName) => (
+              <button
+                className="community-chip community-chip-link px-2 py-1 text-[11px]"
+                key={tagName}
+                onClick={() => onToggleTag(tagName)}
+                type="button"
+              >
+                #{tagName}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {isLoading ? (
           <p className="px-1 py-2 text-xs text-[#667085]">
             태그를 불러오는 중입니다.
@@ -127,7 +149,7 @@ export function TagFilterPanel({
           </p>
         ) : null}
 
-        <div className="grid gap-1">
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
           {visibleTags.map((tag) => {
             const isSelected = selectedTags.some(
               (selectedTag) =>
@@ -138,8 +160,8 @@ export function TagFilterPanel({
               <button
                 className={
                   isSelected
-                    ? "flex items-center justify-between rounded-sm bg-[#2f4f9f] px-2 py-1.5 text-left text-xs font-bold text-white"
-                    : "flex items-center justify-between rounded-sm px-2 py-1.5 text-left text-xs font-bold text-[#4b5563] hover:bg-[#eef3ff] hover:text-[#1f3470]"
+                    ? "flex items-center justify-between rounded-sm bg-[#2f4f9f] px-2.5 py-2 text-left text-xs font-bold text-white"
+                    : "flex items-center justify-between rounded-sm border border-transparent px-2.5 py-2 text-left text-xs font-bold text-[#4b5563] hover:border-[#d8deea] hover:bg-[#eef3ff] hover:text-[#1f3470]"
                 }
                 key={tag.id}
                 onClick={() => onToggleTag(tag.name)}

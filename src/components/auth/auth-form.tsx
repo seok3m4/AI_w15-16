@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 type AuthMode = "login" | "signup";
 
@@ -17,7 +17,7 @@ type AuthResponse = {
 const copy = {
   login: {
     title: "로그인",
-    description: "야구 게시판에 다시 들어갑니다.",
+    description: "저장한 글과 경기 이야기로 다시 들어갑니다.",
     submit: "로그인",
     endpoint: "/api/auth/login",
     alternateText: "아직 계정이 없다면",
@@ -26,7 +26,7 @@ const copy = {
   },
   signup: {
     title: "회원가입",
-    description: "게시글과 댓글을 작성할 계정을 만듭니다.",
+    description: "게시글, 댓글, 추천 기능을 사용할 계정을 만듭니다.",
     submit: "회원가입",
     endpoint: "/api/auth/signup",
     alternateText: "이미 계정이 있다면",
@@ -44,6 +44,14 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const passwordMatchState = useMemo(() => {
+    if (mode !== "signup" || passwordConfirm.length === 0) {
+      return null;
+    }
+
+    return password === passwordConfirm;
+  }, [mode, password, passwordConfirm]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,100 +102,161 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-md px-6 py-10">
-      <div className="rounded-md border border-[#d9e2ec] bg-white p-6">
-        <div className="border-b border-[#d9e2ec] pb-5">
-          <h2 className="text-2xl font-bold text-[#172033]">{config.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-[#5e6a7d]">
-            {config.description}
-          </p>
-        </div>
+    <section className="page-shell">
+      <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="community-panel overflow-hidden">
+          <div className="community-title-bar px-4 py-4">
+            <h2 className="text-xl font-black tracking-tight">KBO Talk</h2>
+            <p className="mt-1 text-sm text-white/70">
+              경기 리뷰, 팀 이야기, 댓글 참여를 이어갈 수 있습니다.
+            </p>
+          </div>
+          <div className="space-y-3 px-4 py-4">
+            <div className="community-subpanel p-3">
+              <p className="text-xs font-black text-[#667085]">게시판 참여</p>
+              <p className="mt-1 text-sm font-bold text-[#202632]">
+                글쓰기, 댓글, 추천 기능을 바로 사용할 수 있습니다.
+              </p>
+            </div>
+            <div className="community-subpanel p-3">
+              <p className="text-xs font-black text-[#667085]">계정 안내</p>
+              <p className="mt-1 text-sm leading-6 text-[#667085]">
+                닉네임은 게시글과 댓글 작성자 이름으로 표시됩니다. 비밀번호는
+                8자 이상으로 입력해주세요.
+              </p>
+            </div>
+          </div>
+        </aside>
 
-        <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
-          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-            이메일
-            <input
-              autoComplete="email"
-              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              type="email"
-              value={email}
-            />
-          </label>
+        <div className="community-panel">
+          <div className="community-panel-header">
+            <div>
+              <h2 className="text-base font-black text-[#071a3d]">
+                {config.title}
+              </h2>
+              <p className="mt-0.5 text-[11px] text-[#667085]">
+                {config.description}
+              </p>
+            </div>
+            <Link className="community-button-secondary community-button-compact" href="/">
+              홈으로
+            </Link>
+          </div>
 
-          {mode === "signup" ? (
-            <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-              닉네임
+          <form className="grid gap-4 p-5 sm:p-6" onSubmit={handleSubmit}>
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-[#172033]">이메일</span>
               <input
-                autoComplete="nickname"
-                className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-                maxLength={20}
-                minLength={2}
-                onChange={(event) => setNickname(event.target.value)}
+                autoComplete="email"
+                className="community-input community-input-large text-sm"
+                onChange={(event) => setEmail(event.target.value)}
                 required
-                type="text"
-                value={nickname}
+                type="email"
+                value={email}
               />
             </label>
-          ) : null}
 
-          <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-            비밀번호
-            <input
-              autoComplete={
-                mode === "signup" ? "new-password" : "current-password"
-              }
-              className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-              maxLength={72}
-              minLength={8}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
+            {mode === "signup" ? (
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-[#172033]">
+                  닉네임
+                </span>
+                <input
+                  autoComplete="nickname"
+                  className="community-input community-input-large text-sm"
+                  maxLength={20}
+                  minLength={2}
+                  onChange={(event) => setNickname(event.target.value)}
+                  required
+                  type="text"
+                  value={nickname}
+                />
+                <span className="text-[11px] text-[#667085]">
+                  게시글과 댓글에 표시될 이름입니다.
+                </span>
+              </label>
+            ) : null}
 
-          {mode === "signup" ? (
-            <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-              비밀번호 확인
+            <label className="grid gap-2">
+              <span className="text-sm font-semibold text-[#172033]">
+                비밀번호
+              </span>
               <input
-                autoComplete="new-password"
-                className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
+                autoComplete={
+                  mode === "signup" ? "new-password" : "current-password"
+                }
+                className="community-input community-input-large text-sm"
                 maxLength={72}
                 minLength={8}
-                onChange={(event) => setPasswordConfirm(event.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
                 type="password"
-                value={passwordConfirm}
+                value={password}
               />
+              {mode === "signup" ? (
+                <span className="text-[11px] text-[#667085]">
+                  8자 이상 입력해주세요.
+                </span>
+              ) : null}
             </label>
-          ) : null}
 
-          {message ? (
-            <p className="rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
-              {message}
-            </p>
-          ) : null}
+            {mode === "signup" ? (
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold text-[#172033]">
+                  비밀번호 확인
+                </span>
+                <input
+                  autoComplete="new-password"
+                  className="community-input community-input-large text-sm"
+                  maxLength={72}
+                  minLength={8}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  required
+                  type="password"
+                  value={passwordConfirm}
+                />
+                {passwordMatchState !== null ? (
+                  <span
+                    className={
+                      passwordMatchState
+                        ? "text-[11px] font-bold text-[#166534]"
+                        : "text-[11px] font-bold text-[#b91c1c]"
+                    }
+                  >
+                    {passwordMatchState
+                      ? "비밀번호가 일치합니다."
+                      : "비밀번호가 일치하지 않습니다."}
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
 
-          <button
-            className="h-11 rounded-md bg-[#0f766e] px-4 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-            disabled={isSubmitting}
-            type="submit"
-          >
-            {isSubmitting ? "처리 중" : config.submit}
-          </button>
-        </form>
+            {message ? (
+              <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+                {message}
+              </p>
+            ) : null}
 
-        <p className="mt-5 text-center text-sm text-[#5e6a7d]">
-          {config.alternateText}{" "}
-          <Link
-            className="font-semibold text-[#0f766e] hover:text-[#115e59]"
-            href={config.alternateHref}
-          >
-            {config.alternateLabel}
-          </Link>
-        </p>
+            <div className="flex flex-col gap-2 border-t border-[#d8deea] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[#667085]">
+                {config.alternateText}{" "}
+                <Link
+                  className="font-bold text-[#2f4f9f] hover:text-[#1f3470]"
+                  href={config.alternateHref}
+                >
+                  {config.alternateLabel}
+                </Link>
+              </p>
+              <button
+                className="community-button-primary community-button-large disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                disabled={isSubmitting}
+                type="submit"
+              >
+                {isSubmitting ? "처리 중" : config.submit}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
   );

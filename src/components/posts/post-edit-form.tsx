@@ -97,6 +97,7 @@ export function PostEditForm({ postId }: PostEditFormProps) {
     setAcknowledgedModerationFingerprint,
   ] = useState("");
   const [message, setMessage] = useState("");
+
   const moderationFingerprint = useMemo(
     () =>
       JSON.stringify({
@@ -275,8 +276,8 @@ export function PostEditForm({ postId }: PostEditFormProps) {
 
   if (isLoading) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-5 text-sm text-[#5e6a7d]">
+      <section className="page-shell">
+        <div className="community-panel p-5 text-sm text-[#667085]">
           게시글을 불러오는 중입니다.
         </div>
       </section>
@@ -285,16 +286,15 @@ export function PostEditForm({ postId }: PostEditFormProps) {
 
   if (!post) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-6">
-          <h2 className="text-xl font-semibold">게시글을 찾을 수 없습니다.</h2>
+      <section className="page-shell">
+        <div className="community-panel p-6">
+          <h2 className="text-xl font-black text-[#071a3d]">
+            게시글을 찾을 수 없습니다.
+          </h2>
           {message ? (
-            <p className="mt-2 text-sm text-[#5e6a7d]">{message}</p>
+            <p className="mt-2 text-sm text-[#667085]">{message}</p>
           ) : null}
-          <Link
-            className="mt-5 inline-flex rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59]"
-            href="/"
-          >
+          <Link className="community-button-primary mt-5" href="/">
             목록으로
           </Link>
         </div>
@@ -304,14 +304,16 @@ export function PostEditForm({ postId }: PostEditFormProps) {
 
   if (!currentUser || currentUser.id !== post.authorId) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-6">
-          <h2 className="text-xl font-semibold">수정 권한이 없습니다.</h2>
-          <p className="mt-2 text-sm text-[#5e6a7d]">
+      <section className="page-shell">
+        <div className="community-panel p-6">
+          <h2 className="text-xl font-black text-[#071a3d]">
+            수정 권한이 없습니다.
+          </h2>
+          <p className="mt-2 text-sm text-[#667085]">
             게시글 작성자만 이 글을 수정할 수 있습니다.
           </p>
           <Link
-            className="mt-5 inline-flex rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59]"
+            className="community-button-primary mt-5"
             href={`/posts/${post.id}`}
           >
             상세로 돌아가기
@@ -322,130 +324,168 @@ export function PostEditForm({ postId }: PostEditFormProps) {
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-6 py-8">
-      <div className="border-b border-[#d9e2ec] pb-4">
-        <h2 className="text-xl font-semibold">게시글 수정</h2>
-        <p className="mt-2 text-sm text-[#5e6a7d]">
-          제목, 본문, 태그를 수정한 뒤 저장할 수 있습니다.
-        </p>
-      </div>
+    <section className="page-shell">
+      <form
+        className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"
+        onSubmit={handleSubmit}
+      >
+        <div className="community-panel min-w-0">
+          <div className="community-panel-header">
+            <div>
+              <h2 className="text-base font-black text-[#071a3d]">
+                게시글 수정
+              </h2>
+              <p className="mt-0.5 text-[11px] text-[#667085]">
+                제목, 본문, 태그를 수정한 뒤 저장할 수 있습니다.
+              </p>
+            </div>
+            <Link
+              className="community-button-secondary community-button-compact"
+              href={`/posts/${post.id}`}
+            >
+              상세로
+            </Link>
+          </div>
 
-      <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          제목
-          <input
-            className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-            maxLength={120}
-            minLength={2}
-            onChange={(event) => setTitle(event.target.value)}
-            required
-            type="text"
-            value={title}
-          />
-        </label>
+          <div className="grid gap-5 p-5 sm:p-6">
+            <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4">
+              <span className="text-sm font-semibold text-[#172033]">제목</span>
+              <input
+                className="community-input community-input-large text-sm"
+                maxLength={120}
+                minLength={2}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+                type="text"
+                value={title}
+              />
+            </label>
 
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          본문
-          <textarea
-            className="min-h-60 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm font-normal leading-6 outline-none focus:border-[#0f766e]"
-            maxLength={20000}
-            onChange={(event) => setContent(event.target.value)}
-            required
-            value={content}
-          />
-        </label>
+            <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4">
+              <span className="text-sm font-semibold text-[#172033]">본문</span>
+              <textarea
+                className="community-textarea min-h-72 resize-y text-sm leading-6"
+                maxLength={20000}
+                onChange={(event) => setContent(event.target.value)}
+                required
+                value={content}
+              />
+            </label>
 
-        <label className="grid gap-2 text-sm font-semibold text-[#172033]">
-          태그
-          <input
-            className="h-11 rounded-md border border-[#c8d3df] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f766e]"
-            onChange={(event) => setTags(event.target.value)}
-            placeholder="kbo, 불펜, 경기리뷰"
-            type="text"
-            value={tags}
-          />
-        </label>
+            <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4">
+              <span className="text-sm font-semibold text-[#172033]">태그</span>
+              <input
+                className="community-input community-input-large text-sm"
+                onChange={(event) => setTags(event.target.value)}
+                placeholder="kbo, 불펜, 경기리뷰"
+                type="text"
+                value={tags}
+              />
+            </label>
 
-        {isModerating ? (
-          <p className="rounded-md border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
-            운영 정책을 점검하는 중입니다.
-          </p>
-        ) : null}
+            {message ? (
+              <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+                {message}
+              </p>
+            ) : null}
 
-        {isModerationCheckCurrent && moderationResult ? (
-          <section
-            className={`rounded-md border px-3 py-3 text-sm ${getModerationClassName(
-              moderationResult.verdict,
-            )}`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-black">운영 정책 점검</p>
-              <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black">
-                {moderationResult.verdict === "allow"
-                  ? "통과"
-                  : moderationResult.verdict === "warn"
-                    ? "주의"
-                    : "등록 제한"}
+            <div className="flex flex-col-reverse gap-2 border-t border-[#d8deea] pt-4 sm:flex-row sm:items-center sm:justify-end">
+              <Link
+                className="community-button-secondary w-full sm:w-auto"
+                href={`/posts/${post.id}`}
+              >
+                취소
+              </Link>
+              <button
+                className="community-button-primary w-full disabled:cursor-not-allowed disabled:bg-[#94a3b8] sm:w-auto"
+                disabled={
+                  isSubmitting ||
+                  isModerating ||
+                  hasModerationWarning ||
+                  hasModerationBlock
+                }
+                type="submit"
+              >
+                {isSubmitting || isModerating ? "처리 중" : "수정 저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <aside className="space-y-4 xl:sticky xl:top-28 xl:self-start">
+          <section className="community-panel">
+            <div className="community-panel-header">
+              <h3 className="text-sm font-black text-[#071a3d]">수정 안내</h3>
+              <span className="text-[11px] font-bold text-[#667085]">
+                저장 전 확인
               </span>
             </div>
-            <p className="mt-2 leading-6">{moderationResult.message}</p>
-            {moderationResult.reasons.length > 0 ? (
-              <ul className="mt-2 grid gap-1 leading-6">
-                {moderationResult.reasons.map((reason) => (
-                  <li key={reason}>- {reason}</li>
-                ))}
-              </ul>
-            ) : null}
-            {moderationResult.suggestions.length > 0 ? (
-              <div className="mt-2 border-t border-current/20 pt-2">
-                <p className="font-black">수정 제안</p>
-                <ul className="mt-1 grid gap-1 leading-6">
-                  {moderationResult.suggestions.map((suggestion) => (
-                    <li key={suggestion}>- {suggestion}</li>
+            <div className="grid gap-3 px-3 py-3 text-sm leading-6 text-[#667085]">
+              <p className="community-subpanel p-3">
+                태그는 쉼표로 구분해서 입력합니다. 너무 많은 태그보다 핵심 팀,
+                경기, 선수 중심으로 정리하는 편이 읽기 좋습니다.
+              </p>
+              <p className="community-subpanel p-3">
+                경기 흐름을 바꾸는 장면, 결정적인 타석, 투수 운영 포인트가 보이게
+                다듬으면 글이 더 잘 읽힙니다.
+              </p>
+            </div>
+          </section>
+
+          {isModerating ? (
+            <p className="rounded-sm border border-[#d7dde8] bg-[#f8fafc] px-3 py-2 text-sm text-[#475569]">
+              운영 정책을 점검하는 중입니다.
+            </p>
+          ) : null}
+
+          {isModerationCheckCurrent && moderationResult ? (
+            <section
+              className={`rounded-sm border px-3 py-3 text-sm ${getModerationClassName(
+                moderationResult.verdict,
+              )}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-black">운영 정책 점검</p>
+                <span className="rounded-sm bg-white/70 px-2 py-1 text-xs font-black">
+                  {moderationResult.verdict === "allow"
+                    ? "통과"
+                    : moderationResult.verdict === "warn"
+                      ? "주의"
+                      : "등록 제한"}
+                </span>
+              </div>
+              <p className="mt-2 leading-6">{moderationResult.message}</p>
+              {moderationResult.reasons.length > 0 ? (
+                <ul className="mt-2 grid gap-1 leading-6">
+                  {moderationResult.reasons.map((reason) => (
+                    <li key={reason}>- {reason}</li>
                   ))}
                 </ul>
-              </div>
-            ) : null}
-            {moderationResult.verdict === "warn" ? (
-              <button
-                className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-black text-[#071a3d] hover:bg-[#f8fafc]"
-                onClick={() =>
-                  setAcknowledgedModerationFingerprint(moderationFingerprint)
-                }
-                type="button"
-              >
-                확인하고 저장 진행
-              </button>
-            ) : null}
-          </section>
-        ) : null}
-
-        {message ? (
-          <p className="rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
-            {message}
-          </p>
-        ) : null}
-
-        <div className="flex items-center justify-end gap-2">
-          <Link
-            className="rounded-md border border-[#c8d3df] bg-white px-4 py-2 text-sm font-semibold text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
-            href={`/posts/${post.id}`}
-          >
-            취소
-          </Link>
-          <button
-            className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
-            disabled={
-              isSubmitting ||
-              isModerating ||
-              hasModerationWarning ||
-              hasModerationBlock
-            }
-            type="submit"
-          >
-            {isSubmitting || isModerating ? "처리 중" : "수정 저장"}
-          </button>
-        </div>
+              ) : null}
+              {moderationResult.suggestions.length > 0 ? (
+                <div className="mt-2 border-t border-current/20 pt-2">
+                  <p className="font-black">수정 제안</p>
+                  <ul className="mt-1 grid gap-1 leading-6">
+                    {moderationResult.suggestions.map((suggestion) => (
+                      <li key={suggestion}>- {suggestion}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {moderationResult.verdict === "warn" ? (
+                <button
+                  className="community-button-secondary community-button-compact mt-3"
+                  onClick={() =>
+                    setAcknowledgedModerationFingerprint(moderationFingerprint)
+                  }
+                  type="button"
+                >
+                  확인하고 저장 진행
+                </button>
+              ) : null}
+            </section>
+          ) : null}
+        </aside>
       </form>
     </section>
   );

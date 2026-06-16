@@ -64,20 +64,24 @@ export function AuthStatus() {
   }
 
   if (isLoading) {
-    return <span className="px-3 py-2 text-sm text-white/70">확인 중</span>;
+    return (
+      <span className="community-header-pill">
+        확인 중
+      </span>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Link
-          className="rounded-md px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/10 hover:text-white"
+          className="community-header-link"
           href="/login"
         >
           로그인
         </Link>
         <Link
-          className="rounded-md bg-[#d71920] px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#a91118]"
+          className="community-button-danger community-button-compact"
           href="/signup"
         >
           회원가입
@@ -87,12 +91,12 @@ export function AuthStatus() {
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="max-w-36 truncate text-sm font-bold text-white">
-        {user.nickname}
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="community-header-pill max-w-40 font-bold text-white">
+        <span className="truncate">{user.nickname}</span>
       </span>
       <button
-        className="rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-bold text-white/80 hover:bg-white/20 hover:text-white"
+        className="community-header-link border border-white/20 bg-white/10"
         onClick={handleLogout}
         type="button"
       >

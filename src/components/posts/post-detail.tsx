@@ -18,6 +18,8 @@ type Tag = {
   name: string;
 };
 
+type VoteType = "UP" | "DOWN";
+
 type Post = {
   id: string;
   title: string;
@@ -46,8 +48,6 @@ type PostResponse = {
 type AuthMeResponse = {
   user?: CurrentUser;
 };
-
-type VoteType = "UP" | "DOWN";
 
 type VoteResponse = {
   vote?: {
@@ -123,7 +123,6 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
         }
 
         const loadedPost = postData.post;
-
         setPost(loadedPost);
 
         const viewSessionKey = getViewSessionKey(loadedPost.id);
@@ -285,8 +284,8 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
 
   if (isLoading) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-5 text-sm text-[#5e6a7d]">
+      <section className="page-shell">
+        <div className="community-panel p-5 text-sm text-[#667085]">
           게시글을 불러오는 중입니다.
         </div>
       </section>
@@ -295,16 +294,15 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
 
   if (!post) {
     return (
-      <section className="mx-auto max-w-3xl px-6 py-8">
-        <div className="rounded-md border border-[#d9e2ec] bg-white p-6">
-          <h2 className="text-xl font-semibold">게시글을 찾을 수 없습니다.</h2>
+      <section className="page-shell">
+        <div className="community-panel p-6">
+          <h2 className="text-xl font-black text-[#071a3d]">
+            게시글을 찾을 수 없습니다.
+          </h2>
           {message ? (
-            <p className="mt-2 text-sm text-[#5e6a7d]">{message}</p>
+            <p className="mt-2 text-sm text-[#667085]">{message}</p>
           ) : null}
-          <Link
-            className="mt-5 inline-flex rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59]"
-            href="/"
-          >
+          <Link className="community-button-primary mt-5" href="/">
             목록으로
           </Link>
         </div>
@@ -313,113 +311,168 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
   }
 
   const isOwner = currentUser?.id === post.authorId;
+  const isUpdated = post.updatedAt !== post.createdAt;
 
   return (
-    <section className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <Link
-          className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-medium text-[#5e6a7d] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
-          href="/"
-        >
-          목록으로
-        </Link>
-        {isOwner ? (
-          <div className="flex items-center gap-2">
-            <Link
-              className="rounded-md border border-[#c8d3df] bg-white px-3 py-2 text-sm font-semibold text-[#0f766e] hover:border-[#0f766e] hover:bg-[#f0fdfa]"
-              href={`/posts/${post.id}/edit`}
-            >
-              수정
-            </Link>
-            <button
-              className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-semibold text-[#b91c1c] hover:bg-[#fff1f2] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isDeleting}
-              onClick={handleDelete}
-              type="button"
-            >
-              {isDeleting ? "삭제 중" : "삭제"}
-            </button>
-          </div>
-        ) : null}
-      </div>
-
+    <section className="page-shell space-y-4">
       {message ? (
-        <p className="mb-4 rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+        <p className="rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
           {message}
         </p>
       ) : null}
 
-      <article className="rounded-md border border-[#d9e2ec] bg-white p-6">
-        <div className="flex flex-wrap gap-2">
-          {post.tags.length > 0 ? (
-            post.tags.map((tag) => (
-              <span
-                className="rounded-md bg-[#e6f4f1] px-2.5 py-1 text-xs font-semibold text-[#0f766e]"
-                key={tag.id}
-              >
-                #{tag.name}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-4">
+          <article className="community-panel min-w-0">
+            <div className="community-panel-header">
+              <div className="flex items-center gap-2">
+                <Link className="community-button-secondary community-button-compact" href="/">
+                  목록으로
+                </Link>
+                <span className="text-[11px] font-bold text-[#667085]">
+                  게시글 상세
+                </span>
+              </div>
+
+              {isOwner ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    className="community-button-secondary community-button-compact"
+                    href={`/posts/${post.id}/edit`}
+                  >
+                    수정
+                  </Link>
+                  <button
+                    className="community-button-danger-outline disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                    type="button"
+                  >
+                    {isDeleting ? "삭제 중" : "삭제"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="p-5 sm:p-6">
+              <div className="flex flex-wrap gap-2">
+                {post.tags.length > 0 ? (
+                  post.tags.map((tag) => (
+                    <Link
+                      className="community-chip community-chip-link"
+                      href={`/?tag=${encodeURIComponent(tag.name)}`}
+                      key={tag.id}
+                    >
+                      #{tag.name}
+                    </Link>
+                  ))
+                ) : (
+                  <span className="community-chip">
+                    태그 없음
+                  </span>
+                )}
+              </div>
+
+              <h2 className="mt-4 break-words text-2xl font-black leading-tight text-[#071a3d] sm:text-3xl">
+                {post.title}
+              </h2>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="community-chip text-[#475467]">
+                  작성 {formatDate(post.createdAt)}
+                </span>
+                {isUpdated ? (
+                  <span className="community-chip text-[#475467]">
+                    수정 {formatDate(post.updatedAt)}
+                  </span>
+                ) : null}
+                <span className="community-chip text-[#475467]">
+                  작성자 {post.author.nickname}
+                </span>
+              </div>
+
+              <div className="mt-5 break-words whitespace-pre-wrap border-t border-[#d8deea] pt-6 text-[15px] leading-8 text-[#202632]">
+                {post.content}
+              </div>
+
+              <div className="mt-6 rounded-sm border border-[#d8deea] bg-[#f8fafc] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+                  <button
+                    className="community-vote-button community-vote-button-up disabled:cursor-not-allowed disabled:opacity-60"
+                    data-active={post.viewerVote === "UP"}
+                    disabled={isVoting}
+                    onClick={() => void handleVote("UP")}
+                    type="button"
+                  >
+                    추천 {post.counts.upVotes}
+                  </button>
+                  <div className="rounded-sm border border-[#d8deea] bg-white px-3 py-2 text-center text-sm font-black text-[#1f3470] sm:min-w-16">
+                    {post.counts.voteScore >= 0 ? "+" : ""}
+                    {post.counts.voteScore}
+                  </div>
+                  <button
+                    className="community-vote-button community-vote-button-down disabled:cursor-not-allowed disabled:opacity-60"
+                    data-active={post.viewerVote === "DOWN"}
+                    disabled={isVoting}
+                    onClick={() => void handleVote("DOWN")}
+                    type="button"
+                  >
+                    비추천 {post.counts.downVotes}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <aside className="space-y-4 xl:sticky xl:top-28 xl:self-start">
+          <section className="community-panel">
+            <div className="community-panel-header">
+              <h3 className="text-sm font-black text-[#071a3d]">글 정보</h3>
+              <span className="text-[11px] font-bold text-[#667085]">
+                읽기 요약
               </span>
-            ))
-          ) : (
-            <span className="rounded-md bg-[#eef4f7] px-2.5 py-1 text-xs font-semibold text-[#5e6a7d]">
-              태그 없음
-            </span>
-          )}
-        </div>
+            </div>
+            <dl className="grid gap-2 px-3 py-3 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-xs font-bold text-[#667085]">작성자</dt>
+                <dd className="text-right font-black text-[#202632]">
+                  {post.author.nickname}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-xs font-bold text-[#667085]">조회</dt>
+                <dd className="text-right font-black text-[#202632]">
+                  {post.counts.views}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-xs font-bold text-[#667085]">추천</dt>
+                <dd className="text-right font-black text-[#202632]">
+                  {post.counts.voteScore}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-xs font-bold text-[#667085]">댓글</dt>
+                <dd className="text-right font-black text-[#202632]">
+                  {post.counts.comments}개
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="shrink-0 text-xs font-bold text-[#667085]">참여</dt>
+                <dd className="text-right text-xs font-bold text-[#667085]">
+                  {currentUser ? "추천/댓글 가능" : "로그인 후 참여 가능"}
+                </dd>
+              </div>
+            </dl>
+          </section>
 
-        <h2 className="mt-4 text-2xl font-bold leading-9 text-[#172033]">
-          {post.title}
-        </h2>
+          <SimilarPostsPanel className="mt-0" postId={post.id} />
+        </aside>
+      </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#5e6a7d]">
-          <span>{post.author.nickname}</span>
-          <span>|</span>
-          <span>{formatDate(post.createdAt)}</span>
-          <span>|</span>
-          <span>조회 {post.counts.views}</span>
-          <span>|</span>
-          <span>추천 {post.counts.voteScore}</span>
-          <span>|</span>
-          <span>댓글 {post.counts.comments}개</span>
-        </div>
-
-        <div className="mt-6 whitespace-pre-wrap border-t border-[#d9e2ec] pt-6 text-sm leading-7 text-[#172033]">
-          {post.content}
-        </div>
-
-        <div className="mt-6 flex flex-col items-center gap-3 border-t border-[#d9e2ec] pt-5 sm:flex-row sm:justify-center">
-          <button
-            className={
-              post.viewerVote === "UP"
-                ? "inline-flex h-10 min-w-28 items-center justify-center rounded-sm bg-[#2f4f9f] px-4 text-sm font-black text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:opacity-60"
-                : "inline-flex h-10 min-w-28 items-center justify-center rounded-sm border border-[#b9c3d7] bg-white px-4 text-sm font-black text-[#2f4f9f] hover:border-[#2f4f9f] hover:bg-[#eef3ff] disabled:cursor-not-allowed disabled:opacity-60"
-            }
-            disabled={isVoting}
-            onClick={() => void handleVote("UP")}
-            type="button"
-          >
-            추천 {post.counts.upVotes}
-          </button>
-          <div className="rounded-sm border border-[#d8deea] bg-[#f6f8fc] px-3 py-2 text-sm font-black text-[#1f3470]">
-            {post.counts.voteScore >= 0 ? "+" : ""}
-            {post.counts.voteScore}
-          </div>
-          <button
-            className={
-              post.viewerVote === "DOWN"
-                ? "inline-flex h-10 min-w-28 items-center justify-center rounded-sm bg-[#b91c1c] px-4 text-sm font-black text-white hover:bg-[#991b1b] disabled:cursor-not-allowed disabled:opacity-60"
-                : "inline-flex h-10 min-w-28 items-center justify-center rounded-sm border border-[#fecaca] bg-white px-4 text-sm font-black text-[#b91c1c] hover:bg-[#fff1f2] disabled:cursor-not-allowed disabled:opacity-60"
-            }
-            disabled={isVoting}
-            onClick={() => void handleVote("DOWN")}
-            type="button"
-          >
-            비추천 {post.counts.downVotes}
-          </button>
-        </div>
-      </article>
-      <SimilarPostsPanel postId={post.id} />
       <CommentSection
+        className="mt-0"
         onCommentCountChange={handleCommentCountChange}
         postId={post.id}
       />

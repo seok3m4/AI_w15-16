@@ -57,6 +57,7 @@ type ModerationResponse = {
 type CommentSectionProps = {
   postId: string;
   onCommentCountChange?: (nextCount: number) => void;
+  className?: string;
 };
 
 const PAGE_SIZE = 20;
@@ -77,9 +78,14 @@ function getModerationMessage(result: ModerationResult): string {
   return `${result.message}${reason}${suggestion}`;
 }
 
+function joinClassNames(...values: Array<string | undefined>): string {
+  return values.filter(Boolean).join(" ");
+}
+
 export function CommentSection({
   postId,
   onCommentCountChange,
+  className,
 }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -338,27 +344,45 @@ export function CommentSection({
   }
 
   return (
-    <section className="mt-5 rounded-md border border-[#d9e2ec] bg-white p-6">
-      <div className="border-b border-[#d9e2ec] pb-4">
-        <h3 className="text-lg font-semibold">댓글</h3>
-        <p className="mt-1 text-sm text-[#5e6a7d]">
-          게시글에 대한 의견을 남기고 이어서 토론할 수 있습니다.
-        </p>
+    <section
+      className={joinClassNames("community-panel min-w-0", className)}
+    >
+      <div className="community-panel-header">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-black text-[#071a3d]">댓글</h3>
+          <span className="rounded-sm bg-[#eef3ff] px-1.5 py-0.5 text-[11px] font-black text-[#2f4f9f]">
+            {comments.length}
+          </span>
+        </div>
+        <span className="text-[11px] font-bold text-[#667085]">
+          경기 이야기 이어가기
+        </span>
       </div>
 
       {currentUser ? (
-        <form className="mt-4 grid gap-3" onSubmit={handleCreate}>
+        <form
+          className="border-b border-[#edf1f7] bg-[#f8fafc] px-3 py-3"
+          onSubmit={handleCreate}
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-black text-[#071a3d]">
+              {currentUser.nickname} 님의 댓글
+            </p>
+            <span className="text-[11px] font-bold text-[#667085]">
+              {content.length} / 5000
+            </span>
+          </div>
           <textarea
-            className="min-h-24 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-[#0f766e]"
+            className="community-textarea min-h-24 w-full resize-y text-sm leading-6"
             maxLength={5000}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="댓글을 입력하세요."
+            placeholder="경기 내용, 선수 평가, 아쉬웠던 장면을 편하게 남겨보세요."
             required
             value={content}
           />
-          <div className="flex justify-end">
+          <div className="mt-3 flex justify-end">
             <button
-              className="rounded-md bg-[#0f766e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+              className="community-button-primary disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
               disabled={isSubmitting}
               type="submit"
             >
@@ -367,9 +391,9 @@ export function CommentSection({
           </div>
         </form>
       ) : (
-        <div className="mt-4 rounded-md border border-[#d9e2ec] bg-[#f7f9fb] p-4 text-sm text-[#5e6a7d]">
+        <div className="border-b border-[#edf1f7] bg-[#f8fafc] px-3 py-4 text-sm text-[#667085]">
           댓글 작성은{" "}
-          <Link className="font-semibold text-[#0f766e]" href="/login">
+          <Link className="font-bold text-[#2f4f9f]" href="/login">
             로그인
           </Link>
           이 필요합니다.
@@ -377,48 +401,56 @@ export function CommentSection({
       )}
 
       {message ? (
-        <p className="mt-4 rounded-md border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+        <p className="mx-3 mt-3 rounded-sm border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
           {message}
         </p>
       ) : null}
 
-      <div className="mt-5 grid gap-3">
+      <div className="grid gap-3 px-3 py-3">
         {isLoading ? (
-          <div className="rounded-md border border-[#d9e2ec] bg-[#f7f9fb] p-4 text-sm text-[#5e6a7d]">
+          <div className="rounded-sm border border-[#d8deea] bg-[#f7f9fb] p-4 text-sm text-[#667085]">
             댓글을 불러오는 중입니다.
           </div>
         ) : null}
 
         {!isLoading && comments.length === 0 ? (
-          <div className="rounded-md border border-[#d9e2ec] bg-[#f7f9fb] p-4 text-sm text-[#5e6a7d]">
-            아직 댓글이 없습니다.
+          <div className="rounded-sm border border-[#d8deea] bg-[#f7f9fb] p-4 text-sm text-[#667085]">
+            아직 댓글이 없습니다. 첫 의견을 남겨보세요.
           </div>
         ) : null}
 
         {comments.map((comment) => {
           const isOwner = currentUser?.id === comment.authorId;
           const isEditing = editingCommentId === comment.id;
+          const isUpdated = comment.updatedAt !== comment.createdAt;
 
           return (
             <article
-              className="rounded-md border border-[#d9e2ec] bg-white p-4"
+              className="min-w-0 rounded-sm border border-[#d8deea] bg-white p-4"
               key={comment.id}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-semibold text-[#172033]">
-                    {comment.author.nickname}
-                  </span>
-                  <span className="text-xs text-[#5e6a7d]">
-                    {formatDate(comment.createdAt)}
-                  </span>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-[#172033]">
+                      {comment.author.nickname}
+                    </span>
+                    <span className="text-xs text-[#667085]">
+                      {formatDate(comment.createdAt)}
+                    </span>
+                    {isUpdated ? (
+                      <span className="rounded-sm bg-[#f6f8fc] px-1.5 py-0.5 text-[11px] font-bold text-[#667085]">
+                        수정됨
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {isOwner ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {isEditing ? (
                       <button
-                        className="text-xs font-semibold text-[#5e6a7d] hover:text-[#0f766e]"
+                        className="text-xs font-semibold text-[#667085] hover:text-[#2f4f9f]"
                         onClick={() => {
                           setEditingCommentId(null);
                           setEditingContent("");
@@ -429,7 +461,7 @@ export function CommentSection({
                       </button>
                     ) : (
                       <button
-                        className="text-xs font-semibold text-[#0f766e] hover:text-[#115e59]"
+                        className="text-xs font-semibold text-[#2f4f9f] hover:text-[#1f3470]"
                         onClick={() => {
                           setEditingCommentId(comment.id);
                           setEditingContent(comment.content);
@@ -454,15 +486,18 @@ export function CommentSection({
               {isEditing ? (
                 <div className="mt-3 grid gap-2">
                   <textarea
-                    className="min-h-24 resize-y rounded-md border border-[#c8d3df] bg-white px-3 py-3 text-sm leading-6 outline-none focus:border-[#0f766e]"
+                    className="community-textarea min-h-24 resize-y text-sm leading-6"
                     maxLength={5000}
                     onChange={(event) => setEditingContent(event.target.value)}
                     required
                     value={editingContent}
                   />
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-[#667085]">
+                      {editingContent.length} / 5000
+                    </span>
                     <button
-                      className="rounded-md bg-[#0f766e] px-3 py-2 text-sm font-semibold text-white hover:bg-[#115e59] disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+                      className="community-button-primary community-button-compact disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
                       disabled={isSubmitting}
                       onClick={() => handleUpdate(comment.id)}
                       type="button"
@@ -472,7 +507,7 @@ export function CommentSection({
                   </div>
                 </div>
               ) : (
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#172033]">
+                <p className="mt-3 break-words whitespace-pre-wrap text-sm leading-6 text-[#172033]">
                   {comment.content}
                 </p>
               )}

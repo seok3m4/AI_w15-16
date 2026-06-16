@@ -171,6 +171,69 @@ function getHeaderCellClass(isActive: boolean): string {
     .join(" ");
 }
 
+function getSortLabel(type: RecordType, sortField: string): string {
+  return (
+    sortOptions[type].find((option) => option.value === sortField)?.label ??
+    "기록"
+  );
+}
+
+function getLeaderStatValue(
+  record: PlayerRecord,
+  type: RecordType,
+  sortField: string,
+): string {
+  if (type === "hitter") {
+    switch (sortField) {
+      case "hitterHra":
+        return formatRate(record.hitter?.battingAverage);
+      case "hitterHr":
+        return formatNumber(record.hitter?.homeRuns);
+      case "hitterRbi":
+        return formatNumber(record.hitter?.rbi);
+      case "hitterOps":
+        return formatRate(record.hitter?.ops);
+      case "hitterWar":
+        return formatDecimal(record.hitter?.war, 2);
+      case "hitterSb":
+        return formatNumber(record.hitter?.steals);
+      default:
+        return "-";
+    }
+  }
+
+  switch (sortField) {
+    case "pitcherEra":
+      return formatDecimal(record.pitcher?.era, 2);
+    case "pitcherWin":
+      return formatNumber(record.pitcher?.wins);
+    case "pitcherSave":
+      return formatNumber(record.pitcher?.saves);
+    case "pitcherHold":
+      return formatNumber(record.pitcher?.holds);
+    case "pitcherKk":
+      return formatNumber(record.pitcher?.strikeouts);
+    case "pitcherWhip":
+      return formatDecimal(record.pitcher?.whip, 2);
+    case "pitcherWar":
+      return formatDecimal(record.pitcher?.war, 2);
+    default:
+      return "-";
+  }
+}
+
+function getLeaderSubSummary(record: PlayerRecord, type: RecordType): string {
+  if (type === "hitter") {
+    return `홈런 ${formatNumber(record.hitter?.homeRuns)} · 타점 ${formatNumber(
+      record.hitter?.rbi,
+    )} · OPS ${formatRate(record.hitter?.ops)}`;
+  }
+
+  return `승 ${formatNumber(record.pitcher?.wins)} · 탈삼진 ${formatNumber(
+    record.pitcher?.strikeouts,
+  )} · 이닝 ${record.pitcher?.innings || "-"}`;
+}
+
 async function requestPlayerRecords(input: {
   season: string;
   type: RecordType;
@@ -313,6 +376,124 @@ function PitcherRow({
   );
 }
 
+function LeaderCard({
+  rank,
+  record,
+  recordType,
+  sortField,
+}: {
+  rank: number;
+  record: PlayerRecord;
+  recordType: RecordType;
+  sortField: string;
+}) {
+  const sortLabel = getSortLabel(recordType, sortField);
+
+  return (
+    <article className="community-subpanel bg-[#fbfcff] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-sm bg-[#071a3d] px-2 text-sm font-black text-white">
+            {rank}
+          </span>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-[#667085]">
+              현재 리더
+            </p>
+            <p className="mt-1 text-lg font-black text-[#071a3d]">
+              {record.playerName}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-black text-[#667085]">{sortLabel}</p>
+          <p className="mt-1 text-2xl font-black text-[#d71920]">
+            {getLeaderStatValue(record, recordType, sortField)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-sm font-bold text-[#344054]">
+        {getPlayerSubText(record)}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-[#667085]">
+        {getLeaderSubSummary(record, recordType)}
+      </p>
+    </article>
+  );
+}
+
+function getRecordSummaryItems(
+  record: PlayerRecord,
+  type: RecordType,
+): Array<{ label: string; value: string }> {
+  if (type === "hitter") {
+    return [
+      { label: "타율", value: formatRate(record.hitter?.battingAverage) },
+      { label: "홈런", value: formatNumber(record.hitter?.homeRuns) },
+      { label: "타점", value: formatNumber(record.hitter?.rbi) },
+      { label: "OPS", value: formatRate(record.hitter?.ops) },
+    ];
+  }
+
+  return [
+    { label: "ERA", value: formatDecimal(record.pitcher?.era, 2) },
+    { label: "승", value: formatNumber(record.pitcher?.wins) },
+    { label: "세이브", value: formatNumber(record.pitcher?.saves) },
+    { label: "WHIP", value: formatDecimal(record.pitcher?.whip, 2) },
+  ];
+}
+
+function MobileRecordCard({
+  record,
+  recordType,
+  sortField,
+}: {
+  record: PlayerRecord;
+  recordType: RecordType;
+  sortField: string;
+}) {
+  const summaryItems = getRecordSummaryItems(record, recordType);
+
+  return (
+    <article className="community-subpanel bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-sm bg-[#071a3d] px-2 text-sm font-black text-white">
+            {record.ranking}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-base font-black text-[#071a3d]">
+              {record.playerName}
+            </p>
+            <p className="mt-1 truncate text-xs text-[#667085]">
+              {getPlayerSubText(record)}
+            </p>
+          </div>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-[11px] font-black text-[#667085]">
+            {getSortLabel(recordType, sortField)}
+          </p>
+          <p className="mt-1 text-xl font-black text-[#d71920]">
+            {getLeaderStatValue(record, recordType, sortField)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {summaryItems.map((item) => (
+          <div className="rounded-sm bg-[#f6f8fc] px-3 py-2" key={item.label}>
+            <p className="text-[11px] font-bold text-[#667085]">{item.label}</p>
+            <p className="mt-1 text-sm font-black text-[#202632]">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 export function PlayerRecordsPage() {
   const [recordType, setRecordType] = useState<RecordType>("hitter");
   const [season, setSeason] = useState("2026");
@@ -416,6 +597,7 @@ export function PlayerRecordsPage() {
       return matchesTeam && matchesKeyword;
     });
   }, [data, searchKeyword, teamFilter]);
+  const topLeaders = filteredRecords.slice(0, 3);
 
   function handleChangeRecordType(nextType: RecordType) {
     if (recordType === nextType) {
@@ -455,23 +637,20 @@ export function PlayerRecordsPage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-5">
-      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-        <div className="flex flex-col gap-3 border-b border-[#172554] bg-[#071a3d] px-5 py-5 text-white md:flex-row md:items-end md:justify-between">
+    <section className="page-shell">
+      <div className="community-panel">
+        <div className="community-page-header">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#f87171]">
-              Records
-            </p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight">
+            <h1 className="text-xl font-black tracking-tight text-[#071a3d]">
               선수 기록실
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">
               타자와 투수 주요 기록을 한 화면에서 비교하고, 선수명이나 팀으로 빠르게 찾아봅니다.
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <button
-              className="h-10 rounded-sm border border-white/20 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="community-button-secondary disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading}
               onClick={() => void loadRecords(true)}
               type="button"
@@ -479,7 +658,7 @@ export function PlayerRecordsPage() {
               {isLoading ? "불러오는 중" : "새로고침"}
             </button>
             <a
-              className="inline-flex h-10 items-center rounded-sm bg-[#d71920] px-4 text-sm font-bold text-white hover:bg-[#a91118]"
+              className="community-button-danger"
               href={
                 data?.source ??
                 "https://m.sports.naver.com/kbaseball/record/kbo?seasonCode=2026&tab=hitter"
@@ -492,28 +671,20 @@ export function PlayerRecordsPage() {
           </div>
         </div>
 
-        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-4 py-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex rounded-sm border border-[#c8d3df] bg-white p-1">
+        <div className="community-toolbar">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="community-segmented min-w-[220px]">
               <button
-                className={[
-                  "h-9 rounded-sm px-4 text-sm font-black",
-                  recordType === "hitter"
-                    ? "bg-[#2f4f9f] text-white"
-                    : "text-[#667085] hover:bg-[#eef3ff]",
-                ].join(" ")}
+                className="community-segment-button"
+                data-active={recordType === "hitter"}
                 onClick={() => handleChangeRecordType("hitter")}
                 type="button"
               >
                 타자 기록
               </button>
               <button
-                className={[
-                  "h-9 rounded-sm px-4 text-sm font-black",
-                  recordType === "pitcher"
-                    ? "bg-[#2f4f9f] text-white"
-                    : "text-[#667085] hover:bg-[#eef3ff]",
-                ].join(" ")}
+                className="community-segment-button"
+                data-active={recordType === "pitcher"}
                 onClick={() => handleChangeRecordType("pitcher")}
                 type="button"
               >
@@ -521,9 +692,9 @@ export function PlayerRecordsPage() {
               </button>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
+            <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap">
               <select
-                className="h-10 rounded-sm border border-[#c8d3df] bg-white px-2 text-sm font-bold text-[#202632] outline-none focus:border-[#2f4f9f]"
+                className="community-input text-sm font-bold"
                 disabled={isLoading}
                 onChange={(event) => handleChangeSeason(event.target.value)}
                 value={season}
@@ -535,7 +706,7 @@ export function PlayerRecordsPage() {
                 ))}
               </select>
               <select
-                className="h-10 rounded-sm border border-[#c8d3df] bg-white px-2 text-sm font-bold text-[#202632] outline-none focus:border-[#2f4f9f]"
+                className="community-input text-sm font-bold"
                 disabled={isLoading}
                 onChange={(event) => handleChangeSortField(event.target.value)}
                 value={sortField}
@@ -547,7 +718,7 @@ export function PlayerRecordsPage() {
                 ))}
               </select>
               <select
-                className="h-10 rounded-sm border border-[#c8d3df] bg-white px-2 text-sm font-bold text-[#202632] outline-none focus:border-[#2f4f9f]"
+                className="community-input text-sm font-bold"
                 onChange={(event) => setTeamFilter(event.target.value)}
                 value={teamFilter}
               >
@@ -559,7 +730,7 @@ export function PlayerRecordsPage() {
                 ))}
               </select>
               <input
-                className="h-10 rounded-sm border border-[#c8d3df] bg-white px-3 text-sm text-[#202632] outline-none focus:border-[#2f4f9f]"
+                className="community-input text-sm"
                 onChange={(event) => setSearchKeyword(event.target.value)}
                 placeholder="선수명, 팀, 포지션 검색"
                 value={searchKeyword}
@@ -580,6 +751,35 @@ export function PlayerRecordsPage() {
           </div>
         ) : null}
 
+        {data && topLeaders.length > 0 ? (
+          <div className="border-b border-[#d8deea] bg-white px-4 py-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-black text-[#071a3d]">
+                  현재 {getSortLabel(recordType, sortField)} 상위권
+                </h2>
+                <p className="mt-1 text-xs text-[#667085]">
+                  현재 필터 조건 기준으로 상위 선수만 먼저 빠르게 확인합니다.
+                </p>
+              </div>
+              <span className="community-chip">
+                TOP {topLeaders.length}
+              </span>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              {topLeaders.map((record, index) => (
+                <LeaderCard
+                  key={`${record.playerId}-${index}`}
+                  rank={index + 1}
+                  record={record}
+                  recordType={recordType}
+                  sortField={sortField}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {message ? (
           <p className="border-b border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-sm text-[#b91c1c]">
             {message}
@@ -587,8 +787,32 @@ export function PlayerRecordsPage() {
         ) : null}
 
         {isLoading && !data ? (
-          <div className="px-5 py-8 text-center text-sm text-[#667085]">
-            선수 기록을 불러오는 중입니다.
+          <div className="overflow-x-auto px-4 py-4">
+            <div className="community-subpanel w-full min-w-[960px] overflow-hidden bg-white">
+              <div className="grid grid-cols-[60px_220px_repeat(9,1fr)] gap-0 border-b border-[#edf1f7] bg-[#f8fafc] px-3 py-3">
+                {Array.from({ length: 11 }).map((_, index) => (
+                  <div
+                    className="h-4 animate-pulse rounded bg-[#e5ebf6]"
+                    key={`records-header-${index}`}
+                  />
+                ))}
+              </div>
+              <div className="divide-y divide-[#edf1f7]">
+                {Array.from({ length: 8 }).map((_, rowIndex) => (
+                  <div
+                    className="grid grid-cols-[60px_220px_repeat(9,1fr)] items-center gap-3 px-3 py-3"
+                    key={`records-row-${rowIndex}`}
+                  >
+                    {Array.from({ length: 11 }).map((__, cellIndex) => (
+                      <div
+                        className="h-4 animate-pulse rounded bg-[#eef3fb]"
+                        key={`records-cell-${rowIndex}-${cellIndex}`}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -604,8 +828,23 @@ export function PlayerRecordsPage() {
         ) : null}
 
         {data && filteredRecords.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse text-sm text-[#344054]">
+          <div className="px-4 py-4 md:hidden">
+            <div className="grid gap-3">
+              {filteredRecords.map((record) => (
+                <MobileRecordCard
+                  key={record.playerId}
+                  record={record}
+                  recordType={recordType}
+                  sortField={sortField}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {data && filteredRecords.length > 0 ? (
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[960px] border-collapse text-sm text-[#344054]">
               <thead className="bg-[#f6f8fc] text-xs font-black text-[#667085]">
                 {recordType === "hitter" ? (
                   <tr>

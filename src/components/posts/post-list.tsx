@@ -75,6 +75,30 @@ function getPrimaryTag(tags: Tag[]): string {
   return tags[0]?.name ?? "자유";
 }
 
+function getPostPreview(content: string): string {
+  return content.replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
+function renderTagButton(
+  tagName: string,
+  onClick: () => void,
+  variant: "primary" | "secondary" = "secondary",
+) {
+  return (
+    <button
+      className={
+        variant === "primary"
+          ? "community-chip community-chip-link px-2 py-1"
+          : "community-chip px-2 py-1"
+      }
+      onClick={onClick}
+      type="button"
+    >
+      #{tagName}
+    </button>
+  );
+}
+
 export function PostList({
   page,
   selectedTags,
@@ -245,25 +269,27 @@ export function PostList({
   );
 
   return (
-    <section className="space-y-2">
-      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-        <div className="flex flex-col gap-2 border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white sm:flex-row sm:items-center sm:justify-between">
+    <section className="space-y-3">
+      <div className="community-panel">
+        <div className="community-panel-header">
           <div>
-            <h2 className="text-base font-black">전체글</h2>
-            <p className="mt-0.5 text-xs text-white/65">
-              {selectedTeam ? `${selectedTeam} 게시판` : `총 ${pagination.total}개 글`}
+            <h2 className="text-base font-black text-[#071a3d]">게시판</h2>
+            <p className="mt-0.5 text-xs text-[#667085]">
+              {selectedTeam
+                ? `${selectedTeam} 게시판 · ${pagination.total}개 글`
+                : `최신 글 ${pagination.total}개`}
             </p>
           </div>
           {currentUser ? (
             <Link
-              className="inline-flex h-9 items-center justify-center rounded-sm bg-[#d71920] px-4 text-sm font-bold text-white hover:bg-[#a91118]"
+              className="community-button-primary px-4 text-sm"
               href="/posts/new"
             >
               글쓰기
             </Link>
           ) : (
             <Link
-              className="inline-flex h-9 items-center justify-center rounded-sm border border-white/20 bg-white px-4 text-sm font-bold text-[#071a3d] hover:bg-[#eef3ff]"
+              className="community-button-secondary px-4 text-sm"
               href="/login"
             >
               로그인 후 글쓰기
@@ -271,44 +297,55 @@ export function PostList({
           )}
         </div>
 
-        <form
-          className="grid gap-2 border-b border-[#d8deea] bg-white px-3 py-2 sm:grid-cols-[minmax(0,1fr)_72px_72px]"
-          onSubmit={handleSearch}
-        >
-          <input
-            className="h-9 rounded-sm border border-[#c8d3df] bg-white px-3 text-sm outline-none focus:border-[#2f4f9f] focus:ring-2 focus:ring-[#2f4f9f]/10"
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="제목 또는 내용을 검색하세요"
-            type="search"
-            value={searchInput}
-          />
-          <button
-            className="h-9 rounded-sm bg-[#2f4f9f] text-sm font-bold text-white hover:bg-[#1f3470]"
-            type="submit"
+        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-3">
+          <form
+            className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_88px_88px]"
+            onSubmit={handleSearch}
           >
-            검색
-          </button>
-          <button
-            className="h-9 rounded-sm border border-[#c8d3df] bg-[#f6f8fc] text-sm font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470] disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!hasActiveFilter}
-            onClick={handleResetFilters}
-            type="button"
-          >
-            초기화
-          </button>
-        </form>
+            <input
+              className="community-input text-sm"
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="제목 또는 내용을 검색하세요"
+              type="search"
+              value={searchInput}
+            />
+            <button className="community-button-primary" type="submit">
+              검색
+            </button>
+            <button
+              className="community-button-secondary disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!hasActiveFilter}
+              onClick={handleResetFilters}
+              type="button"
+            >
+              초기화
+            </button>
+          </form>
+
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-bold text-[#667085]">
+            <span className="rounded-sm bg-white px-2 py-1">
+              {selectedTeam ? `${selectedTeam} 게시판` : "전체 게시판"}
+            </span>
+            <span className="rounded-sm bg-white px-2 py-1">
+              페이지 {pagination.page} / {Math.max(pagination.totalPages, 1)}
+            </span>
+            <span className="rounded-sm bg-white px-2 py-1">
+              태그 {selectedTags.length}개
+            </span>
+          </div>
+        </div>
 
         {hasActiveFilter ? (
           <div className="flex flex-wrap items-center gap-1.5 border-b border-[#d8deea] bg-[#fbfcff] px-3 py-2 text-xs text-[#667085]">
             <span className="font-bold text-[#1f3470]">필터</span>
             {searchQuery ? (
-              <span className="rounded-sm border border-[#d8deea] bg-white px-2 py-1">
+              <span className="community-chip px-2 py-1">
                 검색어: {searchQuery}
               </span>
             ) : null}
             {selectedTeam ? (
               <button
-                className="rounded-sm border border-[#1f3470] bg-[#2f4f9f] px-2 py-1 font-bold text-white hover:bg-[#1f3470]"
+                className="community-chip community-chip-dark px-2 py-1"
                 onClick={() => onSelectTeam?.("")}
                 type="button"
               >
@@ -317,7 +354,7 @@ export function PostList({
             ) : null}
             {selectedTags.map((tagName) => (
               <button
-                className="rounded-sm border border-[#b9c3d7] bg-white px-2 py-1 font-bold text-[#2f4f9f] hover:bg-[#eef3ff]"
+                className="community-chip community-chip-link px-2 py-1"
                 key={tagName}
                 onClick={() => handleSelectTag(tagName)}
                 type="button"
@@ -336,13 +373,13 @@ export function PostList({
         ) : null}
 
         {isLoading ? (
-          <div className="px-3 py-6 text-center text-sm text-[#667085]">
+          <div className="px-3 py-8 text-center text-sm text-[#667085]">
             게시글을 불러오는 중입니다.
           </div>
         ) : null}
 
         {!isLoading && posts.length === 0 ? (
-          <div className="px-3 py-8 text-center">
+          <div className="px-3 py-10 text-center">
             <h3 className="text-base font-black text-[#1f3470]">
               게시글이 없습니다.
             </h3>
@@ -353,140 +390,213 @@ export function PostList({
         ) : null}
 
         {!isLoading && posts.length > 0 ? (
-          <div>
-            <table className="w-full table-fixed border-collapse text-sm">
-              <thead className="border-b border-[#d8deea] bg-[#f6f8fc] text-xs font-bold text-[#667085]">
-                <tr>
-                  <th className="hidden w-12 px-2 py-2 text-center sm:table-cell">
-                    번호
-                  </th>
-                  <th className="w-28 px-2 py-2 text-center">태그</th>
-                  <th className="px-2 py-2 text-left">제목</th>
-                  <th className="hidden w-20 px-2 py-2 text-center md:table-cell">
-                    글쓴이
-                  </th>
-                  <th className="hidden w-24 px-2 py-2 text-center md:table-cell">
-                    작성일
-                  </th>
-                  <th className="hidden w-14 px-2 py-2 text-center md:table-cell">
-                    조회
-                  </th>
-                  <th className="hidden w-14 px-2 py-2 text-center md:table-cell">
-                    추천
-                  </th>
-                  <th className="w-12 px-2 py-2 text-center">댓글</th>
-                </tr>
-              </thead>
-              <tbody>
-                {posts.map((post, index) => {
-                  const postNumber =
-                    pagination.total - (page - 1) * PAGE_SIZE - index;
+          <>
+            <div className="divide-y divide-[#edf1f7] md:hidden">
+              {posts.map((post, index) => {
+                const postNumber =
+                  pagination.total - (page - 1) * PAGE_SIZE - index;
+                const isExpanded = expandedTagPostIds.includes(post.id);
 
-                  return (
-                    <tr
-                      className="border-b border-[#edf1f7] align-middle hover:bg-[#f8fafc]"
-                      key={post.id}
-                    >
-                      <td className="hidden px-2 py-2 text-center text-xs text-[#8a94a6] sm:table-cell">
-                        {postNumber}
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="flex max-w-full items-center justify-center gap-1">
+                return (
+                  <article className="px-3 py-4" key={post.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                          {renderTagButton(
+                            getPrimaryTag(post.tags),
+                            () => handleSelectTag(getPrimaryTag(post.tags)),
+                            "primary",
+                          )}
+                          {post.tags.length > 1 ? (
                             <button
-                              className="max-w-[76px] truncate rounded-sm border border-[#d8deea] bg-[#f6f8fc] px-2 py-1 text-xs font-bold text-[#2f4f9f] hover:border-[#2f4f9f] hover:bg-[#eef3ff]"
-                              onClick={() =>
-                                handleSelectTag(getPrimaryTag(post.tags))
-                              }
+                              className="community-chip community-chip-link px-2 py-1"
+                              onClick={() => handleTogglePostTags(post.id)}
                               type="button"
                             >
-                              {getPrimaryTag(post.tags)}
+                              {isExpanded ? "태그 접기" : `+${post.tags.length - 1}`}
                             </button>
-                            {post.tags.length > 1 ? (
-                              <button
-                                className="shrink-0 rounded-sm border border-[#2f4f9f] bg-white px-1.5 py-1 text-xs font-black text-[#2f4f9f] hover:bg-[#2f4f9f] hover:text-white"
-                                onClick={() => handleTogglePostTags(post.id)}
-                                type="button"
-                              >
-                                {expandedTagPostIds.includes(post.id)
-                                  ? "접기"
-                                  : `+${post.tags.length - 1}`}
-                              </button>
-                            ) : null}
-                          </div>
-
-                          {expandedTagPostIds.includes(post.id) &&
-                          post.tags.length > 1 ? (
-                            <div className="flex max-w-32 flex-wrap justify-center gap-1">
-                              {post.tags.slice(1).map((tag) => (
-                                <button
-                                  className="max-w-full truncate rounded-sm border border-[#d8deea] bg-white px-1.5 py-0.5 text-xs font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#2f4f9f]"
-                                  key={tag.id}
-                                  onClick={() => handleSelectTag(tag.name)}
-                                  type="button"
-                                >
-                                  {tag.name}
-                                </button>
-                              ))}
-                            </div>
                           ) : null}
                         </div>
-                      </td>
-                      <td className="min-w-0 px-2 py-2">
-                        <div className="flex min-w-0 items-center gap-2">
+
+                        <div className="flex min-w-0 items-start gap-2">
                           <Link
-                            className="min-w-0 truncate font-bold text-[#202632] hover:text-[#2f4f9f] hover:underline"
+                            className="min-w-0 flex-1 break-words text-base font-black leading-6 text-[#202632] hover:text-[#2f4f9f] hover:underline"
                             href={`/posts/${post.id}`}
                           >
                             {post.title}
                           </Link>
                           {post.counts.comments > 0 ? (
-                            <span className="shrink-0 text-xs font-bold text-[#d71920]">
+                            <span className="shrink-0 text-xs font-black text-[#d71920]">
                               [{post.counts.comments}]
                             </span>
                           ) : null}
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-1 sm:hidden">
-                          <span className="text-xs text-[#8a94a6]">
-                            {post.author.nickname}
-                          </span>
-                          <span className="text-xs text-[#8a94a6]">
-                            {formatDate(post.createdAt)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#4b5563] md:table-cell">
+
+                        <p className="mt-2 text-sm leading-6 text-[#667085]">
+                          {getPostPreview(post.content)}
+                        </p>
+
+                        {isExpanded && post.tags.length > 1 ? (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {post.tags.slice(1).map((tag) => (
+                              <button
+                                className="community-chip px-2 py-1"
+                                key={tag.id}
+                                onClick={() => handleSelectTag(tag.name)}
+                                type="button"
+                              >
+                                #{tag.name}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <span className="shrink-0 text-xs font-bold text-[#98a2b3]">
+                        {postNumber}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#667085]">
+                      <span className="font-bold text-[#344054]">
                         {post.author.nickname}
-                      </td>
-                      <td className="hidden px-2 py-2 text-center text-xs text-[#667085] md:table-cell">
-                        {formatDate(post.createdAt)}
-                      </td>
-                      <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#4b5563] md:table-cell">
-                        {post.counts.views}
-                      </td>
-                      <td className="hidden px-2 py-2 text-center text-xs font-bold text-[#2f4f9f] md:table-cell">
-                        {post.counts.voteScore}
-                      </td>
-                      <td className="px-2 py-2 text-center text-xs font-bold text-[#d71920]">
-                        {post.counts.comments}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                      <span>{formatDate(post.createdAt)}</span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-sm bg-[#f6f8fc] px-2 py-1 text-xs font-bold text-[#475467]">
+                        조회 {post.counts.views}
+                      </span>
+                      <span className="community-chip community-chip-link px-2 py-1">
+                        추천 {post.counts.voteScore}
+                      </span>
+                      <span className="community-chip community-chip-accent px-2 py-1">
+                        댓글 {post.counts.comments}
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[780px] table-fixed border-collapse text-sm">
+                <thead className="border-b border-[#d8deea] bg-[#f6f8fc] text-xs font-bold text-[#667085]">
+                  <tr>
+                    <th className="w-12 px-2 py-2 text-center">번호</th>
+                    <th className="w-32 px-2 py-2 text-center">태그</th>
+                    <th className="px-2 py-2 text-left">제목</th>
+                    <th className="w-20 px-2 py-2 text-center">글쓴이</th>
+                    <th className="w-24 px-2 py-2 text-center">작성일</th>
+                    <th className="w-14 px-2 py-2 text-center">조회</th>
+                    <th className="w-14 px-2 py-2 text-center">추천</th>
+                    <th className="w-12 px-2 py-2 text-center">댓글</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts.map((post, index) => {
+                    const postNumber =
+                      pagination.total - (page - 1) * PAGE_SIZE - index;
+
+                    return (
+                      <tr
+                        className="border-b border-[#edf1f7] align-middle hover:bg-[#f8fafc]"
+                        key={post.id}
+                      >
+                        <td className="px-2 py-2 text-center text-xs text-[#8a94a6]">
+                          {postNumber}
+                        </td>
+                        <td className="px-2 py-2">
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="flex max-w-full items-center justify-center gap-1">
+                              <button
+                                className="community-chip community-chip-link max-w-[96px] truncate px-2 py-1"
+                                onClick={() =>
+                                  handleSelectTag(getPrimaryTag(post.tags))
+                                }
+                                type="button"
+                              >
+                                {getPrimaryTag(post.tags)}
+                              </button>
+                              {post.tags.length > 1 ? (
+                                <button
+                                  className="community-chip community-chip-link shrink-0 px-1.5 py-1"
+                                  onClick={() => handleTogglePostTags(post.id)}
+                                  type="button"
+                                >
+                                  {expandedTagPostIds.includes(post.id)
+                                    ? "접기"
+                                    : `+${post.tags.length - 1}`}
+                                </button>
+                              ) : null}
+                            </div>
+
+                            {expandedTagPostIds.includes(post.id) &&
+                            post.tags.length > 1 ? (
+                              <div className="flex max-w-32 flex-wrap justify-center gap-1">
+                                {post.tags.slice(1).map((tag) => (
+                                  <button
+                                    className="community-chip max-w-full truncate px-1.5 py-0.5"
+                                    key={tag.id}
+                                    onClick={() => handleSelectTag(tag.name)}
+                                    type="button"
+                                  >
+                                    {tag.name}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="min-w-0 px-2 py-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Link
+                              className="min-w-0 truncate font-bold text-[#202632] hover:text-[#2f4f9f] hover:underline"
+                              href={`/posts/${post.id}`}
+                            >
+                              {post.title}
+                            </Link>
+                            {post.counts.comments > 0 ? (
+                              <span className="shrink-0 text-xs font-bold text-[#d71920]">
+                                [{post.counts.comments}]
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs font-bold text-[#4b5563]">
+                          {post.author.nickname}
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs text-[#667085]">
+                          {formatDate(post.createdAt)}
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs font-bold text-[#4b5563]">
+                          {post.counts.views}
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs font-bold text-[#2f4f9f]">
+                          {post.counts.voteScore}
+                        </td>
+                        <td className="px-2 py-2 text-center text-xs font-bold text-[#d71920]">
+                          {post.counts.comments}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-2 rounded-sm border border-[#b9c3d7] bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="community-panel flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs font-bold text-[#667085]">
           총 {pagination.total}개 · {pagination.page} /{" "}
           {Math.max(pagination.totalPages, 1)} 페이지
         </span>
         <div className="flex items-center gap-1.5">
           <button
-            className="h-8 rounded-sm border border-[#c8d3df] bg-[#f6f8fc] px-3 text-xs font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470] disabled:cursor-not-allowed disabled:opacity-40"
+            className="community-button-secondary px-3 text-xs"
             disabled={!pagination.hasPreviousPage}
             onClick={() => onPageChange(Math.max(page - 1, 1))}
             type="button"
@@ -494,7 +604,7 @@ export function PostList({
             이전
           </button>
           <button
-            className="h-8 rounded-sm border border-[#c8d3df] bg-[#f6f8fc] px-3 text-xs font-bold text-[#4b5563] hover:border-[#2f4f9f] hover:text-[#1f3470] disabled:cursor-not-allowed disabled:opacity-40"
+            className="community-button-secondary px-3 text-xs"
             disabled={!pagination.hasNextPage}
             onClick={() => onPageChange(page + 1)}
             type="button"

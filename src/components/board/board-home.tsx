@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { BoardAssistantPanel } from "@/components/ai/board-assistant-panel";
@@ -53,30 +54,52 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-5">
-      <div className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-        <div className="border-b border-[#172554] bg-[#071a3d] px-4 py-3 text-white">
+    <section className="page-shell space-y-4">
+      <div className="community-panel">
+        <div className="community-panel-header community-panel-header-stack">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">
-              KBO Talk
+            <h1 className="text-base font-black text-[#071a3d]">
+              {selectedTeam ? `${selectedTeam} 게시판` : "전체 게시판"}
             </h1>
-            <p className="mt-1 text-sm text-white/75">
-              경기 결과와 팀 이슈를 모아 보는 야구 커뮤니티
+            <p className="mt-1 text-xs font-bold text-[#667085]">
+              오늘 경기와 팀별 이야기를 모아봅니다.
             </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+            <span className="community-chip community-chip-muted">
+              태그 {selectedTags.length}개
+            </span>
+            <Link className="community-chip community-chip-link" href="/records">
+              기록실
+            </Link>
+            <Link className="community-chip community-chip-link" href="/news">
+              뉴스
+            </Link>
+            <Link className="community-chip community-chip-dark" href="/posts/new">
+              글쓰기
+            </Link>
+            {(selectedTeam || selectedTags.length > 0) ? (
+              <button
+                className="community-chip community-chip-link"
+                onClick={handleClearFilters}
+                type="button"
+              >
+                필터 초기화
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
-        <TeamTabs onSelectTeam={handleSelectTeam} selectedTeam={selectedTeam} />
-        <TodayGameHub
-          onSelectTeam={handleSelectTeam}
-          selectedTeam={selectedTeam}
-        />
-      </div>
+      <TodayGameHub
+        onSelectTeam={handleSelectTeam}
+        selectedTeam={selectedTeam}
+      />
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[200px_minmax(0,1fr)_320px]">
-        <aside className="order-2 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
+      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+        <aside className="space-y-3 lg:sticky lg:top-28 lg:self-start">
+          <TeamTabs onSelectTeam={handleSelectTeam} selectedTeam={selectedTeam} />
           <TagFilterPanel
             onClearTags={handleClearTags}
             onToggleTag={handleToggleTag}
@@ -85,7 +108,7 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
           <KboStandingsPanel />
         </aside>
 
-        <div className="order-1 lg:order-none">
+        <main className="min-w-0">
           <PostList
             onClearFilters={handleClearFilters}
             onClearTags={handleClearTags}
@@ -96,11 +119,11 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
             selectedTags={selectedTags}
             selectedTeam={selectedTeam}
           />
-        </div>
+        </main>
 
-        <aside className="order-3 space-y-3 lg:order-none lg:sticky lg:top-4 lg:self-start">
-          <BoardAssistantPanel selectedTeam={selectedTeam} />
+        <aside className="space-y-3 lg:sticky lg:top-28 lg:self-start">
           <HotPostsPanel selectedTeam={selectedTeam} />
+          <BoardAssistantPanel selectedTeam={selectedTeam} />
         </aside>
       </div>
     </section>

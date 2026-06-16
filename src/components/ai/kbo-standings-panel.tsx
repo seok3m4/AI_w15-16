@@ -117,16 +117,13 @@ export function KboStandingsPanel() {
   }, []);
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-      <div className="flex items-center justify-between border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white">
+    <section className="community-panel">
+      <div className="community-panel-header">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#f87171]">
-            Ranking
-          </p>
-          <h2 className="text-sm font-black">KBO 순위</h2>
+          <h2 className="text-sm font-black text-[#1f3470]">KBO 순위</h2>
         </div>
         <button
-          className="text-xs font-bold text-white/70 hover:text-white hover:underline disabled:cursor-not-allowed disabled:text-white/35"
+          className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline disabled:cursor-not-allowed disabled:opacity-40"
           disabled={isLoading}
           onClick={() => void loadStandings(true)}
           type="button"
@@ -185,6 +182,10 @@ export function KboStandingsPanel() {
                     {row.wins}승 {row.draws}무 {row.losses}패
                   </span>
                   <span>GB {row.gamesBehind}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#8a94a6]">
+                  <span>최근 10경기 {row.lastTenGames}</span>
+                  <span>{row.streak}</span>
                 </div>
               </div>
             </li>

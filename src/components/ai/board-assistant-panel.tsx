@@ -173,19 +173,25 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
   }
 
   return (
-    <section className="overflow-hidden rounded-sm border border-[#172554] bg-white">
-      <div className="border-b border-[#172554] bg-[#071a3d] px-3 py-2 text-white">
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#f87171]">
-          Helper
-        </p>
+    <section className="community-panel">
+      <div className="community-panel-header">
         <div className="flex items-end justify-between gap-2">
-          <h2 className="text-sm font-black">야구 게시판 도우미</h2>
+          <div>
+            <h2 className="text-sm font-black text-[#1f3470]">야구 도우미</h2>
+            <p className="mt-0.5 text-[11px] text-[#667085]">
+              경기, 뉴스, 기록 질문
+            </p>
+          </div>
           {selectedTeam ? (
-            <span className="rounded-sm bg-white/10 px-1.5 py-0.5 text-[11px] font-bold text-white/80">
+            <span className="community-chip community-chip-link px-1.5 py-0.5 text-[11px]">
               {selectedTeam}
             </span>
           ) : null}
         </div>
+      </div>
+
+      <div className="border-b border-[#edf1f7] bg-[#f8fafc] px-3 py-2 text-[11px] font-bold text-[#667085]">
+        게시글, 순위표, 기록실, 경기방 참고
       </div>
 
       <div className="max-h-72 space-y-2 overflow-y-auto bg-[#f8fafc] px-3 py-3">
@@ -233,7 +239,7 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
         <div className="flex flex-wrap gap-1 border-t border-[#edf1f7] px-3 py-2">
           {visibleSteps.slice(0, 4).map((step) => (
             <span
-              className="rounded-sm border border-[#c7d2fe] bg-[#eef2ff] px-1.5 py-0.5 text-[11px] font-black text-[#2f4f9f]"
+              className="community-chip community-chip-link px-1.5 py-0.5 text-[11px]"
               key={`${step.toolName}-${step.summary}`}
               title={step.summary}
             >
@@ -244,10 +250,11 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
       ) : null}
 
       <div className="border-t border-[#edf1f7] px-3 py-3">
-        <div className="mb-2 flex flex-wrap gap-1.5">
+        <p className="mb-2 text-[11px] font-black text-[#667085]">바로 물어보기</p>
+        <div className="mb-3 grid gap-1.5">
           {quickQuestions.map((quickQuestion) => (
             <button
-              className="rounded-sm border border-[#cfd8e6] bg-white px-2 py-1 text-[11px] font-bold text-[#344054] hover:border-[#2f4f9f] hover:text-[#1f3470] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-sm border border-[#cfd8e6] bg-white px-2 py-1 text-left text-[11px] font-bold text-[#344054] hover:border-[#2f4f9f] hover:text-[#1f3470] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading}
               key={quickQuestion}
               onClick={() => void submitQuestion(quickQuestion)}
@@ -260,7 +267,7 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
 
         <form className="flex gap-2" onSubmit={handleSubmit}>
           <input
-            className="min-w-0 flex-1 rounded-sm border border-[#cfd8e6] px-2 py-2 text-xs text-[#202632] outline-none focus:border-[#2f4f9f]"
+            className="community-input min-w-0 flex-1 text-xs"
             disabled={isLoading}
             maxLength={500}
             onChange={(event) => setQuestion(event.target.value)}
@@ -270,7 +277,7 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
             value={question}
           />
           <button
-            className="rounded-sm bg-[#2f4f9f] px-3 py-2 text-xs font-black text-white hover:bg-[#1f3470] disabled:cursor-not-allowed disabled:bg-[#98a2b3]"
+            className="community-button-primary shrink-0 px-3 text-xs"
             disabled={isLoading || question.trim().length < 2}
             type="submit"
           >
