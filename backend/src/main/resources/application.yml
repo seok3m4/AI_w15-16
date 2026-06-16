@@ -9,6 +9,6 @@ spring:
 
 memento:
   auth:
-    email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
-    email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID:local-dev-key}
-    email-lookup-pepper-base64: ${EMAIL_LOOKUP_PEPPER_BASE64:bG9jYWwtbG9va3VwLXBlcHBlcg==}
+    email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64}
+    email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID}
+    email-lookup-pepper-base64: ${EMAIL_LOOKUP_PEPPER_BASE64}
