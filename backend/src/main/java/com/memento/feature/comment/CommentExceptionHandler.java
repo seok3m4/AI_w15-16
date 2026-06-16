@@ -46,6 +46,19 @@ class CommentExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(CommentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    ProblemDetailsResponse handleCommentNotFound(HttpServletRequest request) {
+        return problem(
+                "comment-not-found",
+                "Comment not found",
+                HttpStatus.NOT_FOUND,
+                "Comment was not found.",
+                request,
+                "COMMENT_NOT_FOUND",
+                List.of());
+    }
+
     private ProblemDetailsResponse problem(
             String typeSlug,
             String title,

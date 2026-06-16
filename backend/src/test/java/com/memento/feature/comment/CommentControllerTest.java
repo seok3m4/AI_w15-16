@@ -1,7 +1,11 @@
 package com.memento.feature.comment;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,6 +39,9 @@ class CommentControllerTest {
 
     @MockitoBean
     private CommentCreateService commentCreateService;
+
+    @MockitoBean
+    private CommentCommandService commentCommandService;
 
     @Test
     void createCommentReturnsCreatedCommentForCurrentUser() throws Exception {
@@ -102,5 +109,93 @@ class CommentControllerTest {
                 .andExpect(jsonPath("$.detail").value("Post was not found."))
                 .andExpect(jsonPath("$.instance").value("/api/v1/posts/22222222-2222-2222-2222-222222222222/comments"))
                 .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
+    }
+
+    @Test
+    void updateCommentReturnsUpdatedCommentForCurrentAuthor() throws Exception {
+        CreateCommentRequest request = new CreateCommentRequest("Updated comment");
+        CommentResponse response = new CommentResponse(
+                COMMENT_ID,
+                POST_ID,
+                new CommentAuthorResponse(USER_ID, "cutan"),
+                "Updated comment",
+                NOW,
+                Instant.parse("2026-06-16T09:30:00Z"));
+
+        given(commentCommandService.update(USER_ID, COMMENT_ID, request)).willReturn(response);
+
+        mockMvc.perform(put("/api/v1/comments/{commentId}", COMMENT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("33333333-3333-3333-3333-333333333333"))
+                .andExpect(jsonPath("$.postId").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.author.id").value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(jsonPath("$.content").value("Updated comment"))
+                .andExpect(jsonPath("$.updatedAt").value("2026-06-16T09:30:00Z"));
+
+        verify(commentCommandService).update(USER_ID, COMMENT_ID, request);
+    }
+
+    @Test
+    void updateCommentRejectsBlankContent() throws Exception {
+        mockMvc.perform(put("/api/v1/comments/{commentId}", COMMENT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(new CreateCommentRequest(" "))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors[0].field").value("content"));
+    }
+
+    @Test
+    void updateCommentReturnsNotFoundWhenUserCannotAccessComment() throws Exception {
+        CreateCommentRequest request = new CreateCommentRequest("Updated comment");
+        given(commentCommandService.update(USER_ID, COMMENT_ID, request))
+                .willThrow(new CommentNotFoundException(COMMENT_ID));
+
+        mockMvc.perform(put("/api/v1/comments/{commentId}", COMMENT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("https://memento.local/problems/comment-not-found"))
+                .andExpect(jsonPath("$.title").value("Comment not found"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Comment was not found."))
+                .andExpect(jsonPath("$.instance").value("/api/v1/comments/33333333-3333-3333-3333-333333333333"))
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+    }
+
+    @Test
+    void deleteCommentReturnsNoContentForCurrentAuthor() throws Exception {
+        mockMvc.perform(delete("/api/v1/comments/{commentId}", COMMENT_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNoContent());
+
+        verify(commentCommandService).delete(USER_ID, COMMENT_ID);
+    }
+
+    @Test
+    void deleteCommentReturnsNotFoundWhenUserCannotAccessComment() throws Exception {
+        willThrow(new CommentNotFoundException(COMMENT_ID))
+                .given(commentCommandService)
+                .delete(USER_ID, COMMENT_ID);
+
+        mockMvc.perform(delete("/api/v1/comments/{commentId}", COMMENT_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
 }

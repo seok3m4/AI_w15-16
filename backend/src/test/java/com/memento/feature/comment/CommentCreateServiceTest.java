@@ -76,6 +76,20 @@ class CommentCreateServiceTest {
                     comment.createdAt(),
                     comment.createdAt()));
         }
+
+        @Override
+        public Optional<CommentRecord> updateByAuthor(
+                UUID commentId,
+                UUID authorId,
+                String content,
+                Instant updatedAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean softDeleteByAuthor(UUID commentId, UUID authorId, Instant deletedAt) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     private static class MissingPostCommentRepository implements CommentRepository {
@@ -83,6 +97,20 @@ class CommentCreateServiceTest {
         @Override
         public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
             return Optional.empty();
+        }
+
+        @Override
+        public Optional<CommentRecord> updateByAuthor(
+                UUID commentId,
+                UUID authorId,
+                String content,
+                Instant updatedAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean softDeleteByAuthor(UUID commentId, UUID authorId, Instant deletedAt) {
+            throw new UnsupportedOperationException();
         }
     }
 }

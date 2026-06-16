@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -58,6 +59,70 @@ class JdbcCommentRepositoryTest {
         verify(jdbcTemplate).query(anyString(), any(RowMapper.class), any(Object[].class));
     }
 
+    @Test
+    void updateByAuthorUpdatesActiveCommentOnlyForCurrentAuthorAndActivePost() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<CommentRecord> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(updatedCommentResultSet(), 0));
+                });
+
+        Optional<CommentRecord> updated = repository.updateByAuthor(
+                COMMENT_ID,
+                USER_ID,
+                "Updated comment",
+                NOW);
+
+        assertThat(updated).contains(new CommentRecord(
+                COMMENT_ID,
+                POST_ID,
+                USER_ID,
+                "cutan",
+                "Updated comment",
+                NOW,
+                NOW));
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("update comments")
+                .contains("c.author_id = ?")
+                .contains("c.deleted_at is null")
+                .contains("p.deleted_at is null");
+    }
+
+    @Test
+    void softDeleteByAuthorSoftDeletesActiveCommentOnlyForCurrentAuthorAndActivePost() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+        when(jdbcTemplate.update(anyString(), any(Object[].class))).thenReturn(1);
+
+        boolean deleted = repository.softDeleteByAuthor(COMMENT_ID, USER_ID, NOW);
+
+        assertThat(deleted).isTrue();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).update(sqlCaptor.capture(), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("update comments")
+                .contains("c.author_id = ?")
+                .contains("c.deleted_at is null")
+                .contains("p.deleted_at is null");
+    }
+
+    @Test
+    void softDeleteByAuthorReturnsFalseWhenNoCommentIsVisibleToCurrentAuthor() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+        when(jdbcTemplate.update(anyString(), any(Object[].class))).thenReturn(0);
+
+        boolean deleted = repository.softDeleteByAuthor(COMMENT_ID, USER_ID, NOW);
+
+        assertThat(deleted).isFalse();
+    }
+
     private ResultSet commentResultSet() throws Exception {
         ResultSet rs = mock(ResultSet.class);
         when(rs.getObject("id", UUID.class)).thenReturn(COMMENT_ID);
@@ -67,6 +132,12 @@ class JdbcCommentRepositoryTest {
         when(rs.getString("content")).thenReturn("좋은 기록이네요.");
         when(rs.getTimestamp("created_at")).thenReturn(Timestamp.from(NOW));
         when(rs.getTimestamp("updated_at")).thenReturn(Timestamp.from(NOW));
+        return rs;
+    }
+
+    private ResultSet updatedCommentResultSet() throws Exception {
+        ResultSet rs = commentResultSet();
+        when(rs.getString("content")).thenReturn("Updated comment");
         return rs;
     }
 }
