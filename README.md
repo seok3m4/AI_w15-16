@@ -23,7 +23,7 @@
 | Database | PostgreSQL (Docker, 포트 5433) + **pgvector** (임베딩 벡터 검색) |
 | 인증 | JWT (passport-jwt), bcrypt |
 | 지도 | Kakao Maps JavaScript SDK (코스 경유지 시각화) |
-| AI 모델 | OpenAI — 임베딩 `text-embedding-3-small` + 채팅 `gpt-4o-mini` |
+| AI 모델 | OpenAI — 임베딩 `text-embedding-3-small` + 채팅 `gpt-4o` |
 | AI 도구 | **MCP** (`@modelcontextprotocol/sdk`) — Kakao 장소 검색 도구 |
 
 ---
@@ -49,29 +49,55 @@
 
 ## 3. 전체 아키텍처 구조
 
-```
-┌────────────────────┐        HTTP/JSON         ┌──────────────────────────────┐
-│   React (Vite)     │ ───────────────────────▶ │        NestJS API            │
-│   :5173            │                          │        :3000                 │
-│                    │ ◀─────────────────────── │                              │
-│  - 게시판/지도      │                          │  auth · post · comment       │
-│  - AI 추천/Q&A      │                          │  saved · mcp · rag · agent   │
-│  - AI 질문/장소     │                          └───────┬──────────┬──────┬────┘
-└────────────────────┘                                  │          │      │
-                                                        │          │      │
-                          ┌─────────────────────────────┘          │      │
-                          │ stdio (자식 프로세스)                     │      │ HTTPS
-                          ▼                                         │      ▼
-                ┌──────────────────────┐                           │  ┌──────────────┐
-                │  MCP 서버 (독립 프로세스) │  HTTPS                     │  │  OpenAI API  │
-                │  place_search 도구     │ ────────▶ Kakao Local API  │  │  임베딩/채팅   │
-                └──────────────────────┘                           │  └──────────────┘
-                                                                   ▼
-                                                    ┌──────────────────────────┐
-                                                    │  PostgreSQL + pgvector    │
-                                                    │  :5433                    │
-                                                    │  테이블 + PostEmbedding(벡터)│
-                                                    └──────────────────────────┘
+```mermaid
+flowchart LR
+  User["사용자"]
+
+  subgraph Frontend["Frontend - React / Vite :5173"]
+    Web["게시판 · 마이페이지 · AI 질문 화면"]
+    MapSDK["Kakao Maps JS SDK<br/>지도 표시 · 장소 검색"]
+  end
+
+  subgraph Backend["Backend - NestJS API :3000"]
+    Auth["AuthModule<br/>JWT 인증"]
+    Post["Post / Comment / Saved<br/>게시판 핵심 API"]
+    Rag["RagModule<br/>유사 코스 검색 · Q&A"]
+    Agent["AgentModule<br/>Function Calling 루프"]
+    McpClient["McpModule<br/>MCP 클라이언트"]
+    Prisma["PrismaService"]
+  end
+
+  subgraph Database["PostgreSQL + pgvector :5433"]
+    Tables["User · Post · Place · Comment · Tag"]
+    Vector["PostEmbedding<br/>vector(1536)"]
+  end
+
+  subgraph External["외부 서비스"]
+    OpenAI["OpenAI API<br/>gpt-4o · text-embedding-3-small"]
+    MCP["MCP Server<br/>place_search 도구"]
+    KakaoLocal["Kakao Local API"]
+  end
+
+  User --> Web
+  Web <-->|HTTP / JSON| Auth
+  Web <-->|HTTP / JSON| Post
+  Web <-->|HTTP / JSON| Rag
+  Web <-->|HTTP / JSON| Agent
+  Web --> MapSDK
+
+  Auth --> Prisma
+  Post --> Prisma
+  Rag --> Prisma
+  Agent --> Rag
+  Agent --> McpClient
+
+  Prisma --> Tables
+  Prisma --> Vector
+
+  Rag <-->|Embedding / Chat| OpenAI
+  Agent <-->|Chat + Tool Calling| OpenAI
+  McpClient <-->|stdio / JSON-RPC| MCP
+  MCP -->|HTTPS| KakaoLocal
 ```
 
 - **React**는 NestJS API만 호출합니다. (Kakao 지도 SDK는 브라우저에서 직접 로드)
