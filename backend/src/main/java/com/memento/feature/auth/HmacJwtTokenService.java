@@ -1,8 +1,12 @@
 package com.memento.feature.auth;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -14,6 +18,7 @@ class HmacJwtTokenService implements JwtTokenService {
 
     private final byte[] signingKey;
     private final long accessTokenTtlSeconds;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     HmacJwtTokenService(
             @Value("${memento.auth.jwt-signing-key}") String signingKey,
@@ -34,6 +39,42 @@ class HmacJwtTokenService implements JwtTokenService {
                 + "."
                 + encode(payload.getBytes(StandardCharsets.UTF_8));
         return unsignedToken + "." + encode(sign(unsignedToken));
+    }
+
+    @Override
+    public Optional<AccessTokenClaims> verifyAccessToken(String token, Instant now) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        String[] parts = token.split("\\.", -1);
+        if (parts.length != 3) {
+            return Optional.empty();
+        }
+
+        String unsignedToken = parts[0] + "." + parts[1];
+        byte[] expectedSignature = sign(unsignedToken);
+        byte[] actualSignature;
+        try {
+            actualSignature = Base64.getUrlDecoder().decode(parts[2]);
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+        if (!MessageDigest.isEqual(expectedSignature, actualSignature)) {
+            return Optional.empty();
+        }
+
+        try {
+            JsonNode payload = objectMapper.readTree(Base64.getUrlDecoder().decode(parts[1]));
+            if (!"access".equals(payload.path("type").asText())) {
+                return Optional.empty();
+            }
+            if (payload.path("exp").asLong(0) <= now.getEpochSecond()) {
+                return Optional.empty();
+            }
+            return Optional.of(new AccessTokenClaims(UUID.fromString(payload.path("sub").asText())));
+        } catch (Exception exception) {
+            return Optional.empty();
+        }
     }
 
     @Override

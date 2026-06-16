@@ -23,6 +23,8 @@ class DefaultEmailProtectorTest {
         assertThat(first.emailLookupHash()).isEqualTo(second.emailLookupHash());
         assertThat(first.emailCiphertext())
                 .isNotEqualTo("user@example.com".getBytes(StandardCharsets.UTF_8));
+        assertThat(protector.unprotect(first.emailCiphertext(), first.emailNonce()))
+                .isEqualTo("user@example.com");
         assertThat(first.emailNonce()).hasSize(12);
         assertThat(first.emailKeyId()).isEqualTo("local-dev-key");
     }

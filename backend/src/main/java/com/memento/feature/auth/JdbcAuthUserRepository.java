@@ -62,6 +62,36 @@ class JdbcAuthUserRepository implements AuthUserRepository, RefreshTokenSessionR
     }
 
     @Override
+    public Optional<UserPrivateRecord> findActivePrivateUserById(UUID userId) {
+        try {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(
+                    """
+                    SELECT
+                        u.id,
+                        u.email_ciphertext,
+                        u.email_nonce,
+                        u.nickname,
+                        ups.friend_ai_sharing_enabled,
+                        u.created_at
+                    FROM users u
+                    JOIN user_privacy_settings ups ON ups.user_id = u.id
+                    WHERE u.id = ?
+                      AND u.status = 'active'
+                    """,
+                    (rs, rowNum) -> new UserPrivateRecord(
+                            rs.getObject("id", UUID.class),
+                            rs.getBytes("email_ciphertext"),
+                            rs.getBytes("email_nonce"),
+                            rs.getString("nickname"),
+                            rs.getBoolean("friend_ai_sharing_enabled"),
+                            rs.getTimestamp("created_at").toInstant()),
+                    userId));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public void insert(AuthUserRecord user) {
         jdbcTemplate.update(
                 """

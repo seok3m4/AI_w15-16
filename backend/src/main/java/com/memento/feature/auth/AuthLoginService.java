@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 class AuthLoginService {
 
     private static final String ROTATION_REUSE_REASON = "rotation_reuse";
+    private static final String LOGOUT_REASON = "logout";
 
     private final AuthUserRepository userRepository;
     private final PasswordVerifier passwordVerifier;
@@ -141,6 +142,22 @@ class AuthLoginService {
                 "Bearer",
                 jwtTokenService.accessTokenExpiresInSeconds(),
                 RefreshCookie.from(newRefreshToken, tokenProperties));
+    }
+
+    @Transactional
+    void logout(UUID userId, String rawRefreshToken) {
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            return;
+        }
+
+        Instant now = clock.instant();
+        byte[] refreshTokenHash = refreshTokenHasher.hash(rawRefreshToken);
+        refreshTokenSessionRepository.findByTokenHash(refreshTokenHash)
+                .filter(session -> session.userId().equals(userId))
+                .ifPresent(session -> refreshTokenSessionRepository.revokeFamily(
+                        session.sessionFamilyId(),
+                        LOGOUT_REASON,
+                        now));
     }
 
     private String normalizeEmail(String email) {

@@ -9,6 +9,8 @@ interface AuthUserRepository {
 
     Optional<AuthLoginUser> findActiveLoginUserByEmailLookupHash(byte[] emailLookupHash);
 
+    Optional<UserPrivateRecord> findActivePrivateUserById(UUID userId);
+
     void insert(AuthUserRecord user);
 
     void insertDefaultPrivacySettings(UUID userId);

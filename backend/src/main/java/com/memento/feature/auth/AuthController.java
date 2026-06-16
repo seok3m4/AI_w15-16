@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,10 +19,15 @@ class AuthController {
 
     private final AuthSignupService signupService;
     private final AuthLoginService loginService;
+    private final AuthCurrentUserService currentUserService;
 
-    AuthController(AuthSignupService signupService, AuthLoginService loginService) {
+    AuthController(
+            AuthSignupService signupService,
+            AuthLoginService loginService,
+            AuthCurrentUserService currentUserService) {
         this.signupService = signupService;
         this.loginService = loginService;
+        this.currentUserService = currentUserService;
     }
 
     @PostMapping("/signup")
@@ -51,6 +57,21 @@ class AuthController {
         return response;
     }
 
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void logout(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse servletResponse) {
+        loginService.logout(currentUser.userId(), refreshToken);
+        clearRefreshCookie(servletResponse);
+    }
+
+    @GetMapping("/me")
+    UserPrivateResponse me(@CurrentUser AuthenticatedUserPrincipal currentUser) {
+        return currentUserService.me(currentUser.userId());
+    }
+
     private void addRefreshCookie(HttpServletResponse servletResponse, RefreshCookie refreshCookie) {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshCookie.value())
                 .httpOnly(true)
@@ -58,6 +79,17 @@ class AuthController {
                 .sameSite("Lax")
                 .path("/api/v1/auth")
                 .maxAge(refreshCookie.maxAgeSeconds())
+                .build();
+        servletResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private void clearRefreshCookie(HttpServletResponse servletResponse) {
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/api/v1/auth")
+                .maxAge(0)
                 .build();
         servletResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }

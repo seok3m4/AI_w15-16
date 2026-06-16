@@ -90,6 +90,11 @@ class AuthSignupServiceTest {
         }
 
         @Override
+        public Optional<UserPrivateRecord> findActivePrivateUserById(UUID userId) {
+            return Optional.empty();
+        }
+
+        @Override
         public void insert(AuthUserRecord user) {
             insertedUser = copy(user);
         }

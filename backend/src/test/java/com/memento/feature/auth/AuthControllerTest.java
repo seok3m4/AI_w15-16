@@ -1,6 +1,9 @@
 package com.memento.feature.auth;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,18 +11,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
+@Import({
+        AuthControllerTest.FixedClockConfig.class,
+        AuthWebConfig.class,
+        BearerAccessTokenFilter.class,
+        CurrentUserArgumentResolver.class
+})
 class AuthControllerTest {
+
+    private static final UUID USER_ID =
+            UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final Instant NOW = Instant.parse("2026-06-15T03:10:00Z");
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,6 +52,12 @@ class AuthControllerTest {
 
     @MockitoBean
     private AuthLoginService loginService;
+
+    @MockitoBean
+    private AuthCurrentUserService currentUserService;
+
+    @MockitoBean
+    private JwtTokenService jwtTokenService;
 
     @Test
     void signupReturnsCreatedUser() throws Exception {
@@ -147,5 +173,69 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/refresh"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void meReturnsCurrentUserWhenBearerTokenIsValid() throws Exception {
+        given(jwtTokenService.verifyAccessToken("access-token", NOW))
+                .willReturn(Optional.of(new AccessTokenClaims(USER_ID)));
+        given(currentUserService.me(USER_ID)).willReturn(new UserPrivateResponse(
+                USER_ID,
+                "user@example.com",
+                "cutan",
+                true,
+                Instant.parse("2026-06-15T03:00:00Z")));
+
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("11111111-1111-1111-1111-111111111111"))
+                .andExpect(jsonPath("$.email").value("user@example.com"))
+                .andExpect(jsonPath("$.nickname").value("cutan"))
+                .andExpect(jsonPath("$.friendAiSharingEnabled").value(true))
+                .andExpect(jsonPath("$.createdAt").value("2026-06-15T03:00:00Z"));
+    }
+
+    @Test
+    void meRejectsMissingBearerToken() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void meRejectsValidTokenWhenUserIsNoLongerActive() throws Exception {
+        given(jwtTokenService.verifyAccessToken("access-token", NOW))
+                .willReturn(Optional.of(new AccessTokenClaims(USER_ID)));
+        willThrow(new InvalidAccessTokenException()).given(currentUserService).me(USER_ID);
+
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+    }
+
+    @Test
+    void logoutRevokesRefreshSessionAndClearsRefreshCookie() throws Exception {
+        given(jwtTokenService.verifyAccessToken("access-token", NOW))
+                .willReturn(Optional.of(new AccessTokenClaims(USER_ID)));
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
+                        .cookie(new Cookie("refreshToken", "refresh-token")))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().value("refreshToken", ""))
+                .andExpect(cookie().maxAge("refreshToken", 0));
+
+        verify(loginService).logout(USER_ID, "refresh-token");
+    }
+
+    @TestConfiguration
+    static class FixedClockConfig {
+
+        @Bean
+        Clock clock() {
+            return Clock.fixed(NOW, ZoneOffset.UTC);
+        }
     }
 }

@@ -11,4 +11,9 @@ class AuthConfig {
     Clock clock() {
         return Clock.systemUTC();
     }
+
+    @Bean
+    BearerAccessTokenFilter bearerAccessTokenFilter(JwtTokenService jwtTokenService, Clock clock) {
+        return new BearerAccessTokenFilter(jwtTokenService, clock);
+    }
 }

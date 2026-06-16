@@ -33,6 +33,12 @@ class AuthExceptionHandler {
         return new ErrorResponse("INVALID_REFRESH_TOKEN", "Refresh token is invalid.");
     }
 
+    @ExceptionHandler(InvalidAccessTokenException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    ErrorResponse handleInvalidAccessToken() {
+        return new ErrorResponse("UNAUTHORIZED", "Authentication is required.");
+    }
+
     record ErrorResponse(String code, String message) {
     }
 }

@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-class DefaultEmailProtector implements EmailProtector, EmailLookupHasher {
+class DefaultEmailProtector implements EmailProtector, EmailLookupHasher, EmailUnprotector {
 
     private static final int GCM_TAG_BITS = 128;
     private static final int NONCE_BYTES = 12;
@@ -55,6 +55,20 @@ class DefaultEmailProtector implements EmailProtector, EmailLookupHasher {
             return cipher.doFinal(normalizedEmail.getBytes(StandardCharsets.UTF_8));
         } catch (GeneralSecurityException exception) {
             throw new IllegalStateException("Failed to protect email.", exception);
+        }
+    }
+
+    @Override
+    public String unprotect(byte[] emailCiphertext, byte[] emailNonce) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(emailEncryptionKey, "AES"),
+                    new GCMParameterSpec(GCM_TAG_BITS, emailNonce));
+            return new String(cipher.doFinal(emailCiphertext), StandardCharsets.UTF_8);
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalStateException("Failed to unprotect email.", exception);
         }
     }
 

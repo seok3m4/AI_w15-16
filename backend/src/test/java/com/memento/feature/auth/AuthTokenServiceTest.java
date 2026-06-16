@@ -33,6 +33,33 @@ class AuthTokenServiceTest {
     }
 
     @Test
+    void verifiesSignedAccessTokenAndReturnsSubject() {
+        HmacJwtTokenService service = new HmacJwtTokenService(
+                "local-dev-only-change-me",
+                3600);
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        String token = service.createAccessToken(userId, CLOCK.instant());
+
+        assertThat(service.verifyAccessToken(token, CLOCK.instant().plusSeconds(10)))
+                .contains(new AccessTokenClaims(userId));
+    }
+
+    @Test
+    void rejectsExpiredOrTamperedAccessToken() {
+        HmacJwtTokenService service = new HmacJwtTokenService(
+                "local-dev-only-change-me",
+                3600);
+        String token = service.createAccessToken(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                CLOCK.instant());
+
+        assertThat(service.verifyAccessToken(token, CLOCK.instant().plusSeconds(3600)))
+                .isEmpty();
+        assertThat(service.verifyAccessToken(token + "tampered", CLOCK.instant()))
+                .isEmpty();
+    }
+
+    @Test
     void hashesRefreshTokenWithPepper() {
         HmacRefreshTokenHasher hasher = new HmacRefreshTokenHasher("refresh-pepper");
 

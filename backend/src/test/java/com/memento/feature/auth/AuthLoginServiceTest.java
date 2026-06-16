@@ -135,6 +135,43 @@ class AuthLoginServiceTest {
         assertThat(repository.revokedReason).isEqualTo("rotation_reuse");
     }
 
+    @Test
+    void logoutRevokesMatchingRefreshTokenFamily() {
+        CapturingRepository repository = CapturingRepository.withRefreshSession();
+        AuthLoginService service = new AuthLoginService(
+                repository,
+                (rawPassword, encodedPassword) -> true,
+                normalizedEmail -> normalizedEmail.getBytes(StandardCharsets.UTF_8),
+                new StubJwtTokenService(),
+                new StubRefreshTokenHasher(),
+                () -> "refresh-token-2",
+                CLOCK);
+
+        service.logout(USER_ID, "refresh-token-1");
+
+        assertThat(repository.revokedFamilyId)
+                .isEqualTo(UUID.fromString("33333333-3333-3333-3333-333333333333"));
+        assertThat(repository.revokedReason).isEqualTo("logout");
+    }
+
+    @Test
+    void logoutIgnoresRefreshTokenOwnedByAnotherUser() {
+        CapturingRepository repository = CapturingRepository.withRefreshSessionForAnotherUser();
+        AuthLoginService service = new AuthLoginService(
+                repository,
+                (rawPassword, encodedPassword) -> true,
+                normalizedEmail -> normalizedEmail.getBytes(StandardCharsets.UTF_8),
+                new StubJwtTokenService(),
+                new StubRefreshTokenHasher(),
+                () -> "refresh-token-2",
+                CLOCK);
+
+        service.logout(USER_ID, "refresh-token-1");
+
+        assertThat(repository.revokedFamilyId).isNull();
+        assertThat(repository.revokedReason).isNull();
+    }
+
     private static class CapturingRepository implements AuthUserRepository, RefreshTokenSessionRepository {
 
         private final Optional<AuthLoginUser> user;
@@ -191,6 +228,18 @@ class AuthLoginServiceTest {
                     null)));
         }
 
+        private static CapturingRepository withRefreshSessionForAnotherUser() {
+            return new CapturingRepository(Optional.empty(), Optional.of(new RefreshTokenSessionRecord(
+                    UUID.fromString("22222222-2222-2222-2222-222222222222"),
+                    UUID.fromString("99999999-9999-9999-9999-999999999999"),
+                    UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                    "hash:refresh-token-1".getBytes(StandardCharsets.UTF_8),
+                    null,
+                    Instant.parse("2026-06-29T03:10:00Z"),
+                    null,
+                    null)));
+        }
+
         @Override
         public boolean existsActiveByEmailLookupHash(byte[] emailLookupHash) {
             return false;
@@ -200,6 +249,11 @@ class AuthLoginServiceTest {
         public Optional<AuthLoginUser> findActiveLoginUserByEmailLookupHash(byte[] emailLookupHash) {
             lookupHash = Arrays.copyOf(emailLookupHash, emailLookupHash.length);
             return user;
+        }
+
+        @Override
+        public Optional<UserPrivateRecord> findActivePrivateUserById(UUID userId) {
+            return Optional.empty();
         }
 
         @Override
@@ -238,6 +292,11 @@ class AuthLoginServiceTest {
         @Override
         public String createAccessToken(UUID userId, Instant issuedAt) {
             return "access:" + userId;
+        }
+
+        @Override
+        public Optional<AccessTokenClaims> verifyAccessToken(String token, Instant now) {
+            return Optional.empty();
         }
 
         @Override
