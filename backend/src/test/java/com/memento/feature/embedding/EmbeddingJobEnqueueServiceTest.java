@@ -132,5 +132,22 @@ class EmbeddingJobEnqueueServiceTest {
         public void savePending(List<NewMemoryEmbedding> embeddings) {
             saved = List.copyOf(embeddings);
         }
+
+        @Override
+        public void markRunningByJob(UUID jobId) {
+        }
+
+        @Override
+        public List<EmbeddingInputChunk> findInputsByJob(UUID jobId) {
+            return List.of();
+        }
+
+        @Override
+        public void saveSucceeded(UUID jobId, EmbeddingResponse response) {
+        }
+
+        @Override
+        public void markFailedByJob(UUID jobId, String failureReason) {
+        }
     }
 }
