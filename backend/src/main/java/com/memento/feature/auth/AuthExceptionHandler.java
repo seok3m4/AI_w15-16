@@ -21,6 +21,18 @@ class AuthExceptionHandler {
         return new ErrorResponse("EMAIL_ALREADY_EXISTS", "Email already exists.");
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    ErrorResponse handleInvalidCredentials() {
+        return new ErrorResponse("INVALID_CREDENTIALS", "Email or password is invalid.");
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    ErrorResponse handleInvalidRefreshToken() {
+        return new ErrorResponse("INVALID_REFRESH_TOKEN", "Refresh token is invalid.");
+    }
+
     record ErrorResponse(String code, String message) {
     }
 }

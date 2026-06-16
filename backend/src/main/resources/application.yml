@@ -12,3 +12,7 @@ memento:
     email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64}
     email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID}
     email-lookup-pepper-base64: ${EMAIL_LOOKUP_PEPPER_BASE64}
+    jwt-signing-key: ${JWT_SIGNING_KEY}
+    refresh-token-pepper: ${REFRESH_TOKEN_PEPPER}
+    access-token-ttl-seconds: ${ACCESS_TOKEN_TTL_SECONDS:3600}
+    refresh-token-ttl-seconds: ${REFRESH_TOKEN_TTL_SECONDS:1209600}

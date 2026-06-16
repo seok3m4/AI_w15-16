@@ -26,12 +26,12 @@
 | D9 | **pgvector 인덱스는 P4로 지연**, 스키마(차원 포함)만 P0 확정 | 초기 데이터 적음, 스키마만 안정화 | 초기부터 hnsw/ivfflat | P0-INFRA-5, P1-BE-6 |
 | D18 | `memory_embeddings.embedding`은 nullable, `succeeded` 상태에서만 필수 | P1에서 pending/running/failed embedding row를 같은 테이블로 추적해야 함 | pending은 `async_jobs`/`posts.memory_status`에만 저장, 결과 전용 테이블 분리 | P0-INFRA-5, P1-BE-4~6 |
 | D19 | Auth 암호화/lookup pepper local dev 기본값은 `application-local.yml`에만 둔다 | base profile에 dev key가 있으면 운영 env 누락을 놓칠 수 있음 | `application.yml`에 fallback 기본값 유지 | P0-BE-1, 배포 설정 |
+| D10 | 인증 방식은 **Bearer access JWT + HttpOnly refresh token rotation**으로 확정 | FE 계약과 API 명세가 access token은 `Authorization: Bearer`, refresh token은 cookie+rotation을 전제함. refresh token 원문은 저장하지 않고 HMAC hash만 저장 | 서버 세션 쿠키 단일 방식 | P0-BE-2, P0-BE-3, P0-FE-1 |
 
 ### A-2. 후행 결정 (해당 단계 진입 직전, 담당 트랙이 결정) — 상태: 보류
 
 | ID | 결정 항목 | 담당 트랙 | 차단 단계 | 권장 기본값 | 상태 |
 |----|-----------|-----------|-----------|-------------|------|
-| D10 | 인증 방식(JWT vs 세션) | T1 | P0 | JWT access+refresh rotation | 보류 |
 | D11 | embedding provider/model (차원은 D8로 고정) | T4 | P1 | mock 우선, real은 P4 | 보류 |
 | D12 | stale memory 보존 기간 | T3 | P1 | 예: 30일 | 보류 |
 | D13 | Capsule compact context JSON 구조 | T5 | P2 | `purpose,summary,keyFacts[],sourcePostIds[],tags[]` | 보류 |
@@ -59,7 +59,7 @@
 |------|------|------|--------|--------|------|
 | P0-INFRA(공동) | INFRA-0 + 스키마 베이스라인(차원 1536) | 대기 | | | T6와 공동 |
 | P0-BE-1 | users 모델 + 회원가입 API | 완료 | sjin | | 2026-06-16: `POST /api/v1/auth/signup` 구현. 단위 테스트와 로컬 HTTP smoke 통과. 보완: auth crypto fallback은 local profile로 격리하고 base profile은 env 필수값으로 변경. |
-| P0-BE-2~3 | 로그인·인증필터 | 대기 | | | Login/JWT/auth filter remaining. |
+| P0-BE-2~3 | 로그인·인증필터 | 진행 | | | 2026-06-16: P0-BE-2 완료. `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, access JWT, HttpOnly refresh cookie, refresh token HMAC 저장·rotation·reuse family revoke 구현. 품질 검토 blocker 반영: JWT/refresh secret dev fallback을 local profile로 격리하고 refresh rotation 조건부 update로 경쟁 조건 보강. `backend\\gradlew.bat test` 통과. P0-BE-3 인증 필터·logout·me 대기. |
 | P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 대기 | | | |
 | P2-BE-7 | 친구 AI 동의 toggle | 대기 | | | |
 

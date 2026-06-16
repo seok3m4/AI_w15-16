@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +82,11 @@ class AuthSignupServiceTest {
         @Override
         public boolean existsActiveByEmailLookupHash(byte[] emailLookupHash) {
             return existing;
+        }
+
+        @Override
+        public Optional<AuthLoginUser> findActiveLoginUserByEmailLookupHash(byte[] emailLookupHash) {
+            return Optional.empty();
         }
 
         @Override

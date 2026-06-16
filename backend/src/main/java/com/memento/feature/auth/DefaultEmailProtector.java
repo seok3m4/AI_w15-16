@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-class DefaultEmailProtector implements EmailProtector {
+class DefaultEmailProtector implements EmailProtector, EmailLookupHasher {
 
     private static final int GCM_TAG_BITS = 128;
     private static final int NONCE_BYTES = 12;
@@ -58,7 +58,8 @@ class DefaultEmailProtector implements EmailProtector {
         }
     }
 
-    private byte[] lookupHash(String normalizedEmail) {
+    @Override
+    public byte[] lookupHash(String normalizedEmail) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(emailLookupPepper, "HmacSHA256"));

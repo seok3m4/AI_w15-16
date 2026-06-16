@@ -3,3 +3,7 @@ memento:
     email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
     email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID:local-dev-key}
     email-lookup-pepper-base64: ${EMAIL_LOOKUP_PEPPER_BASE64:bG9jYWwtbG9va3VwLXBlcHBlcg==}
+    jwt-signing-key: ${JWT_SIGNING_KEY:local-dev-only-change-me}
+    refresh-token-pepper: ${REFRESH_TOKEN_PEPPER:local-dev-only-change-me}
+    access-token-ttl-seconds: ${ACCESS_TOKEN_TTL_SECONDS:3600}
+    refresh-token-ttl-seconds: ${REFRESH_TOKEN_TTL_SECONDS:1209600}

@@ -318,7 +318,7 @@ Response `200 OK`:
 Header:
 
 ```http
-Set-Cookie: refreshToken=<jwt-refresh-token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=1209600
+Set-Cookie: refreshToken=<refresh-token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=1209600
 ```
 
 ```json
@@ -347,7 +347,7 @@ Response `200 OK`:
 Header:
 
 ```http
-Set-Cookie: refreshToken=<new-jwt-refresh-token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=1209600
+Set-Cookie: refreshToken=<new-refresh-token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=1209600
 ```
 
 ```json
@@ -363,6 +363,7 @@ Set-Cookie: refreshToken=<new-jwt-refresh-token>; HttpOnly; Secure; SameSite=Lax
 - refresh token이 유효하면 새 access token과 새 refresh token을 발급한다.
 - 기존 refresh token은 재사용할 수 없도록 폐기한다.
 - refresh token이 없거나 만료, 위조, 재사용으로 판단되면 `401 Unauthorized`를 반환한다.
+- refresh token 원문은 서버에 저장하지 않고 HMAC-SHA-256 hash만 저장한다.
 
 ### 4.4 로그아웃
 
