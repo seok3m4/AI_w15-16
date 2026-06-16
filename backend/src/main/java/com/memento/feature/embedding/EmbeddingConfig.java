@@ -16,7 +16,10 @@ class EmbeddingConfig {
     }
 
     @Bean
-    RestTemplate embeddingRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+    RestTemplate embeddingRestTemplate(RestTemplateBuilder builder, EmbeddingProperties properties) {
+        return builder
+                .connectTimeout(properties.getConnectTimeout())
+                .readTimeout(properties.getReadTimeout())
+                .build();
     }
 }
