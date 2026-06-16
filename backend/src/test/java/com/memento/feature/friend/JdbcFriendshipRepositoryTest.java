@@ -137,7 +137,7 @@ class JdbcFriendshipRepositoryTest {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(USER_ID), eq(USER_ID),
-                eq("accepted"), eq(20), eq(0)))
+                eq(USER_ID), eq("accepted"), eq(20), eq(0)))
                 .thenAnswer(invocation -> {
                     @SuppressWarnings("unchecked")
                     RowMapper<FriendshipListRecord> mapper = invocation.getArgument(1);
@@ -152,7 +152,7 @@ class JdbcFriendshipRepositoryTest {
         assertThat(records.get(0).direction()).isEqualTo("outgoing");
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(USER_ID),
-                eq(USER_ID), eq("accepted"), eq(20), eq(0));
+                eq(USER_ID), eq(USER_ID), eq("accepted"), eq(20), eq(0));
         assertThat(sqlCaptor.getValue().toLowerCase())
                 .contains("join users")
                 .contains("requester_id = ? or f.addressee_id = ?")

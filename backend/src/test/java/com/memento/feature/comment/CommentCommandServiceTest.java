@@ -95,7 +95,7 @@ class CommentCommandServiceTest {
         private Instant deletedAt;
 
         @Override
-        public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
+        public Optional<CommentRecord> saveOnAccessiblePost(NewComment comment) {
             savedComment = comment;
             return Optional.of(commentRecord(comment.content(), comment.createdAt()));
         }
@@ -122,17 +122,17 @@ class CommentCommandServiceTest {
         }
 
         @Override
-        public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+        public boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+        public List<CommentRecord> findPageByAccessiblePost(UUID postId, UUID accessorId, int limit, int offset) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long countByOwnedPost(UUID postId, UUID ownerId) {
+        public long countByAccessiblePost(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
     }

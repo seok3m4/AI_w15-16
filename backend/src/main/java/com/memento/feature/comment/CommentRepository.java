@@ -7,15 +7,15 @@ import java.util.UUID;
 
 interface CommentRepository {
 
-    Optional<CommentRecord> saveOnOwnedPost(NewComment comment);
+    Optional<CommentRecord> saveOnAccessiblePost(NewComment comment);
 
     Optional<CommentRecord> updateByAuthor(UUID commentId, UUID authorId, String content, Instant updatedAt);
 
     boolean softDeleteByAuthor(UUID commentId, UUID authorId, Instant deletedAt);
 
-    boolean existsActivePostOwnedBy(UUID postId, UUID ownerId);
+    boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId);
 
-    List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset);
+    List<CommentRecord> findPageByAccessiblePost(UUID postId, UUID accessorId, int limit, int offset);
 
-    long countByOwnedPost(UUID postId, UUID ownerId);
+    long countByAccessiblePost(UUID postId, UUID accessorId);
 }

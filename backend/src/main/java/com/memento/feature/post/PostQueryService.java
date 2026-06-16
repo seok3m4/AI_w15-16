@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 class PostQueryService {
 
     private static final String SUPPORTED_SCOPE = "me";
+    private static final String FRIENDS_SCOPE = "friends";
+    private static final String ALL_ACCESSIBLE_SCOPE = "all_accessible";
     private static final String SUPPORTED_SORT = "createdAt,desc";
     private static final int MAX_PAGE_SIZE = 100;
     private static final int PREVIEW_CODE_POINTS = 120;
@@ -27,16 +29,21 @@ class PostQueryService {
         String keyword = normalizeKeyword(q);
         String normalizedTag = normalizeTag(tag);
         int offset = offset(page, size);
-        List<PostSummaryResponse> items = postRepository.findPageByAuthor(
+        List<PostRecord> records = FRIENDS_SCOPE.equals(scope)
+                ? postRepository.findPageByAcceptedFriends(currentUserId, size, offset)
+                : postRepository.findPageByAuthor(
                         currentUserId,
                         keyword,
                         normalizedTag,
                         size,
-                        offset)
+                        offset);
+        List<PostSummaryResponse> items = records
                 .stream()
                 .map(record -> PostSummaryResponse.from(record, preview(record.content())))
                 .toList();
-        long totalCount = postRepository.countByAuthor(currentUserId, keyword, normalizedTag);
+        long totalCount = FRIENDS_SCOPE.equals(scope)
+                ? postRepository.countByAcceptedFriends(currentUserId)
+                : postRepository.countByAuthor(currentUserId, keyword, normalizedTag);
         int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
 
         return new PostListResponse(items, new PageResponse(page, size, totalCount, totalPages));
@@ -44,14 +51,20 @@ class PostQueryService {
 
     @Transactional(readOnly = true)
     PostDetailResponse getDetail(UUID currentUserId, UUID postId) {
-        return postRepository.findByIdAndAuthor(postId, currentUserId)
+        return postRepository.findByIdAccessibleTo(postId, currentUserId)
                 .map(PostDetailResponse::from)
                 .orElseThrow(() -> new PostNotFoundException(postId));
     }
 
     private void validateListQuery(String scope, String q, String tag, int page, int size, String sort) {
-        if (!SUPPORTED_SCOPE.equals(scope)) {
-            throw new PostInvalidQueryException("Only scope=me is supported in P0-BE-12.");
+        if (ALL_ACCESSIBLE_SCOPE.equals(scope)) {
+            throw new PostInvalidQueryException("scope=all_accessible is supported in P2-BE-6.");
+        }
+        if (!SUPPORTED_SCOPE.equals(scope) && !FRIENDS_SCOPE.equals(scope)) {
+            throw new PostInvalidQueryException("Only scope=me and scope=friends are supported in P2-BE-4.");
+        }
+        if (FRIENDS_SCOPE.equals(scope) && (hasText(q) || hasText(tag))) {
+            throw new PostInvalidQueryException("Search filters with scope=friends are supported in P2-BE-6.");
         }
         if (page < 0) {
             throw new PostInvalidQueryException("page must be greater than or equal to 0.");

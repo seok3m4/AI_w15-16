@@ -20,7 +20,7 @@ class CommentQueryServiceTest {
     private static final Instant NOW = Instant.parse("2026-06-15T03:10:00Z");
 
     @Test
-    void listReturnsOwnedPostCommentsWithPageMetadata() {
+    void listReturnsAccessiblePostCommentsWithPageMetadata() {
         CapturingCommentRepository repository = new CapturingCommentRepository();
         repository.postExists = true;
         repository.records = List.of(commentRecord("첫 댓글"));
@@ -29,7 +29,7 @@ class CommentQueryServiceTest {
 
         CommentListResponse response = service.list(USER_ID, POST_ID, 1, 20, "createdAt,asc");
 
-        assertThat(repository.capturedOwnerId).isEqualTo(USER_ID);
+        assertThat(repository.capturedAccessorId).isEqualTo(USER_ID);
         assertThat(repository.capturedPostId).isEqualTo(POST_ID);
         assertThat(repository.capturedLimit).isEqualTo(20);
         assertThat(repository.capturedOffset).isEqualTo(20);
@@ -38,7 +38,7 @@ class CommentQueryServiceTest {
     }
 
     @Test
-    void listReturnsEmptyPageForOwnedPostWithoutComments() {
+    void listReturnsEmptyPageForAccessiblePostWithoutComments() {
         CapturingCommentRepository repository = new CapturingCommentRepository();
         repository.postExists = true;
         CommentQueryService service = new CommentQueryService(repository);
@@ -79,13 +79,13 @@ class CommentQueryServiceTest {
         private boolean postExists;
         private List<CommentRecord> records = List.of();
         private long totalCount;
-        private UUID capturedOwnerId;
+        private UUID capturedAccessorId;
         private UUID capturedPostId;
         private int capturedLimit;
         private int capturedOffset;
 
         @Override
-        public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
+        public Optional<CommentRecord> saveOnAccessiblePost(NewComment comment) {
             throw new UnsupportedOperationException();
         }
 
@@ -104,29 +104,29 @@ class CommentQueryServiceTest {
         }
 
         @Override
-        public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
-            capturedOwnerId = ownerId;
+        public boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId) {
+            capturedAccessorId = accessorId;
             capturedPostId = postId;
             return postExists;
         }
 
         @Override
-        public List<CommentRecord> findPageByOwnedPost(
+        public List<CommentRecord> findPageByAccessiblePost(
                 UUID postId,
-                UUID ownerId,
+                UUID accessorId,
                 int limit,
                 int offset) {
             capturedPostId = postId;
-            capturedOwnerId = ownerId;
+            capturedAccessorId = accessorId;
             capturedLimit = limit;
             capturedOffset = offset;
             return records;
         }
 
         @Override
-        public long countByOwnedPost(UUID postId, UUID ownerId) {
+        public long countByAccessiblePost(UUID postId, UUID accessorId) {
             capturedPostId = postId;
-            capturedOwnerId = ownerId;
+            capturedAccessorId = accessorId;
             return totalCount;
         }
     }

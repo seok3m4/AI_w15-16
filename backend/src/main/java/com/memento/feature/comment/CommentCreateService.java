@@ -35,7 +35,7 @@ class CommentCreateService {
                 currentUserId,
                 request.content().trim(),
                 now);
-        return commentRepository.saveOnOwnedPost(comment)
+        return commentRepository.saveOnAccessiblePost(comment)
                 .map(CommentResponse::from)
                 .orElseThrow(() -> new CommentPostNotFoundException(postId));
     }

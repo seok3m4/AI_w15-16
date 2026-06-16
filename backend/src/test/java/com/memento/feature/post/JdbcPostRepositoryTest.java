@@ -88,6 +88,58 @@ class JdbcPostRepositoryTest {
     }
 
     @Test
+    void findPageByAcceptedFriendsUsesAcceptedFriendshipScope() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        List<PostRecord> records = repository.findPageByAcceptedFriends(USER_ID, 10, 20);
+
+        assertThat(records).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("join friendships f")
+                .contains("f.status = 'accepted'")
+                .contains("p.author_id <> ?")
+                .contains("'friend'")
+                .contains("as access_scope")
+                .contains("order by p.created_at desc, p.id desc")
+                .contains("limit ?")
+                .contains("offset ?");
+    }
+
+    @Test
+    void findByIdAccessibleToAllowsOwnerOrAcceptedFriendOnly() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.queryForObject(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<PostRecord> mapper = invocation.getArgument(1);
+                    return mapper.mapRow(postResultSet(), 0);
+                });
+
+        repository.findByIdAccessibleTo(POST_ID, USER_ID);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("case when p.author_id = ? then 'me' else 'friend' end")
+                .contains("as access_scope")
+                .contains("where p.id = ?")
+                .contains("and p.deleted_at is null")
+                .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'");
+    }
+
+    @Test
     void findPageByAuthorSearchesTitleContentActiveCommentsAndTagsInsideAuthorScope() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);

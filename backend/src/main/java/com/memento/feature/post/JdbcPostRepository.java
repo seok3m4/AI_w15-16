@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 class JdbcPostRepository implements PostRepository {
 
-    private static final String POST_SELECT_COLUMNS = """
+    private static final String POST_SELECT_COLUMNS_PREFIX = """
             SELECT
                 p.id,
                 p.author_id,
@@ -30,7 +30,10 @@ class JdbcPostRepository implements PostRepository {
                     WHERE pl_me.post_id = p.id
                       AND pl_me.user_id = ?
                 ) AS liked_by_me,
-                'me' AS access_scope,
+            """;
+
+    private static final String POST_SELECT_COLUMNS_SUFFIX = """
+                 AS access_scope,
                 p.memory_status,
                 p.created_at,
                 p.updated_at
@@ -53,6 +56,18 @@ class JdbcPostRepository implements PostRepository {
                 FROM post_likes pl
                 WHERE pl.post_id = p.id
             ) like_data ON true
+            """;
+
+    private static final String ACCEPTED_FRIENDSHIP_CONDITION = """
+            EXISTS (
+                SELECT 1
+                FROM friendships f
+                WHERE f.status = 'accepted'
+                  AND (
+                      (f.requester_id = ? AND f.addressee_id = p.author_id)
+                      OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                  )
+            )
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -144,7 +159,7 @@ class JdbcPostRepository implements PostRepository {
     private Optional<PostRecord> findInsertedPost(UUID postId) {
         try {
             return Optional.ofNullable(jdbcTemplate.queryForObject(
-                    POST_SELECT_COLUMNS
+                    postSelectColumns("'me'")
                             + """
                             WHERE p.id = ?
                               AND p.deleted_at IS NULL
@@ -166,7 +181,7 @@ class JdbcPostRepository implements PostRepository {
             int offset) {
         String keywordPattern = keywordPattern(keyword);
         return jdbcTemplate.query(
-                POST_SELECT_COLUMNS
+                postSelectColumns("'me'")
                         + """
                         WHERE p.author_id = ?
                           AND p.deleted_at IS NULL
@@ -277,10 +292,56 @@ class JdbcPostRepository implements PostRepository {
     }
 
     @Override
+    public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+        return jdbcTemplate.query(
+                postSelectColumns("'friend'")
+                        + """
+                        JOIN friendships f ON f.status = 'accepted'
+                          AND (
+                              (f.requester_id = ? AND f.addressee_id = p.author_id)
+                              OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                          )
+                        WHERE p.author_id <> ?
+                          AND p.deleted_at IS NULL
+                        ORDER BY p.created_at DESC, p.id DESC
+                        LIMIT ?
+                        OFFSET ?
+                        """,
+                this::mapPost,
+                accessorId,
+                accessorId,
+                accessorId,
+                accessorId,
+                limit,
+                offset);
+    }
+
+    @Override
+    public long countByAcceptedFriends(UUID accessorId) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*)
+                FROM posts p
+                JOIN friendships f ON f.status = 'accepted'
+                  AND (
+                      (f.requester_id = ? AND f.addressee_id = p.author_id)
+                      OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                  )
+                WHERE p.author_id <> ?
+                  AND p.deleted_at IS NULL
+                """,
+                Long.class,
+                accessorId,
+                accessorId,
+                accessorId);
+        return count == null ? 0 : count;
+    }
+
+    @Override
     public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
         try {
             return Optional.ofNullable(jdbcTemplate.queryForObject(
-                    POST_SELECT_COLUMNS
+                    postSelectColumns("'me'")
                             + """
                             WHERE p.id = ?
                               AND p.author_id = ?
@@ -290,6 +351,32 @@ class JdbcPostRepository implements PostRepository {
                     authorId,
                     postId,
                     authorId));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<PostRecord> findByIdAccessibleTo(UUID postId, UUID accessorId) {
+        try {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(
+                    postSelectColumns("CASE WHEN p.author_id = ? THEN 'me' ELSE 'friend' END")
+                            + """
+                            WHERE p.id = ?
+                              AND p.deleted_at IS NULL
+                              AND (
+                                  p.author_id = ?
+                                  OR
+                                  """ + ACCEPTED_FRIENDSHIP_CONDITION + """
+                              )
+                            """,
+                    this::mapPost,
+                    accessorId,
+                    accessorId,
+                    postId,
+                    accessorId,
+                    accessorId,
+                    accessorId));
         } catch (EmptyResultDataAccessException exception) {
             return Optional.empty();
         }
@@ -388,6 +475,10 @@ class JdbcPostRepository implements PostRepository {
                 rs.getString("memory_status"),
                 rs.getTimestamp("created_at").toInstant(),
                 rs.getTimestamp("updated_at").toInstant());
+    }
+
+    private String postSelectColumns(String accessScopeExpression) {
+        return POST_SELECT_COLUMNS_PREFIX + accessScopeExpression + POST_SELECT_COLUMNS_SUFFIX;
     }
 
     private List<String> toStringList(Array array) {

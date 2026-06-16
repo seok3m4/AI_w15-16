@@ -29,7 +29,7 @@ class JdbcCommentRepositoryTest {
     private static final Instant NOW = Instant.parse("2026-06-15T03:10:00Z");
 
     @Test
-    void saveOnOwnedPostInsertsCommentOnlyForOwnedPostAndReturnsMappedRecord() throws Exception {
+    void saveOnAccessiblePostInsertsCommentOnlyForOwnerOrAcceptedFriendAndReturnsMappedRecord() throws Exception {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
         NewComment comment = new NewComment(
@@ -46,7 +46,7 @@ class JdbcCommentRepositoryTest {
                     return List.of(mapper.mapRow(commentResultSet(), 0));
                 });
 
-        Optional<CommentRecord> saved = repository.saveOnOwnedPost(comment);
+        Optional<CommentRecord> saved = repository.saveOnAccessiblePost(comment);
 
         assertThat(saved).contains(new CommentRecord(
                 COMMENT_ID,
@@ -56,29 +56,36 @@ class JdbcCommentRepositoryTest {
                 "좋은 기록이네요.",
                 NOW,
                 NOW));
-        verify(jdbcTemplate).query(anyString(), any(RowMapper.class), any(Object[].class));
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'");
     }
 
     @Test
-    void existsActivePostOwnedByChecksActivePostAndCurrentOwner() {
+    void existsActivePostAccessibleToChecksOwnerOrAcceptedFriend() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
         when(jdbcTemplate.queryForObject(anyString(), any(Class.class), any(Object[].class)))
                 .thenReturn(true);
 
-        boolean exists = repository.existsActivePostOwnedBy(POST_ID, USER_ID);
+        boolean exists = repository.existsActivePostAccessibleTo(POST_ID, USER_ID);
 
         assertThat(exists).isTrue();
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), any(Class.class), any(Object[].class));
         assertThat(sqlCaptor.getValue().toLowerCase())
                 .contains("from posts")
-                .contains("author_id = ?")
-                .contains("deleted_at is null");
+                .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'")
+                .contains("p.deleted_at is null");
     }
 
     @Test
-    void findPageByOwnedPostReturnsActiveCommentsOrderedByCreatedAt() throws Exception {
+    void findPageByAccessiblePostReturnsActiveCommentsOrderedByCreatedAt() throws Exception {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
@@ -88,7 +95,7 @@ class JdbcCommentRepositoryTest {
                     return List.of(mapper.mapRow(commentResultSet(), 0));
                 });
 
-        List<CommentRecord> comments = repository.findPageByOwnedPost(POST_ID, USER_ID, 20, 0);
+        List<CommentRecord> comments = repository.findPageByAccessiblePost(POST_ID, USER_ID, 20, 0);
 
         assertThat(comments).containsExactly(new CommentRecord(
                 COMMENT_ID,
@@ -103,6 +110,8 @@ class JdbcCommentRepositoryTest {
         assertThat(sqlCaptor.getValue().toLowerCase())
                 .contains("join posts p")
                 .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'")
                 .contains("c.deleted_at is null")
                 .contains("order by c.created_at asc")
                 .contains("limit ?")
@@ -110,13 +119,13 @@ class JdbcCommentRepositoryTest {
     }
 
     @Test
-    void countByOwnedPostCountsActiveCommentsOnlyForCurrentOwnersActivePost() {
+    void countByAccessiblePostCountsActiveCommentsOnlyForOwnerOrAcceptedFriend() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
         when(jdbcTemplate.queryForObject(anyString(), any(Class.class), any(Object[].class)))
                 .thenReturn(2L);
 
-        long count = repository.countByOwnedPost(POST_ID, USER_ID);
+        long count = repository.countByAccessiblePost(POST_ID, USER_ID);
 
         assertThat(count).isEqualTo(2L);
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
@@ -125,6 +134,8 @@ class JdbcCommentRepositoryTest {
                 .contains("count(*)")
                 .contains("join posts p")
                 .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'")
                 .contains("c.deleted_at is null")
                 .contains("p.deleted_at is null");
     }

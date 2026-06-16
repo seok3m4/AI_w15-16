@@ -48,7 +48,7 @@ class CommentCreateServiceTest {
     }
 
     @Test
-    void createThrowsWhenPostIsMissingOrNotOwnedByCurrentUser() {
+    void createThrowsWhenPostIsMissingOrNotAccessibleToCurrentUser() {
         CommentCreateService service = new CommentCreateService(
                 new MissingPostCommentRepository(),
                 () -> COMMENT_ID,
@@ -66,7 +66,7 @@ class CommentCreateServiceTest {
         private NewComment savedComment;
 
         @Override
-        public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
+        public Optional<CommentRecord> saveOnAccessiblePost(NewComment comment) {
             savedComment = comment;
             return Optional.of(new CommentRecord(
                     comment.id(),
@@ -93,17 +93,17 @@ class CommentCreateServiceTest {
         }
 
         @Override
-        public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+        public boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+        public List<CommentRecord> findPageByAccessiblePost(UUID postId, UUID accessorId, int limit, int offset) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long countByOwnedPost(UUID postId, UUID ownerId) {
+        public long countByAccessiblePost(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
     }
@@ -111,7 +111,7 @@ class CommentCreateServiceTest {
     private static class MissingPostCommentRepository implements CommentRepository {
 
         @Override
-        public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
+        public Optional<CommentRecord> saveOnAccessiblePost(NewComment comment) {
             return Optional.empty();
         }
 
@@ -130,17 +130,17 @@ class CommentCreateServiceTest {
         }
 
         @Override
-        public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+        public boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+        public List<CommentRecord> findPageByAccessiblePost(UUID postId, UUID accessorId, int limit, int offset) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long countByOwnedPost(UUID postId, UUID ownerId) {
+        public long countByAccessiblePost(UUID postId, UUID accessorId) {
             throw new UnsupportedOperationException();
         }
     }

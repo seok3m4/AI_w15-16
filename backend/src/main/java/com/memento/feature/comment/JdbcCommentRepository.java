@@ -17,7 +17,7 @@ class JdbcCommentRepository implements CommentRepository {
     }
 
     @Override
-    public Optional<CommentRecord> saveOnOwnedPost(NewComment comment) {
+    public Optional<CommentRecord> saveOnAccessiblePost(NewComment comment) {
         return jdbcTemplate.query(
                         """
                         WITH inserted AS (
@@ -32,8 +32,19 @@ class JdbcCommentRepository implements CommentRepository {
                             SELECT ?, ?, ?, ?, ?, ?
                             FROM posts p
                             WHERE p.id = ?
-                              AND p.author_id = ?
                               AND p.deleted_at IS NULL
+                              AND (
+                                  p.author_id = ?
+                                  OR EXISTS (
+                                      SELECT 1
+                                      FROM friendships f
+                                      WHERE f.status = 'accepted'
+                                        AND (
+                                            (f.requester_id = ? AND f.addressee_id = p.author_id)
+                                            OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                                        )
+                                  )
+                              )
                             RETURNING id, post_id, author_id, content, created_at, updated_at
                         )
                         SELECT
@@ -55,6 +66,8 @@ class JdbcCommentRepository implements CommentRepository {
                         Timestamp.from(comment.createdAt()),
                         Timestamp.from(comment.createdAt()),
                         comment.postId(),
+                        comment.authorId(),
+                        comment.authorId(),
                         comment.authorId())
                 .stream()
                 .findFirst();
@@ -122,24 +135,37 @@ class JdbcCommentRepository implements CommentRepository {
     }
 
     @Override
-    public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+    public boolean existsActivePostAccessibleTo(UUID postId, UUID accessorId) {
         return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
                 """
                 SELECT EXISTS (
                     SELECT 1
-                    FROM posts
-                    WHERE id = ?
-                      AND author_id = ?
-                      AND deleted_at IS NULL
+                    FROM posts p
+                    WHERE p.id = ?
+                      AND p.deleted_at IS NULL
+                      AND (
+                          p.author_id = ?
+                          OR EXISTS (
+                              SELECT 1
+                              FROM friendships f
+                              WHERE f.status = 'accepted'
+                                AND (
+                                    (f.requester_id = ? AND f.addressee_id = p.author_id)
+                                    OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                                )
+                          )
+                      )
                 )
                 """,
                 Boolean.class,
                 postId,
-                ownerId));
+                accessorId,
+                accessorId,
+                accessorId));
     }
 
     @Override
-    public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+    public List<CommentRecord> findPageByAccessiblePost(UUID postId, UUID accessorId, int limit, int offset) {
         return jdbcTemplate.query(
                 """
                 SELECT
@@ -154,35 +180,61 @@ class JdbcCommentRepository implements CommentRepository {
                 JOIN posts p ON p.id = c.post_id
                 JOIN users u ON u.id = c.author_id
                 WHERE c.post_id = ?
-                  AND p.author_id = ?
                   AND c.deleted_at IS NULL
                   AND p.deleted_at IS NULL
+                  AND (
+                      p.author_id = ?
+                      OR EXISTS (
+                          SELECT 1
+                          FROM friendships f
+                          WHERE f.status = 'accepted'
+                            AND (
+                                (f.requester_id = ? AND f.addressee_id = p.author_id)
+                                OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                            )
+                      )
+                  )
                 ORDER BY c.created_at ASC
                 LIMIT ?
                 OFFSET ?
                 """,
                 this::mapComment,
                 postId,
-                ownerId,
+                accessorId,
+                accessorId,
+                accessorId,
                 limit,
                 offset);
     }
 
     @Override
-    public long countByOwnedPost(UUID postId, UUID ownerId) {
+    public long countByAccessiblePost(UUID postId, UUID accessorId) {
         Long count = jdbcTemplate.queryForObject(
                 """
                 SELECT count(*)
                 FROM comments c
                 JOIN posts p ON p.id = c.post_id
                 WHERE c.post_id = ?
-                  AND p.author_id = ?
                   AND c.deleted_at IS NULL
                   AND p.deleted_at IS NULL
+                  AND (
+                      p.author_id = ?
+                      OR EXISTS (
+                          SELECT 1
+                          FROM friendships f
+                          WHERE f.status = 'accepted'
+                            AND (
+                                (f.requester_id = ? AND f.addressee_id = p.author_id)
+                                OR (f.addressee_id = ? AND f.requester_id = p.author_id)
+                            )
+                      )
+                  )
                 """,
                 Long.class,
                 postId,
-                ownerId);
+                accessorId,
+                accessorId,
+                accessorId);
         return count == null ? 0 : count;
     }
 

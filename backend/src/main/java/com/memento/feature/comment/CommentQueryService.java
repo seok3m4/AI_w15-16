@@ -21,16 +21,16 @@ class CommentQueryService {
     CommentListResponse list(UUID currentUserId, UUID postId, int page, int size, String sort) {
         validateQuery(page, size, sort);
 
-        if (!commentRepository.existsActivePostOwnedBy(postId, currentUserId)) {
+        if (!commentRepository.existsActivePostAccessibleTo(postId, currentUserId)) {
             throw new CommentPostNotFoundException(postId);
         }
 
         int offset = offset(page, size);
-        List<CommentResponse> items = commentRepository.findPageByOwnedPost(postId, currentUserId, size, offset)
+        List<CommentResponse> items = commentRepository.findPageByAccessiblePost(postId, currentUserId, size, offset)
                 .stream()
                 .map(CommentResponse::from)
                 .toList();
-        long totalCount = commentRepository.countByOwnedPost(postId, currentUserId);
+        long totalCount = commentRepository.countByAccessiblePost(postId, currentUserId);
         int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
 
         return new CommentListResponse(items, new CommentPageResponse(page, size, totalCount, totalPages));

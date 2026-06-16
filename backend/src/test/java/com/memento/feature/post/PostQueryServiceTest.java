@@ -43,8 +43,22 @@ class PostQueryServiceTest {
         assertThatThrownBy(() -> service.getDetail(USER_ID, POST_ID))
                 .isInstanceOf(PostNotFoundException.class);
 
-        assertThat(repository.capturedDetailAuthorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedAccessorId).isEqualTo(USER_ID);
         assertThat(repository.capturedDetailPostId).isEqualTo(POST_ID);
+    }
+
+    @Test
+    void getDetailReturnsAcceptedFriendPostWithFriendAccessScope() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.detailRecord = Optional.of(friendPostRecord());
+        PostQueryService service = new PostQueryService(repository);
+
+        PostDetailResponse response = service.getDetail(USER_ID, POST_ID);
+
+        assertThat(repository.capturedAccessorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedDetailPostId).isEqualTo(POST_ID);
+        assertThat(response.author().nickname()).isEqualTo("friend");
+        assertThat(response.accessScope()).isEqualTo("friend");
     }
 
     @Test
@@ -82,10 +96,37 @@ class PostQueryServiceTest {
     }
 
     @Test
-    void listRejectsUnsupportedScopeUntilFriendSearchTasksExtendIt() {
+    void listReturnsAcceptedFriendPostsWithoutSearchFilters() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.pageRecords = List.of(friendPostRecord());
+        repository.totalCount = 1;
+        PostQueryService service = new PostQueryService(repository);
+
+        PostListResponse response = service.list(USER_ID, "friends", null, null, 0, 20, "createdAt,desc");
+
+        assertThat(repository.capturedAccessorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedLimit).isEqualTo(20);
+        assertThat(repository.capturedOffset).isZero();
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().accessScope()).isEqualTo("friend");
+        assertThat(response.page()).isEqualTo(new PageResponse(0, 20, 1, 1));
+    }
+
+    @Test
+    void listRejectsFriendScopeSearchFiltersUntilP2Be6ExtendsSearch() {
         PostQueryService service = new PostQueryService(new CapturingPostRepository());
 
-        assertThatThrownBy(() -> service.list(USER_ID, "friends", null, null, 0, 20, "createdAt,desc"))
+        assertThatThrownBy(() -> service.list(USER_ID, "friends", "memo", null, 0, 20, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+        assertThatThrownBy(() -> service.list(USER_ID, "friends", null, "project", 0, 20, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+    }
+
+    @Test
+    void listRejectsAllAccessibleScopeUntilP2Be6ExtendsSearch() {
+        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+
+        assertThatThrownBy(() -> service.list(USER_ID, "all_accessible", null, null, 0, 20, "createdAt,desc"))
                 .isInstanceOf(PostInvalidQueryException.class);
     }
 
@@ -126,6 +167,23 @@ class PostQueryServiceTest {
                 NOW);
     }
 
+    private static PostRecord friendPostRecord() {
+        return new PostRecord(
+                POST_ID,
+                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                "friend",
+                "친구의 회고",
+                "친구가 공유한 기록",
+                List.of("친구"),
+                0,
+                0,
+                false,
+                "friend",
+                "pending",
+                NOW,
+                NOW);
+    }
+
     private static class CapturingPostRepository implements PostRepository {
 
         private List<PostRecord> pageRecords = List.of();
@@ -136,7 +194,8 @@ class PostQueryServiceTest {
         private int capturedLimit;
         private int capturedOffset;
         private UUID capturedDetailPostId;
-        private UUID capturedDetailAuthorId;
+        private UUID capturedAccessorId;
+        private Optional<PostRecord> detailRecord = Optional.empty();
 
         @Override
         public PostRecord save(NewPost post, List<String> tagNames) {
@@ -164,10 +223,30 @@ class PostQueryServiceTest {
         }
 
         @Override
+        public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+            capturedAccessorId = accessorId;
+            capturedLimit = limit;
+            capturedOffset = offset;
+            return pageRecords;
+        }
+
+        @Override
+        public long countByAcceptedFriends(UUID accessorId) {
+            return totalCount;
+        }
+
+        @Override
         public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
             capturedDetailPostId = postId;
-            capturedDetailAuthorId = authorId;
+            capturedAccessorId = authorId;
             return Optional.empty();
+        }
+
+        @Override
+        public Optional<PostRecord> findByIdAccessibleTo(UUID postId, UUID accessorId) {
+            capturedDetailPostId = postId;
+            capturedAccessorId = accessorId;
+            return detailRecord;
         }
 
         @Override

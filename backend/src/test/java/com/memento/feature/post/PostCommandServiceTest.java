@@ -177,7 +177,22 @@ class PostCommandServiceTest {
         }
 
         @Override
+        public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+            return List.of();
+        }
+
+        @Override
+        public long countByAcceptedFriends(UUID accessorId) {
+            return 0;
+        }
+
+        @Override
         public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<PostRecord> findByIdAccessibleTo(UUID postId, UUID accessorId) {
             return Optional.empty();
         }
 
