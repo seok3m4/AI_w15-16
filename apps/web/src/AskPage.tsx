@@ -2,126 +2,130 @@
 //   - search_similar_posts(RAG): 게시판 코스 후기 검색
 //   - place_search(MCP): 실제 장소 위치·주소 검색
 // 답변과 함께, 답변에 실제로 언급된 장소를 카카오맵 카드로 보여준다.
-import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from "react";
+import ReactMarkdown from "react-markdown";
+import { Link } from "react-router-dom";
 import {
   askAgent,
   getPosts,
   type AgentAnswer,
   type AgentPlace,
   type TravelPost,
-} from './api'
+} from "./api";
 
 // 처음 보여줄 예시 질문들. 클릭하면 바로 질문이 채워진다.
 const EXAMPLES = [
-  '부산에서 바다랑 맛집 같이 즐길 코스 추천해줘',
-  '혼자 조용히 힐링하기 좋은 코스 있어?',
-  '광안리 해수욕장은 어디에 있어?',
-]
+  "부산에서 바다랑 맛집 같이 즐길 코스 추천해줘",
+  "혼자 조용히 힐링하기 좋은 코스 있어?",
+  "광안리 해수욕장은 어디에 있어?",
+];
 
 type AskState =
-  | { kind: 'idle' }
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; result: AgentAnswer }
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; result: AgentAnswer };
 
 // 장소의 카카오맵 링크를 만든다.
 // MCP가 준 장소 상세 페이지 URL(place.map.kakao.com/...)이 있으면 우선 쓰고,
 // 없으면 이름·좌표로 지도 핀 링크를 만든다.
 function kakaoPlaceUrl(place: AgentPlace) {
   if (place.url) {
-    return place.url.replace(/^http:/, 'https:')
+    return place.url.replace(/^http:/, "https:");
   }
   return `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${
     place.lat
-  },${place.lng}`
+  },${place.lng}`;
 }
 
 // 비교용: 공백/대소문자를 지운 문자열.
 function squash(text: string) {
-  return text.replace(/\s+/g, '').toLowerCase()
+  return text.replace(/\s+/g, "").toLowerCase();
 }
 
 // 답변 본문에 실제로 언급된 장소만 추린다.
 // (place_search가 함께 가져오는 "○○ 주차장" 같은 노이즈를 자동으로 걸러낸다)
-function pickMentionedPlaces(answer: string, places: AgentPlace[]): AgentPlace[] {
-  const answerKey = squash(answer)
-  const seen = new Set<string>()
+function pickMentionedPlaces(
+  answer: string,
+  places: AgentPlace[],
+): AgentPlace[] {
+  const answerKey = squash(answer);
+  const seen = new Set<string>();
   return places.filter((place) => {
-    if (seen.has(place.name)) return false
-    const mentioned = answerKey.includes(squash(place.name))
-    if (mentioned) seen.add(place.name)
-    return mentioned
-  })
+    if (seen.has(place.name)) return false;
+    const mentioned = answerKey.includes(squash(place.name));
+    if (mentioned) seen.add(place.name);
+    return mentioned;
+  });
 }
 
 export function AskPage() {
-  const [question, setQuestion] = useState('')
-  const [state, setState] = useState<AskState>({ kind: 'idle' })
+  const [question, setQuestion] = useState("");
+  const [state, setState] = useState<AskState>({ kind: "idle" });
   // 로딩 중 "기다리는 동안 이런 코스는 어때요?"로 돌려 보여줄 게시판 코스들
-  const [adPosts, setAdPosts] = useState<TravelPost[]>([])
-  const [adIndex, setAdIndex] = useState(0)
+  const [adPosts, setAdPosts] = useState<TravelPost[]>([]);
+  const [adIndex, setAdIndex] = useState(0);
 
   // 페이지 진입 시 추천용 코스를 미리 불러와 무작위로 섞어 둔다.
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     getPosts(1, 20)
       .then((res) => {
-        if (!mounted) return
-        const shuffled = [...res.items].sort(() => Math.random() - 0.5)
-        setAdPosts(shuffled)
+        if (!mounted) return;
+        const shuffled = [...res.items].sort(() => Math.random() - 0.5);
+        setAdPosts(shuffled);
       })
       .catch(() => {
         // 광고는 부가 요소라 실패해도 무시한다.
-      })
+      });
     return () => {
-      mounted = false
-    }
-  }, [])
+      mounted = false;
+    };
+  }, []);
 
   // 로딩 중일 때만 일정 간격으로 보여줄 코스를 바꾼다.
   useEffect(() => {
-    if (state.kind !== 'loading' || adPosts.length === 0) return
+    if (state.kind !== "loading" || adPosts.length === 0) return;
     const id = setInterval(() => {
-      setAdIndex((i) => (i + 1) % adPosts.length)
-    }, 3500)
-    return () => clearInterval(id)
-  }, [state.kind, adPosts.length])
+      setAdIndex((i) => (i + 1) % adPosts.length);
+    }, 3500);
+    return () => clearInterval(id);
+  }, [state.kind, adPosts.length]);
 
   async function submit(q: string) {
-    const trimmed = q.trim()
-    if (trimmed.length < 2) return
+    const trimmed = q.trim();
+    if (trimmed.length < 2) return;
 
-    setState({ kind: 'loading' })
+    setState({ kind: "loading" });
     try {
-      const result = await askAgent(trimmed)
-      setState({ kind: 'ready', result })
+      const result = await askAgent(trimmed);
+      setState({ kind: "ready", result });
     } catch (error) {
       setState({
-        kind: 'error',
+        kind: "error",
         message:
-          error instanceof Error ? error.message : 'AI 답변을 받지 못했습니다.',
-      })
+          error instanceof Error ? error.message : "AI 답변을 받지 못했습니다.",
+      });
     }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    void submit(question)
+    event.preventDefault();
+    void submit(question);
   }
 
   function handleExample(example: string) {
-    setQuestion(example)
-    void submit(example)
+    setQuestion(example);
+    void submit(example);
   }
 
-  const result = state.kind === 'ready' ? state.result : null
+  const result = state.kind === "ready" ? state.result : null;
   // 답변에 언급된 장소만, 없으면 fallback으로 MCP가 찾은 장소 전체를 보여준다.
   const mentionedPlaces = result
     ? pickMentionedPlaces(result.answer, result.places)
-    : []
+    : [];
   const placesToShow =
-    mentionedPlaces.length > 0 ? mentionedPlaces : result?.places ?? []
+    mentionedPlaces.length > 0 ? mentionedPlaces : (result?.places ?? []);
 
   return (
     <main className="app-page">
@@ -147,14 +151,14 @@ export function AskPage() {
           <div className="ask-form-actions">
             <button
               type="submit"
-              disabled={state.kind === 'loading' || question.trim().length < 2}
+              disabled={state.kind === "loading" || question.trim().length < 2}
             >
-              {state.kind === 'loading' ? '생각하는 중...' : 'AI에게 물어보기'}
+              {state.kind === "loading" ? "생각하는 중..." : "AI에게 물어보기"}
             </button>
           </div>
         </form>
 
-        {state.kind === 'idle' && (
+        {state.kind === "idle" && (
           <div className="ask-examples">
             <p className="ask-examples-label">이런 걸 물어볼 수 있어요</p>
             <div className="ask-examples-list">
@@ -172,7 +176,7 @@ export function AskPage() {
           </div>
         )}
 
-        {state.kind === 'loading' && (
+        {state.kind === "loading" && (
           <div className="ask-loading">
             <div className="ask-loading-head">
               <div className="ask-loading-dots" aria-hidden>
@@ -187,7 +191,9 @@ export function AskPage() {
 
             {adPosts.length > 0 && (
               <div className="ask-ad">
-                <p className="ask-ad-label">기다리는 동안, 이런 코스는 어때요?</p>
+                <p className="ask-ad-label">
+                  기다리는 동안, 이런 코스는 어때요?
+                </p>
                 <Link
                   key={adPosts[adIndex].id}
                   to={`/posts/${adPosts[adIndex].id}`}
@@ -195,7 +201,7 @@ export function AskPage() {
                 >
                   {adPosts[adIndex].thumbnailUrl ? (
                     <div className="ask-ad-thumb">
-                      <img src={adPosts[adIndex].thumbnailUrl ?? ''} alt="" />
+                      <img src={adPosts[adIndex].thumbnailUrl ?? ""} alt="" />
                     </div>
                   ) : (
                     <div className="ask-ad-thumb placeholder">
@@ -209,7 +215,7 @@ export function AskPage() {
                       작성자 {adPosts[adIndex].author.name}
                       {adPosts[adIndex].duration
                         ? ` · ${adPosts[adIndex].duration}일 코스`
-                        : ''}
+                        : ""}
                     </span>
                   </div>
                   <span className="ask-ad-arrow" aria-hidden>
@@ -221,7 +227,7 @@ export function AskPage() {
           </div>
         )}
 
-        {state.kind === 'error' && (
+        {state.kind === "error" && (
           <p className="error-message">{state.message}</p>
         )}
 
@@ -229,7 +235,9 @@ export function AskPage() {
           <div className="ask-result">
             <div className="ask-answer">
               <span className="ask-answer-badge">AI 답변</span>
-              <p>{result.answer}</p>
+              <div className="ask-answer-markdown">
+                <ReactMarkdown>{result.answer}</ReactMarkdown>
+              </div>
 
               {/* 답변에 나온 장소를 카카오맵 칩으로 — 클릭하면 카카오맵 장소 페이지로 */}
               {placesToShow.length > 0 && (
@@ -262,7 +270,10 @@ export function AskPage() {
                 <ol className="ask-sources-list">
                   {result.sources.map((source, index) => (
                     <li key={source.id}>
-                      <Link to={`/posts/${source.id}`} className="ask-source-card">
+                      <Link
+                        to={`/posts/${source.id}`}
+                        className="ask-source-card"
+                      >
                         <span className="ask-source-num">{index + 1}</span>
                         <div className="ask-source-info">
                           <strong>{source.title}</strong>
@@ -280,5 +291,5 @@ export function AskPage() {
         )}
       </section>
     </main>
-  )
+  );
 }

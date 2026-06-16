@@ -2070,11 +2070,60 @@
   border-radius: 980px;
   margin-bottom: 12px;
 }
-.ask-answer p {
-  margin: 0;
+.ask-answer-markdown {
   font-size: 16px;
-  line-height: 1.7;
-  white-space: pre-wrap;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+.ask-answer-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.ask-answer-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.ask-answer-markdown p {
+  margin: 10px 0;
+}
+
+.ask-answer-markdown strong {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.ask-answer-markdown ul,
+.ask-answer-markdown ol {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.ask-answer-markdown li {
+  margin: 6px 0;
+  padding-left: 2px;
+}
+
+.ask-answer-markdown li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.ask-answer-markdown h1,
+.ask-answer-markdown h2,
+.ask-answer-markdown h3 {
+  margin: 18px 0 8px;
+  color: var(--text-strong);
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.ask-answer-markdown hr {
+  height: 1px;
+  margin: 18px 0;
+  border: 0;
+  background: var(--border-soft);
 }
 .ask-sources-list {
   list-style: none;
