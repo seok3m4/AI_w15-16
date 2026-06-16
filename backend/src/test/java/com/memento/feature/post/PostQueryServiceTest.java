@@ -113,21 +113,52 @@ class PostQueryServiceTest {
     }
 
     @Test
-    void listRejectsFriendScopeSearchFiltersUntilP2Be6ExtendsSearch() {
-        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+    void listPassesSearchFiltersToAcceptedFriendScope() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.pageRecords = List.of(friendPostRecord());
+        repository.totalCount = 1;
+        PostQueryService service = new PostQueryService(repository);
 
-        assertThatThrownBy(() -> service.list(USER_ID, "friends", "memo", null, 0, 20, "createdAt,desc"))
-                .isInstanceOf(PostInvalidQueryException.class);
-        assertThatThrownBy(() -> service.list(USER_ID, "friends", null, "project", 0, 20, "createdAt,desc"))
-                .isInstanceOf(PostInvalidQueryException.class);
+        PostListResponse response = service.list(
+                USER_ID,
+                "friends",
+                "  Memo  ",
+                "  Project  ",
+                0,
+                20,
+                "createdAt,desc");
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().accessScope()).isEqualTo("friend");
+        assertThat(repository.capturedAccessorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedKeyword).isEqualTo("Memo");
+        assertThat(repository.capturedNormalizedTag).isEqualTo("project");
     }
 
     @Test
-    void listRejectsAllAccessibleScopeUntilP2Be6ExtendsSearch() {
-        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+    void listReturnsAllAccessiblePostsWithSearchFilters() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.pageRecords = List.of(postRecord("내 회고", "내 기록"), friendPostRecord());
+        repository.totalCount = 2;
+        PostQueryService service = new PostQueryService(repository);
 
-        assertThatThrownBy(() -> service.list(USER_ID, "all_accessible", null, null, 0, 20, "createdAt,desc"))
-                .isInstanceOf(PostInvalidQueryException.class);
+        PostListResponse response = service.list(
+                USER_ID,
+                "all_accessible",
+                "  Memo  ",
+                "  Project  ",
+                1,
+                10,
+                "createdAt,desc");
+
+        assertThat(response.items()).extracting(PostSummaryResponse::accessScope)
+                .containsExactly("me", "friend");
+        assertThat(response.page()).isEqualTo(new PageResponse(1, 10, 2, 1));
+        assertThat(repository.capturedAccessibleAccessorId).isEqualTo(USER_ID);
+        assertThat(repository.capturedKeyword).isEqualTo("Memo");
+        assertThat(repository.capturedNormalizedTag).isEqualTo("project");
+        assertThat(repository.capturedLimit).isEqualTo(10);
+        assertThat(repository.capturedOffset).isEqualTo(10);
     }
 
     @Test
@@ -195,6 +226,7 @@ class PostQueryServiceTest {
         private int capturedOffset;
         private UUID capturedDetailPostId;
         private UUID capturedAccessorId;
+        private UUID capturedAccessibleAccessorId;
         private Optional<PostRecord> detailRecord = Optional.empty();
 
         @Override
@@ -223,15 +255,42 @@ class PostQueryServiceTest {
         }
 
         @Override
-        public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+        public List<PostRecord> findPageByAcceptedFriends(
+                UUID accessorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
             capturedAccessorId = accessorId;
+            capturedKeyword = keyword;
+            capturedNormalizedTag = normalizedTag;
             capturedLimit = limit;
             capturedOffset = offset;
             return pageRecords;
         }
 
         @Override
-        public long countByAcceptedFriends(UUID accessorId) {
+        public long countByAcceptedFriends(UUID accessorId, String keyword, String normalizedTag) {
+            return totalCount;
+        }
+
+        @Override
+        public List<PostRecord> findPageByAccessible(
+                UUID accessorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
+            capturedAccessibleAccessorId = accessorId;
+            capturedKeyword = keyword;
+            capturedNormalizedTag = normalizedTag;
+            capturedLimit = limit;
+            capturedOffset = offset;
+            return pageRecords;
+        }
+
+        @Override
+        public long countByAccessible(UUID accessorId, String keyword, String normalizedTag) {
             return totalCount;
         }
 

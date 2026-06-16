@@ -70,6 +70,40 @@ class JdbcPostRepository implements PostRepository {
             )
             """;
 
+    private static final String ACCESSIBLE_SEARCH_FILTER = """
+              AND (
+                  ?::varchar IS NULL
+                  OR p.title ILIKE ?::varchar
+                  OR p.content ILIKE ?::varchar
+                  OR EXISTS (
+                      SELECT 1
+                      FROM comments c_search
+                      WHERE c_search.post_id = p.id
+                        AND c_search.deleted_at IS NULL
+                        AND c_search.content ILIKE ?::varchar
+                  )
+                  OR EXISTS (
+                      SELECT 1
+                      FROM post_tags pt_search
+                      JOIN tags t_search ON t_search.id = pt_search.tag_id
+                      WHERE pt_search.post_id = p.id
+                        AND t_search.owner_id = p.author_id
+                        AND t_search.name ILIKE ?::varchar
+                  )
+              )
+              AND (
+                  ?::varchar IS NULL
+                  OR EXISTS (
+                      SELECT 1
+                      FROM post_tags pt_filter
+                      JOIN tags t_filter ON t_filter.id = pt_filter.tag_id
+                      WHERE pt_filter.post_id = p.id
+                        AND t_filter.owner_id = p.author_id
+                        AND t_filter.normalized_name = ?::varchar
+                  )
+              )
+            """;
+
     private final JdbcTemplate jdbcTemplate;
 
     JdbcPostRepository(JdbcTemplate jdbcTemplate) {
@@ -292,7 +326,13 @@ class JdbcPostRepository implements PostRepository {
     }
 
     @Override
-    public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+    public List<PostRecord> findPageByAcceptedFriends(
+            UUID accessorId,
+            String keyword,
+            String normalizedTag,
+            int limit,
+            int offset) {
+        String keywordPattern = keywordPattern(keyword);
         return jdbcTemplate.query(
                 postSelectColumns("'friend'")
                         + """
@@ -300,9 +340,10 @@ class JdbcPostRepository implements PostRepository {
                           AND (
                               (f.requester_id = ? AND f.addressee_id = p.author_id)
                               OR (f.addressee_id = ? AND f.requester_id = p.author_id)
-                          )
+                        )
                         WHERE p.author_id <> ?
                           AND p.deleted_at IS NULL
+                        """ + ACCESSIBLE_SEARCH_FILTER + """
                         ORDER BY p.created_at DESC, p.id DESC
                         LIMIT ?
                         OFFSET ?
@@ -312,12 +353,20 @@ class JdbcPostRepository implements PostRepository {
                 accessorId,
                 accessorId,
                 accessorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                normalizedTag,
+                normalizedTag,
                 limit,
                 offset);
     }
 
     @Override
-    public long countByAcceptedFriends(UUID accessorId) {
+    public long countByAcceptedFriends(UUID accessorId, String keyword, String normalizedTag) {
+        String keywordPattern = keywordPattern(keyword);
         Long count = jdbcTemplate.queryForObject(
                 """
                 SELECT count(*)
@@ -329,11 +378,85 @@ class JdbcPostRepository implements PostRepository {
                   )
                 WHERE p.author_id <> ?
                   AND p.deleted_at IS NULL
-                """,
+                """ + ACCESSIBLE_SEARCH_FILTER,
                 Long.class,
                 accessorId,
                 accessorId,
-                accessorId);
+                accessorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                normalizedTag,
+                normalizedTag);
+        return count == null ? 0 : count;
+    }
+
+    @Override
+    public List<PostRecord> findPageByAccessible(
+            UUID accessorId,
+            String keyword,
+            String normalizedTag,
+            int limit,
+            int offset) {
+        String keywordPattern = keywordPattern(keyword);
+        return jdbcTemplate.query(
+                postSelectColumns("CASE WHEN p.author_id = ? THEN 'me' ELSE 'friend' END")
+                        + """
+                        WHERE p.deleted_at IS NULL
+                          AND (
+                              p.author_id = ?
+                              OR
+                              """ + ACCEPTED_FRIENDSHIP_CONDITION + """
+                          )
+                        """ + ACCESSIBLE_SEARCH_FILTER + """
+                        ORDER BY p.created_at DESC, p.id DESC
+                        LIMIT ?
+                        OFFSET ?
+                        """,
+                this::mapPost,
+                accessorId,
+                accessorId,
+                accessorId,
+                accessorId,
+                accessorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                normalizedTag,
+                normalizedTag,
+                limit,
+                offset);
+    }
+
+    @Override
+    public long countByAccessible(UUID accessorId, String keyword, String normalizedTag) {
+        String keywordPattern = keywordPattern(keyword);
+        Long count = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*)
+                FROM posts p
+                WHERE p.deleted_at IS NULL
+                  AND (
+                      p.author_id = ?
+                      OR
+                      """ + ACCEPTED_FRIENDSHIP_CONDITION + """
+                  )
+                """ + ACCESSIBLE_SEARCH_FILTER,
+                Long.class,
+                accessorId,
+                accessorId,
+                accessorId,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                keywordPattern,
+                normalizedTag,
+                normalizedTag);
         return count == null ? 0 : count;
     }
 

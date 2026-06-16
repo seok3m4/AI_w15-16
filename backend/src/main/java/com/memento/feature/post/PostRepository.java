@@ -13,9 +13,23 @@ interface PostRepository {
 
     long countByAuthor(UUID authorId, String keyword, String normalizedTag);
 
-    List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset);
+    List<PostRecord> findPageByAcceptedFriends(
+            UUID accessorId,
+            String keyword,
+            String normalizedTag,
+            int limit,
+            int offset);
 
-    long countByAcceptedFriends(UUID accessorId);
+    long countByAcceptedFriends(UUID accessorId, String keyword, String normalizedTag);
+
+    List<PostRecord> findPageByAccessible(
+            UUID accessorId,
+            String keyword,
+            String normalizedTag,
+            int limit,
+            int offset);
+
+    long countByAccessible(UUID accessorId, String keyword, String normalizedTag);
 
     Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId);
 

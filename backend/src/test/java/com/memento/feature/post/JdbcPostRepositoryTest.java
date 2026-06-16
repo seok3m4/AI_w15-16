@@ -95,7 +95,7 @@ class JdbcPostRepositoryTest {
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
                 .thenReturn(List.of());
 
-        List<PostRecord> records = repository.findPageByAcceptedFriends(USER_ID, 10, 20);
+        List<PostRecord> records = repository.findPageByAcceptedFriends(USER_ID, null, null, 10, 20);
 
         assertThat(records).isEmpty();
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
@@ -110,6 +110,65 @@ class JdbcPostRepositoryTest {
                 .contains("order by p.created_at desc, p.id desc")
                 .contains("limit ?")
                 .contains("offset ?");
+    }
+
+    @Test
+    void findPageByAcceptedFriendsAppliesSearchFiltersInsideFriendScope() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        List<PostRecord> records = repository.findPageByAcceptedFriends(USER_ID, "memo", "project", 10, 0);
+
+        assertThat(records).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("join friendships f")
+                .contains("f.status = 'accepted'")
+                .contains("p.author_id <> ?")
+                .contains("?::varchar is null")
+                .contains("p.title ilike")
+                .contains("p.content ilike")
+                .contains("from comments c_search")
+                .contains("c_search.deleted_at is null")
+                .contains("from post_tags pt_search")
+                .contains("t_search.owner_id = p.author_id")
+                .contains("t_search.name ilike")
+                .contains("t_filter.owner_id = p.author_id")
+                .contains("t_filter.normalized_name = ?::varchar");
+    }
+
+    @Test
+    void findPageByAccessibleIncludesCurrentUserAndAcceptedFriendsOnly() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        List<PostRecord> records = repository.findPageByAccessible(USER_ID, "memo", "project", 10, 0);
+
+        assertThat(records).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("case when p.author_id = ? then 'me' else 'friend' end")
+                .contains("as access_scope")
+                .contains("p.author_id = ?")
+                .contains("from friendships f")
+                .contains("f.status = 'accepted'")
+                .contains("?::varchar is null")
+                .contains("p.title ilike")
+                .contains("from comments c_search")
+                .contains("from post_tags pt_search")
+                .contains("t_search.owner_id = p.author_id")
+                .contains("t_filter.owner_id = p.author_id")
+                .contains("order by p.created_at desc, p.id desc");
     }
 
     @Test

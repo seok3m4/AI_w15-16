@@ -2,6 +2,7 @@ package com.memento.feature.post;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,10 @@ class PostQueryService {
     private static final String SUPPORTED_SCOPE = "me";
     private static final String FRIENDS_SCOPE = "friends";
     private static final String ALL_ACCESSIBLE_SCOPE = "all_accessible";
+    private static final Set<String> SUPPORTED_SCOPES = Set.of(
+            SUPPORTED_SCOPE,
+            FRIENDS_SCOPE,
+            ALL_ACCESSIBLE_SCOPE);
     private static final String SUPPORTED_SORT = "createdAt,desc";
     private static final int MAX_PAGE_SIZE = 100;
     private static final int PREVIEW_CODE_POINTS = 120;
@@ -29,21 +34,12 @@ class PostQueryService {
         String keyword = normalizeKeyword(q);
         String normalizedTag = normalizeTag(tag);
         int offset = offset(page, size);
-        List<PostRecord> records = FRIENDS_SCOPE.equals(scope)
-                ? postRepository.findPageByAcceptedFriends(currentUserId, size, offset)
-                : postRepository.findPageByAuthor(
-                        currentUserId,
-                        keyword,
-                        normalizedTag,
-                        size,
-                        offset);
+        List<PostRecord> records = findPage(currentUserId, scope, keyword, normalizedTag, size, offset);
         List<PostSummaryResponse> items = records
                 .stream()
                 .map(record -> PostSummaryResponse.from(record, preview(record.content())))
                 .toList();
-        long totalCount = FRIENDS_SCOPE.equals(scope)
-                ? postRepository.countByAcceptedFriends(currentUserId)
-                : postRepository.countByAuthor(currentUserId, keyword, normalizedTag);
+        long totalCount = count(currentUserId, scope, keyword, normalizedTag);
         int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
 
         return new PostListResponse(items, new PageResponse(page, size, totalCount, totalPages));
@@ -57,14 +53,8 @@ class PostQueryService {
     }
 
     private void validateListQuery(String scope, String q, String tag, int page, int size, String sort) {
-        if (ALL_ACCESSIBLE_SCOPE.equals(scope)) {
-            throw new PostInvalidQueryException("scope=all_accessible is supported in P2-BE-6.");
-        }
-        if (!SUPPORTED_SCOPE.equals(scope) && !FRIENDS_SCOPE.equals(scope)) {
-            throw new PostInvalidQueryException("Only scope=me and scope=friends are supported in P2-BE-4.");
-        }
-        if (FRIENDS_SCOPE.equals(scope) && (hasText(q) || hasText(tag))) {
-            throw new PostInvalidQueryException("Search filters with scope=friends are supported in P2-BE-6.");
+        if (!SUPPORTED_SCOPES.contains(scope)) {
+            throw new PostInvalidQueryException("scope must be one of me, friends, all_accessible.");
         }
         if (page < 0) {
             throw new PostInvalidQueryException("page must be greater than or equal to 0.");
@@ -79,6 +69,47 @@ class PostQueryService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private List<PostRecord> findPage(
+            UUID currentUserId,
+            String scope,
+            String keyword,
+            String normalizedTag,
+            int size,
+            int offset) {
+        if (FRIENDS_SCOPE.equals(scope)) {
+            return postRepository.findPageByAcceptedFriends(
+                    currentUserId,
+                    keyword,
+                    normalizedTag,
+                    size,
+                    offset);
+        }
+        if (ALL_ACCESSIBLE_SCOPE.equals(scope)) {
+            return postRepository.findPageByAccessible(
+                    currentUserId,
+                    keyword,
+                    normalizedTag,
+                    size,
+                    offset);
+        }
+        return postRepository.findPageByAuthor(
+                currentUserId,
+                keyword,
+                normalizedTag,
+                size,
+                offset);
+    }
+
+    private long count(UUID currentUserId, String scope, String keyword, String normalizedTag) {
+        if (FRIENDS_SCOPE.equals(scope)) {
+            return postRepository.countByAcceptedFriends(currentUserId, keyword, normalizedTag);
+        }
+        if (ALL_ACCESSIBLE_SCOPE.equals(scope)) {
+            return postRepository.countByAccessible(currentUserId, keyword, normalizedTag);
+        }
+        return postRepository.countByAuthor(currentUserId, keyword, normalizedTag);
     }
 
     private String normalizeKeyword(String value) {

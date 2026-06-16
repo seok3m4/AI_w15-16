@@ -177,12 +177,32 @@ class PostCommandServiceTest {
         }
 
         @Override
-        public List<PostRecord> findPageByAcceptedFriends(UUID accessorId, int limit, int offset) {
+        public List<PostRecord> findPageByAcceptedFriends(
+                UUID accessorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
             return List.of();
         }
 
         @Override
-        public long countByAcceptedFriends(UUID accessorId) {
+        public long countByAcceptedFriends(UUID accessorId, String keyword, String normalizedTag) {
+            return 0;
+        }
+
+        @Override
+        public List<PostRecord> findPageByAccessible(
+                UUID accessorId,
+                String keyword,
+                String normalizedTag,
+                int limit,
+                int offset) {
+            return List.of();
+        }
+
+        @Override
+        public long countByAccessible(UUID accessorId, String keyword, String normalizedTag) {
             return 0;
         }
 
