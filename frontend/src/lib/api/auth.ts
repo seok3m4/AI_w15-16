@@ -1,5 +1,6 @@
 import { apiRequest } from './client';
 import {
+  AiSharingSettingResponse,
   LoginRequest,
   LoginResponse,
   SignupRequest,
@@ -30,4 +31,11 @@ export function logout(): Promise<void> {
 
 export function me(): Promise<UserPrivateResponse> {
   return apiRequest<UserPrivateResponse>('/auth/me');
+}
+
+export function updateAiSharing(enabled: boolean): Promise<AiSharingSettingResponse> {
+  return apiRequest<AiSharingSettingResponse>('/privacy/ai-sharing', {
+    method: 'PUT',
+    body: { enabled },
+  });
 }

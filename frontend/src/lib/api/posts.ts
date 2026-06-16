@@ -10,6 +10,7 @@ export type PostListParams = {
   page?: number;
   q?: string | null;
   size?: number;
+  scope?: 'me' | 'friends' | 'all_accessible';
   tag?: string | null;
 };
 
@@ -23,6 +24,7 @@ export const postQueryKeys = {
         page: params.page ?? 0,
         q: cleanQueryValue(params.q),
         size: params.size ?? 20,
+        scope: params.scope ?? 'me',
         tag: cleanQueryValue(params.tag),
       },
     ] as const,
@@ -34,7 +36,7 @@ export function listPosts(params: PostListParams = {}): Promise<PostListResponse
   const size = params.size ?? 20;
   const query = new URLSearchParams({
     page: String(page),
-    scope: 'me',
+    scope: params.scope ?? 'me',
     size: String(size),
     sort: 'createdAt,desc',
   });

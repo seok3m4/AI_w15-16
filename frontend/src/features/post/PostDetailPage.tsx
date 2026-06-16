@@ -8,6 +8,8 @@ import {
 } from '@tanstack/react-query';
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { LikeButton } from '../friend/LikeButton';
+import { me } from '../../lib/api/auth';
 import {
   commentQueryKeys,
   createComment,
@@ -35,6 +37,10 @@ export function PostDetailPage() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const commentsQueryKey = commentQueryKeys.list(postId ?? '', COMMENT_PAGE_SIZE);
+  const userQuery = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: me,
+  });
   const detailQuery = useQuery({
     enabled: Boolean(postId),
     queryKey: postQueryKeys.detail(postId ?? ''),
@@ -175,6 +181,7 @@ export function PostDetailPage() {
   }
 
   const statusTone = memoryStatusTone(post.memoryStatus);
+  const canManagePost = post.accessScope === 'me';
   const handleCreateComment = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const content = commentContent.trim();
@@ -207,21 +214,23 @@ export function PostDetailPage() {
           <Icon icon="solar:alt-arrow-left-linear" aria-hidden="true" />
           돌아가기
         </Link>
-        <div className="detail-action-group">
-          <Link className="button button-secondary" to={`/app/posts/${post.id}/edit`}>
-            <Icon icon="solar:pen-new-square-linear" aria-hidden="true" />
-            수정
-          </Link>
-          <button
-            className="button button-danger"
-            disabled={deleteMutation.isPending}
-            onClick={() => deleteMutation.mutate()}
-            type="button"
-          >
-            <Icon icon="solar:trash-bin-trash-linear" aria-hidden="true" />
-            삭제
-          </button>
-        </div>
+        {canManagePost ? (
+          <div className="detail-action-group">
+            <Link className="button button-secondary" to={`/app/posts/${post.id}/edit`}>
+              <Icon icon="solar:pen-new-square-linear" aria-hidden="true" />
+              수정
+            </Link>
+            <button
+              className="button button-danger"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+              type="button"
+            >
+              <Icon icon="solar:trash-bin-trash-linear" aria-hidden="true" />
+              삭제
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {deleteMutation.isError ? (
@@ -258,6 +267,7 @@ export function PostDetailPage() {
           <Icon icon="solar:heart-linear" aria-hidden="true" />
           좋아요 {post.likeCount}
         </span>
+        <LikeButton post={post} />
       </footer>
 
       <CommentSection
@@ -285,6 +295,7 @@ export function PostDetailPage() {
         onUpdateComment={handleUpdateComment}
         totalComments={totalComments}
         updateError={updateCommentMutation.error}
+        userId={userQuery.data?.id}
       />
     </article>
   );
@@ -315,6 +326,7 @@ type CommentSectionProps = {
   onUpdateComment: (event: FormEvent<HTMLFormElement>) => void;
   totalComments: number;
   updateError: unknown;
+  userId?: string;
 };
 
 function CommentSection({
@@ -342,6 +354,7 @@ function CommentSection({
   onUpdateComment,
   totalComments,
   updateError,
+  userId,
 }: CommentSectionProps) {
   return (
     <section className="comment-section" aria-labelledby="comment-section-title">
@@ -407,26 +420,28 @@ function CommentSection({
               ) : (
                 <>
                   <p>{comment.content}</p>
-                  <div className="comment-actions">
-                    <button
-                      aria-label="댓글 수정"
-                      className="icon-button"
-                      disabled={isDeleting}
-                      onClick={() => onStartEditComment(comment)}
-                      type="button"
-                    >
-                      <Icon icon="solar:pen-new-square-linear" aria-hidden="true" />
-                    </button>
-                    <button
-                      aria-label="댓글 삭제"
-                      className="icon-button danger"
-                      disabled={isDeleting}
-                      onClick={() => onDeleteComment(comment.id)}
-                      type="button"
-                    >
-                      <Icon icon="solar:trash-bin-trash-linear" aria-hidden="true" />
-                    </button>
-                  </div>
+                  {comment.author.id === userId ? (
+                    <div className="comment-actions">
+                      <button
+                        aria-label="댓글 수정"
+                        className="icon-button"
+                        disabled={isDeleting}
+                        onClick={() => onStartEditComment(comment)}
+                        type="button"
+                      >
+                        <Icon icon="solar:pen-new-square-linear" aria-hidden="true" />
+                      </button>
+                      <button
+                        aria-label="댓글 삭제"
+                        className="icon-button danger"
+                        disabled={isDeleting}
+                        onClick={() => onDeleteComment(comment.id)}
+                        type="button"
+                      >
+                        <Icon icon="solar:trash-bin-trash-linear" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : null}
                 </>
               )}
             </li>

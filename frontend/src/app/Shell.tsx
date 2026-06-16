@@ -12,10 +12,14 @@ type AppShellProps = {
   user: UserPrivateResponse | undefined;
 };
 
+const activeItems = [
+  ['solar:users-group-rounded-linear', '친구', '/app/friends'],
+  ['solar:settings-linear', '설정', '/app/settings'],
+] as const;
+
 const upcomingItems = [
   ['solar:magic-stars-linear', 'Memory Search'],
   ['solar:box-minimalistic-linear', 'Capsule'],
-  ['solar:users-group-rounded-linear', '친구'],
   ['solar:robot-linear', 'Agent'],
   ['solar:plug-circle-linear', 'MCP'],
 ] as const;
@@ -144,6 +148,16 @@ function NavigationItems() {
         <Icon icon="solar:home-2-linear" aria-hidden="true" />
         <span className="nav-label">홈</span>
       </NavLink>
+      {activeItems.map(([icon, label, to]) => (
+        <NavLink
+          to={to}
+          key={to}
+          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+        >
+          <Icon icon={icon} aria-hidden="true" />
+          <span className="nav-label">{label}</span>
+        </NavLink>
+      ))}
       {upcomingItems.map(([icon, label]) => (
         <span className="nav-item disabled" key={label} aria-disabled="true">
           <Icon icon={icon} aria-hidden="true" />

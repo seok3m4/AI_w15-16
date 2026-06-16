@@ -6,6 +6,8 @@ const ACCESS_TOKEN_STORAGE_KEY = 'memento.accessToken';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const FIRST_POST_ID = '22222222-2222-2222-2222-222222222222';
 const FIRST_COMMENT_ID = '33333333-3333-3333-3333-333333333333';
+const FRIEND_ID = '44444444-4444-4444-4444-444444444444';
+const FRIENDSHIP_ID = '55555555-5555-5555-5555-555555555555';
 
 function mockFetch(
   handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -88,6 +90,21 @@ function tagListResponse(items: Array<{ id: string; name: string; postCount: num
       totalCount: items.length,
       totalPages: items.length > 0 ? 1 : 0,
     },
+  };
+}
+
+function friendshipItem(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: FRIENDSHIP_ID,
+    user: {
+      id: FRIEND_ID,
+      nickname: '하윤서',
+    },
+    status: 'accepted',
+    direction: 'incoming',
+    createdAt: '2026-06-15T03:10:00Z',
+    updatedAt: '2026-06-15T03:10:00Z',
+    ...overrides,
   };
 }
 
@@ -920,5 +937,190 @@ describe('App auth flow', () => {
         );
       }),
     ).toBe(true);
+  });
+
+  it('opens the friends page and sends a UUID-based friend request', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const requestedAddressees: string[] = [];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/friendships?') && init?.method !== 'POST') {
+        const status = new URL(url).searchParams.get('status');
+        const items = status === 'accepted' ? [friendshipItem()] : [];
+        return jsonResponse({
+          items,
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: items.length,
+            totalPages: items.length > 0 ? 1 : 0,
+          },
+        });
+      }
+      if (url.endsWith('/friendships/requests') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body));
+        requestedAddressees.push(body.addresseeUserId);
+        return jsonResponse(friendshipItem({ status: 'pending', direction: 'outgoing' }), {
+          status: 201,
+        });
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [],
+          page: { page: 0, size: 20, totalCount: 0, totalPages: 0 },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.click((await screen.findAllByRole('link', { name: '친구' }))[0]);
+    expect(await screen.findByRole('heading', { name: '친구' })).toBeInTheDocument();
+    expect(await screen.findByText('하윤서')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('친구 사용자 UUID'), {
+      target: { value: FRIEND_ID },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '친구 요청' }));
+
+    await waitFor(() => expect(requestedAddressees).toEqual([FRIEND_ID]));
+    expect(await screen.findByText('친구 요청을 보냈습니다.')).toBeInTheDocument();
+  });
+
+  it('accepts an incoming friend request from the friends page', async () => {
+    window.history.pushState({}, '', '/app/friends');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let accepted = false;
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/friendships?')) {
+        const status = new URL(url).searchParams.get('status');
+        const items =
+          status === 'pending' && !accepted
+            ? [friendshipItem({ status: 'pending', direction: 'incoming' })]
+            : status === 'accepted' && accepted
+              ? [friendshipItem()]
+              : [];
+        return jsonResponse({
+          items,
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: items.length,
+            totalPages: items.length > 0 ? 1 : 0,
+          },
+        });
+      }
+      if (url.endsWith(`/friendships/${FRIENDSHIP_ID}/accept`) && init?.method === 'POST') {
+        accepted = true;
+        return jsonResponse({
+          id: FRIENDSHIP_ID,
+          status: 'accepted',
+          updatedAt: '2026-06-15T03:20:00Z',
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('받은 요청 1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '수락' }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/friendships/${FRIENDSHIP_ID}/accept`),
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(await screen.findByText('친구 요청을 수락했습니다.')).toBeInTheDocument();
+  });
+
+  it('loads the friend feed with scope=friends and toggles likes', async () => {
+    window.history.pushState({}, '', '/app/friends/feed');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let likedByMe = false;
+    let likeCount = 2;
+    const postRequests: string[] = [];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        postRequests.push(url);
+        return jsonResponse({
+          items: [
+            postSummary({
+              author: { id: FRIEND_ID, nickname: '하윤서' },
+              title: '친구의 회고',
+              accessScope: 'friend',
+              likedByMe,
+              likeCount,
+            }),
+          ],
+          page: { page: 0, size: 20, totalCount: 1, totalPages: 1 },
+        });
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}/likes`) && init?.method === 'POST') {
+        likedByMe = true;
+        likeCount = 3;
+        return jsonResponse({ postId: FIRST_POST_ID, likedByMe, likeCount });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '친구 기록' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /친구의 회고/ })).toBeInTheDocument();
+    expect(
+      postRequests.some((url) => new URL(url).searchParams.get('scope') === 'friends'),
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: '좋아요' }));
+
+    expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('updates friend AI sharing from the settings page', async () => {
+    window.history.pushState({}, '', '/app/settings');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let enabled = false;
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({ ...authMeResponse(), friendAiSharingEnabled: enabled });
+      }
+      if (url.endsWith('/privacy/ai-sharing') && init?.method === 'PUT') {
+        expect(JSON.parse(String(init.body))).toEqual({ enabled: true });
+        enabled = true;
+        return jsonResponse({
+          friendAiSharingEnabled: enabled,
+          updatedAt: '2026-06-15T03:20:00Z',
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '설정' })).toBeInTheDocument();
+    const toggle = screen.getByRole('switch', { name: '친구 AI 공유 동의' });
+    expect(toggle).not.toBeChecked();
+
+    fireEvent.click(toggle);
+
+    expect(await screen.findByText('AI 공유 동의를 켰습니다.')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '친구 AI 공유 동의' })).toBeChecked();
   });
 });

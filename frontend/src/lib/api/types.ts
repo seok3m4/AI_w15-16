@@ -151,3 +151,54 @@ export type TagListResponse = {
   items: TagResponse[];
   page: PageResponse;
 };
+
+export type FriendshipDirection = 'incoming' | 'outgoing' | string;
+export type FriendshipStatus = 'pending' | 'accepted' | 'rejected' | string;
+
+export type FriendshipUserResponse = UserPublicSummary & {
+  friendAiSharingEnabled?: boolean;
+};
+
+export type FriendshipListItemResponse = {
+  id: string;
+  user: FriendshipUserResponse;
+  status: FriendshipStatus;
+  direction: FriendshipDirection;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FriendshipListResponse = {
+  items: FriendshipListItemResponse[];
+  page: PageResponse;
+};
+
+export type CreateFriendshipRequest = {
+  addresseeUserId: string;
+};
+
+export type FriendshipResponse = {
+  id: string;
+  requester?: FriendshipUserResponse;
+  addressee?: FriendshipUserResponse;
+  status: FriendshipStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FriendshipStatusResponse = {
+  id: string;
+  status: FriendshipStatus;
+  updatedAt: string;
+};
+
+export type PostLikeResponse = {
+  postId: string;
+  likedByMe: boolean;
+  likeCount: number;
+};
+
+export type AiSharingSettingResponse = {
+  friendAiSharingEnabled: boolean;
+  updatedAt: string;
+};
