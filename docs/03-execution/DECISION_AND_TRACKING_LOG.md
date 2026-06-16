@@ -95,7 +95,7 @@
 ### T6 · Platform
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
-| INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료: backend/frontend/ai-server/scripts 골격 생성. P0-INFRA-2~5 대기. T1과 공동 |
+| INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료. P0-INFRA-2 완료: PostgreSQL+pgvector compose 및 `CREATE EXTENSION vector` 초기화 추가, `pg_extension` vector 조회와 vector 캐스팅 검증 통과. 검토 반영: 병렬 compose 실행을 위해 고정 `container_name` 제거. P0-INFRA-3 완료: Spring Boot `/api/health`, FastAPI `/health` 200 반환. P0-INFRA-4~5 대기. T1과 공동 |
 | P1-BE-3 | async_jobs 작업큐·worker | 대기 | | | T3가 사용 |
 | P3-BE-5~8 | Agent tool·실행·승인 게이트 | 대기 | | | |
 | P3-BE-9~13 | MCP Server/Client BE | 대기 | | | |
