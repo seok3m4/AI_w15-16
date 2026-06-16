@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 
 import httpx
 
+from app.discussion_retriever import DiscussionRetriever
 from app.guardrails import EvidenceGuardrailError
 
 TOOL_ALLOWLIST = {
@@ -152,6 +153,19 @@ def related_news_search(
 
 
 def rag_search(
+    query: str,
+    source_types: list[str] | None = None,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    retriever = DiscussionRetriever(
+        backend_search=_backend_rag_search,
+        source_types=source_types,
+        limit=_safe_limit(limit),
+    )
+    return retriever.search_evidence_items(query)
+
+
+def _backend_rag_search(
     query: str,
     source_types: list[str] | None = None,
     limit: int = 5,

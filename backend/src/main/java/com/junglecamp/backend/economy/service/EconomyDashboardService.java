@@ -53,7 +53,10 @@ public class EconomyDashboardService {
 		List<ExchangeRate> exchangeRates = repository.findExchangeRates();
 		AiBrief brief = repository.findLatestBrief(resolvedLocale)
 				.orElseGet(() -> RuleBasedBriefFactory.fallback(metrics, events, "fallback:no-openai-key", resolvedLocale));
-		syncService.refreshIfStale();
+		if ("fallback:openai-error".equals(brief.generationStatus())) {
+			syncService.refreshInBackground();
+			brief = RuleBasedBriefFactory.fallback(metrics, events, "fallback:refreshing-ai-brief", resolvedLocale);
+		}
 		exchangeSyncService.refreshIfStale();
 
 		return new EconomyDashboard(

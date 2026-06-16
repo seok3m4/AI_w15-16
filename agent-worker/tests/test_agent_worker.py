@@ -209,6 +209,72 @@ def test_gdelt_articles_are_normalized_into_sourced_news_evidence_items():
     assert result[0]["publishedAt"] == "2026-06-13T01:00:00Z"
 
 
+def test_discussion_retriever_converts_backend_rag_results_to_documents():
+    from app.discussion_retriever import DiscussionRetriever
+
+    def backend_search(query, source_types, limit):
+        assert query == "usd krw pressure"
+        assert source_types == ["BOARD_POST"]
+        assert limit == 2
+        return [
+            {
+                "id": "rag-chunk-7",
+                "sourceType": "BOARD_POST",
+                "sourceId": "42",
+                "title": "CPI and dollar-won discussion",
+                "sourceName": "BOARD_POST",
+                "sourceUrl": "/home?view=discussion&postId=42",
+                "snippet": "Discussion connects CPI pressure with USD/KRW.",
+                "observedAt": "2026-06-15T08:00:00Z",
+                "score": 0.91,
+            }
+        ]
+
+    retriever = DiscussionRetriever(backend_search=backend_search, source_types=["BOARD_POST"], limit=2)
+    documents = retriever.invoke("usd krw pressure")
+
+    assert documents[0].page_content == "Discussion connects CPI pressure with USD/KRW."
+    assert documents[0].metadata["id"] == "rag-chunk-7"
+    assert documents[0].metadata["sourceUrl"] == "/home?view=discussion&postId=42"
+    assert documents[0].metadata["score"] == 0.91
+
+
+def test_rag_search_uses_discussion_retriever_for_sourced_evidence_items(monkeypatch):
+    from app import mcp_tools
+
+    class FakeDiscussionRetriever:
+        def __init__(self, backend_search, source_types, limit):
+            self.backend_search = backend_search
+            self.source_types = source_types
+            self.limit = limit
+
+        def search_evidence_items(self, query):
+            assert query == "cpi exchange rate"
+            assert self.source_types == ["BOARD_POST"]
+            assert self.limit == 3
+            return [
+                {
+                    "id": "rag-chunk-7",
+                    "type": "rag",
+                    "title": "CPI and dollar-won discussion",
+                    "sourceName": "BOARD_POST",
+                    "sourceUrl": "/home?view=discussion&postId=42",
+                    "observedAt": "2026-06-15T08:00:00Z",
+                    "snippet": "Discussion connects CPI pressure with USD/KRW.",
+                    "payload": '{"sourceType":"BOARD_POST","sourceId":"42","score":0.91}',
+                }
+            ]
+
+    monkeypatch.setattr(mcp_tools, "DiscussionRetriever", FakeDiscussionRetriever)
+
+    results = mcp_tools.rag_search("cpi exchange rate", ["BOARD_POST"], 3)
+
+    assert results[0]["id"] == "rag-chunk-7"
+    assert results[0]["type"] == "rag"
+    assert results[0]["sourceName"] == "BOARD_POST"
+    assert results[0]["sourceUrl"] == "/home?view=discussion&postId=42"
+
+
 def test_tool_evidence_guardrail_rejects_missing_or_unsourced_news_and_rag_ids():
     sourced_items = [
         {

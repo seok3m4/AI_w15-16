@@ -63,8 +63,14 @@ public class RagIndexService {
 		}
 
 		int limit = Math.max(1, Math.min(requestedLimit <= 0 ? 5 : requestedLimit, 10));
-		List<RagSearchResult> keywordResults = keywordSearch(normalized, sourceTypes, limit);
-		return new RagSearchResponse(keywordResults);
+		Optional<String> queryVector = embeddingService.embedAsVectorLiteral(query);
+		if (queryVector.isPresent()) {
+			List<RagSearchResult> vectorResults = vectorSearch(queryVector.get(), sourceTypes, limit);
+			if (!vectorResults.isEmpty()) {
+				return new RagSearchResponse(vectorResults);
+			}
+		}
+		return new RagSearchResponse(keywordSearch(normalized, sourceTypes, limit));
 	}
 
 	private Optional<Long> findDocumentId(String sourceType, Long sourceId) {
@@ -158,6 +164,8 @@ public class RagIndexService {
 					SELECT c.id, d.source_type, d.source_id, d.title, c.content, d.updated_at
 					FROM rag_chunks c
 					JOIN rag_documents d ON d.id = c.document_id
+					LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
+					WHERE d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL
 					ORDER BY d.updated_at DESC, c.id DESC
 					LIMIT 50
 					""", (resultSet, rowNumber) -> mapResult(resultSet, normalized))
@@ -171,7 +179,9 @@ public class RagIndexService {
 				SELECT c.id, d.source_type, d.source_id, d.title, c.content, d.updated_at
 				FROM rag_chunks c
 				JOIN rag_documents d ON d.id = c.document_id
+				LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
 				WHERE d.source_type = ?
+				AND (d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL)
 				ORDER BY d.updated_at DESC, c.id DESC
 				LIMIT 50
 				""", (resultSet, rowNumber) -> mapResult(resultSet, normalized), firstSourceType)
@@ -181,11 +191,124 @@ public class RagIndexService {
 				.toList();
 	}
 
+	private List<RagSearchResult> vectorSearch(String queryVector, List<String> sourceTypes, int limit) {
+		try {
+			List<RagSearchResult> results = pgVectorSearch(queryVector, sourceTypes, limit);
+			if (!results.isEmpty()) {
+				return results;
+			}
+		} catch (DataAccessException exception) {
+			return inMemoryVectorSearch(queryVector, sourceTypes, limit);
+		}
+		return inMemoryVectorSearch(queryVector, sourceTypes, limit);
+	}
+
+	private List<RagSearchResult> pgVectorSearch(String queryVector, List<String> sourceTypes, int limit) {
+		if (sourceTypes == null || sourceTypes.isEmpty()) {
+			return jdbcTemplate.query("""
+					SELECT c.id, d.source_type, d.source_id, d.title, c.content, d.updated_at,
+					       1 - (c.embedding <=> ?::vector) AS score
+					FROM rag_chunks c
+					JOIN rag_documents d ON d.id = c.document_id
+					LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
+					WHERE c.embedding IS NOT NULL
+					AND (d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL)
+					ORDER BY c.embedding <=> ?::vector, d.updated_at DESC
+					LIMIT ?
+					""", (resultSet, rowNumber) -> mapScoredResult(resultSet),
+					queryVector,
+					queryVector,
+					limit);
+		}
+		String firstSourceType = sourceTypes.get(0);
+		return jdbcTemplate.query("""
+				SELECT c.id, d.source_type, d.source_id, d.title, c.content, d.updated_at,
+				       1 - (c.embedding <=> ?::vector) AS score
+				FROM rag_chunks c
+				JOIN rag_documents d ON d.id = c.document_id
+				LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
+				WHERE c.embedding IS NOT NULL
+				AND d.source_type = ?
+				AND (d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL)
+				ORDER BY c.embedding <=> ?::vector, d.updated_at DESC
+				LIMIT ?
+				""", (resultSet, rowNumber) -> mapScoredResult(resultSet),
+				queryVector,
+				firstSourceType,
+				queryVector,
+				limit);
+	}
+
+	private List<RagSearchResult> inMemoryVectorSearch(String queryVector, List<String> sourceTypes, int limit) {
+		double[] queryValues = parseVector(queryVector);
+		if (queryValues.length == 0) {
+			return List.of();
+		}
+		if (sourceTypes == null || sourceTypes.isEmpty()) {
+			return jdbcTemplate.query("""
+					SELECT c.id, d.source_type, d.source_id, d.title, c.content, c.embedding, d.updated_at
+					FROM rag_chunks c
+					JOIN rag_documents d ON d.id = c.document_id
+					LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
+					WHERE c.embedding IS NOT NULL
+					AND (d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL)
+					ORDER BY d.updated_at DESC, c.id DESC
+					LIMIT 100
+					""", (resultSet, rowNumber) -> mapVectorCandidate(resultSet, queryValues))
+					.stream()
+					.filter(result -> result.score() > 0)
+					.sorted((left, right) -> Double.compare(right.score(), left.score()))
+					.limit(limit)
+					.toList();
+		}
+		String firstSourceType = sourceTypes.get(0);
+		return jdbcTemplate.query("""
+				SELECT c.id, d.source_type, d.source_id, d.title, c.content, c.embedding, d.updated_at
+				FROM rag_chunks c
+				JOIN rag_documents d ON d.id = c.document_id
+				LEFT JOIN board_posts p ON d.source_type = 'BOARD_POST' AND p.id = d.source_id
+				WHERE c.embedding IS NOT NULL
+				AND d.source_type = ?
+				AND (d.source_type <> 'BOARD_POST' OR p.hidden_at IS NULL)
+				ORDER BY d.updated_at DESC, c.id DESC
+				LIMIT 100
+				""", (resultSet, rowNumber) -> mapVectorCandidate(resultSet, queryValues), firstSourceType)
+				.stream()
+				.filter(result -> result.score() > 0)
+				.sorted((left, right) -> Double.compare(right.score(), left.score()))
+				.limit(limit)
+				.toList();
+	}
+
 	private RagSearchResult mapResult(ResultSet resultSet, String normalizedQuery) throws SQLException {
 		long sourceId = resultSet.getLong("source_id");
 		String sourceType = resultSet.getString("source_type");
 		String content = resultSet.getString("content");
 		double score = keywordScore(resultSet.getString("title") + " " + content, normalizedQuery);
+		return toResult(resultSet, sourceId, sourceType, content, score);
+	}
+
+	private RagSearchResult mapScoredResult(ResultSet resultSet) throws SQLException {
+		long sourceId = resultSet.getLong("source_id");
+		String sourceType = resultSet.getString("source_type");
+		String content = resultSet.getString("content");
+		return toResult(resultSet, sourceId, sourceType, content, resultSet.getDouble("score"));
+	}
+
+	private RagSearchResult mapVectorCandidate(ResultSet resultSet, double[] queryValues) throws SQLException {
+		long sourceId = resultSet.getLong("source_id");
+		String sourceType = resultSet.getString("source_type");
+		String content = resultSet.getString("content");
+		double score = cosineSimilarity(queryValues, parseVector(resultSet.getString("embedding")));
+		return toResult(resultSet, sourceId, sourceType, content, score);
+	}
+
+	private RagSearchResult toResult(
+			ResultSet resultSet,
+			long sourceId,
+			String sourceType,
+			String content,
+			double score) throws SQLException {
 		return new RagSearchResult(
 				"rag-chunk-" + resultSet.getLong("id"),
 				sourceType,
@@ -219,9 +342,50 @@ public class RagIndexService {
 
 	private String sourceUrl(String sourceType, long sourceId) {
 		if (BOARD_POST.equals(sourceType)) {
-			return "/api/posts/" + sourceId;
+			return "/home?view=discussion&postId=" + sourceId;
 		}
 		return "";
+	}
+
+	private double[] parseVector(String value) {
+		if (value == null || value.isBlank()) {
+			return new double[0];
+		}
+		String trimmed = value.trim();
+		if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+			trimmed = trimmed.substring(1, trimmed.length() - 1);
+		}
+		if (trimmed.isBlank()) {
+			return new double[0];
+		}
+		String[] parts = trimmed.split(",");
+		double[] values = new double[parts.length];
+		for (int index = 0; index < parts.length; index++) {
+			try {
+				values[index] = Double.parseDouble(parts[index].trim());
+			} catch (NumberFormatException exception) {
+				return new double[0];
+			}
+		}
+		return values;
+	}
+
+	private double cosineSimilarity(double[] left, double[] right) {
+		if (left.length == 0 || right.length == 0 || left.length != right.length) {
+			return 0;
+		}
+		double dotProduct = 0;
+		double leftNorm = 0;
+		double rightNorm = 0;
+		for (int index = 0; index < left.length; index++) {
+			dotProduct += left[index] * right[index];
+			leftNorm += left[index] * left[index];
+			rightNorm += right[index] * right[index];
+		}
+		if (leftNorm == 0 || rightNorm == 0) {
+			return 0;
+		}
+		return dotProduct / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm));
 	}
 
 	private String normalizeQuery(String query) {

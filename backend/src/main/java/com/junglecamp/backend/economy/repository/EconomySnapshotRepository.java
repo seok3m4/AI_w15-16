@@ -162,7 +162,10 @@ public class EconomySnapshotRepository {
 					       generation_status, generated_at
 					FROM economy_briefs
 					WHERE locale = ?
-					ORDER BY generated_at DESC, id DESC
+					ORDER BY
+						CASE WHEN generation_status = 'generated' THEN 0 ELSE 1 END,
+						generated_at DESC,
+						id DESC
 					LIMIT 1
 					""", this::mapBrief, localeTag(locale));
 			return briefs.stream().findFirst();
@@ -441,6 +444,24 @@ public class EconomySnapshotRepository {
 					errorMessage);
 		} catch (DataAccessException ignored) {
 			// If migration has not run yet, the API should still return an empty fallback dashboard.
+		}
+	}
+
+	public int countSyncRunsSince(String source, OffsetDateTime since) {
+		try {
+			Integer count = jdbcTemplate.queryForObject("""
+					SELECT COUNT(*)
+					FROM economy_sync_runs
+					WHERE source = ?
+					  AND status IN ('success', 'failed')
+					  AND started_at >= ?
+					""",
+					Integer.class,
+					source,
+					Timestamp.from(since.toInstant()));
+			return count == null ? 0 : count;
+		} catch (DataAccessException exception) {
+			return 0;
 		}
 	}
 

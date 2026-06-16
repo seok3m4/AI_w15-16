@@ -3,7 +3,6 @@ package com.junglecamp.backend.economy.service;
 import com.junglecamp.backend.economy.client.FredSeriesClient;
 import com.junglecamp.backend.economy.definition.EconomyMetricDefinitions;
 import com.junglecamp.backend.economy.definition.MetricDefinition;
-import com.junglecamp.backend.economy.dto.EconomyDashboardDtos;
 import com.junglecamp.backend.economy.dto.EconomyDashboardDtos.AiBrief;
 import com.junglecamp.backend.economy.dto.EconomyDashboardDtos.EconomicEvent;
 import com.junglecamp.backend.economy.model.EconomyMetricSnapshot;
@@ -12,13 +11,12 @@ import com.junglecamp.backend.i18n.SupportedLocale;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.CompletableFuture;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -28,38 +26,33 @@ public class EconomySyncService {
 	private final FredSeriesClient fredSeriesClient;
 	private final EconomySnapshotRepository repository;
 	private final OpenAiBriefService openAiBriefService;
-	private final EconomyTextCatalog textCatalog;
 	private final EconomySourceComparisonSyncService sourceComparisonSyncService;
 	private final EconomyEventSupplementSyncService eventSupplementSyncService;
 	private final Duration staleAfter;
 	private final boolean enabled;
+	private final int dailyLimit;
 	private final AtomicBoolean syncing = new AtomicBoolean(false);
 
 	public EconomySyncService(
 			FredSeriesClient fredSeriesClient,
 			EconomySnapshotRepository repository,
 			OpenAiBriefService openAiBriefService,
-			EconomyTextCatalog textCatalog,
 			EconomySourceComparisonSyncService sourceComparisonSyncService,
 			EconomyEventSupplementSyncService eventSupplementSyncService,
 			@Value("${app.economy.sync.stale-after-minutes:60}") long staleAfterMinutes,
-			@Value("${app.economy.sync.enabled:true}") boolean enabled) {
+			@Value("${app.economy.sync.enabled:true}") boolean enabled,
+			@Value("${app.economy.sync.daily-limit:20}") int dailyLimit) {
 		this.fredSeriesClient = fredSeriesClient;
 		this.repository = repository;
 		this.openAiBriefService = openAiBriefService;
-		this.textCatalog = textCatalog;
 		this.sourceComparisonSyncService = sourceComparisonSyncService;
 		this.eventSupplementSyncService = eventSupplementSyncService;
 		this.staleAfter = Duration.ofMinutes(staleAfterMinutes);
 		this.enabled = enabled;
+		this.dailyLimit = dailyLimit;
 	}
 
-	@EventListener(ApplicationReadyEvent.class)
-	public void syncOnStartup() {
-		refreshInBackground();
-	}
-
-	@Scheduled(fixedRateString = "${app.economy.sync.fixed-rate-ms:1800000}")
+	@Scheduled(fixedRateString = "${app.economy.sync.fixed-rate-ms:14400000}")
 	public void scheduledSync() {
 		syncAll();
 	}
@@ -90,6 +83,10 @@ public class EconomySyncService {
 
 		OffsetDateTime startedAt = OffsetDateTime.now();
 		try {
+			if (isDailyLimitReached(startedAt)) {
+				repository.recordSyncRun("FRED", startedAt, OffsetDateTime.now(), "skipped", "daily_limit_reached");
+				return;
+			}
 			List<EconomyMetricSnapshot> snapshots = new ArrayList<>();
 			for (MetricDefinition definition : EconomyMetricDefinitions.all()) {
 				snapshots.add(fredSeriesClient.fetchLatest(definition));
@@ -101,10 +98,7 @@ public class EconomySyncService {
 
 			List<EconomicEvent> events = repository.findEvents();
 			for (SupportedLocale locale : SupportedLocale.values()) {
-				List<EconomyMetricSnapshot> localizedSnapshots = snapshots.stream()
-						.map(snapshot -> textCatalog.localizeMetric(snapshot, locale))
-						.toList();
-				AiBrief brief = openAiBriefService.generate(localizedSnapshots, events, locale);
+				AiBrief brief = openAiBriefService.generate(snapshots, events, locale);
 				if ("generated".equals(brief.generationStatus())) {
 					repository.saveBrief(brief, openAiBriefService.model(), locale);
 				}
@@ -115,6 +109,18 @@ public class EconomySyncService {
 		} finally {
 			syncing.set(false);
 		}
+	}
+
+	private boolean isDailyLimitReached(OffsetDateTime now) {
+		if (dailyLimit <= 0) {
+			return false;
+		}
+		OffsetDateTime startOfKoreanDay = now
+				.atZoneSameInstant(ZoneId.of("Asia/Seoul"))
+				.toLocalDate()
+				.atStartOfDay(ZoneId.of("Asia/Seoul"))
+				.toOffsetDateTime();
+		return repository.countSyncRunsSince("FRED", startOfKoreanDay) >= dailyLimit;
 	}
 
 	private void syncSourceComparisons() {

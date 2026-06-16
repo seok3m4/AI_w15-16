@@ -11,6 +11,8 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -19,6 +21,8 @@ import org.springframework.web.client.RestClient;
 
 @Service
 public class OpenAiBriefService {
+
+	private static final Logger log = LoggerFactory.getLogger(OpenAiBriefService.class);
 
 	private final RestClient restClient;
 	private final ObjectMapper objectMapper;
@@ -67,13 +71,14 @@ public class OpenAiBriefService {
 									"events", events)))));
 			body.put("text", Map.of("format", jsonSchema()));
 
-			JsonNode response = restClient.post()
+			String responseBody = restClient.post()
 					.uri("/v1/responses")
 					.contentType(MediaType.APPLICATION_JSON)
 					.header("Authorization", "Bearer " + apiKey)
 					.body(body)
 					.retrieve()
-					.body(JsonNode.class);
+					.body(String.class);
+			JsonNode response = objectMapper.readTree(responseBody);
 			String json = extractOutputText(response);
 			OpenAiBriefPayload payload = objectMapper.readValue(json, OpenAiBriefPayload.class);
 
@@ -87,6 +92,7 @@ public class OpenAiBriefService {
 					OffsetDateTime.now().toString(),
 					"generated");
 		} catch (Exception exception) {
+			log.warn("OpenAI economy brief generation failed for model {}: {}", model, exception.getMessage());
 			return RuleBasedBriefFactory.fallback(metrics, events, "fallback:openai-error", resolvedLocale);
 		}
 	}

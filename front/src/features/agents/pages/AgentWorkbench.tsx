@@ -1,4 +1,5 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useHistory } from "react-router-dom";
 import { IonIcon } from "@ionic/react";
 import {
   chatbubbleEllipsesOutline,
@@ -55,12 +56,33 @@ function formatDateTime(value: string | null, locale: string, fallback: string) 
   }).format(date);
 }
 
+function internalDiscussionHref(sourceUrl: string) {
+  if (sourceUrl.startsWith("/home")) {
+    return sourceUrl;
+  }
+  if (sourceUrl.startsWith("/api/posts/")) {
+    const postId = sourceUrl.replace("/api/posts/", "").split(/[/?#]/)[0];
+    return postId ? `/home?view=discussion&postId=${encodeURIComponent(postId)}` : sourceUrl;
+  }
+  return sourceUrl;
+}
+
 function evidenceHref(sourceUrl: string) {
   if (sourceUrl.startsWith("http://") || sourceUrl.startsWith("https://")) {
     return sourceUrl;
   }
-  const backendOrigin = import.meta.env.VITE_BACKEND_ORIGIN ?? "http://localhost:8080";
-  return `${backendOrigin}${sourceUrl}`;
+  return internalDiscussionHref(sourceUrl);
+}
+
+function isInternalEvidenceHref(href: string) {
+  return href.startsWith("/");
+}
+
+function evidenceTypeLabel(evidence: { type: string; sourceName: string }, t: ReturnType<typeof useI18n>["t"]) {
+  if (evidence.type === "rag" && evidence.sourceName === "BOARD_POST") {
+    return t("agent.relatedDiscussion");
+  }
+  return evidence.sourceName || evidence.type;
 }
 
 function answerStatusLabel(status: string | null, t: ReturnType<typeof useI18n>["t"]) {
@@ -95,6 +117,7 @@ function messageEvidenceIds(item: AgentMessage) {
 }
 
 export default function AgentWorkbench({ currentUser, dashboard }: AgentWorkbenchProps) {
+  const history = useHistory();
   const { locale, t } = useI18n();
   const [runs, setRuns] = useState<AgentRunSummary[]>([]);
   const [activeRun, setActiveRun] = useState<AgentRunDetail | null>(null);
@@ -393,16 +416,25 @@ export default function AgentWorkbench({ currentUser, dashboard }: AgentWorkbenc
                       )}
                       {item.evidenceItems.length > 0 && (
                         <div className="agent-message-sources">
-                          {item.evidenceItems.map((evidence) => (
-                            <a
-                              href={evidenceHref(evidence.sourceUrl)}
-                              key={`${item.id}-${evidence.type}-${evidence.id}`}
-                              rel="noreferrer"
-                              target="_blank"
-                            >
-                              {evidence.type} / {evidence.title}
-                            </a>
-                          ))}
+                          {item.evidenceItems.map((evidence) => {
+                            const href = evidenceHref(evidence.sourceUrl);
+                            const isInternal = isInternalEvidenceHref(href);
+                            return (
+                              <a
+                                href={href}
+                                key={`${item.id}-${evidence.type}-${evidence.id}`}
+                                rel={isInternal ? undefined : "noreferrer"}
+                                target={isInternal ? undefined : "_blank"}
+                                onClick={isInternal ? (event) => {
+                                  event.preventDefault();
+                                  history.push(href);
+                                } : undefined}
+                              >
+                                <span className="agent-source-type">{evidenceTypeLabel(evidence, t)}</span>
+                                {evidence.title}
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                       {item.steps.length > 0 && (
