@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,16 +15,26 @@ class PostCreateService {
     private static final String INITIAL_MEMORY_STATUS = "pending";
 
     private final PostRepository postRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final Supplier<UUID> idSupplier;
     private final Clock clock;
 
     @Autowired
-    PostCreateService(PostRepository postRepository, Clock clock) {
-        this(postRepository, UUID::randomUUID, clock);
+    PostCreateService(PostRepository postRepository, ApplicationEventPublisher eventPublisher, Clock clock) {
+        this(postRepository, eventPublisher, UUID::randomUUID, clock);
     }
 
     PostCreateService(PostRepository postRepository, Supplier<UUID> idSupplier, Clock clock) {
+        this(postRepository, event -> {}, idSupplier, clock);
+    }
+
+    PostCreateService(
+            PostRepository postRepository,
+            ApplicationEventPublisher eventPublisher,
+            Supplier<UUID> idSupplier,
+            Clock clock) {
         this.postRepository = postRepository;
+        this.eventPublisher = eventPublisher;
         this.idSupplier = idSupplier;
         this.clock = clock;
     }
@@ -39,6 +50,8 @@ class PostCreateService {
                 INITIAL_MEMORY_STATUS,
                 now);
 
-        return PostResponse.from(postRepository.save(post, PostTagNames.normalize(request.tagNames())));
+        PostResponse response = PostResponse.from(postRepository.save(post, PostTagNames.normalize(request.tagNames())));
+        eventPublisher.publishEvent(new PostCreatedEvent(response.id(), authorId));
+        return response;
     }
 }

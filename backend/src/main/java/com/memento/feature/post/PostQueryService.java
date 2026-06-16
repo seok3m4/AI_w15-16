@@ -1,6 +1,7 @@
 package com.memento.feature.post;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +24,19 @@ class PostQueryService {
     PostListResponse list(UUID currentUserId, String scope, String q, String tag, int page, int size, String sort) {
         validateListQuery(scope, q, tag, page, size, sort);
 
+        String keyword = normalizeKeyword(q);
+        String normalizedTag = normalizeTag(tag);
         int offset = offset(page, size);
-        List<PostSummaryResponse> items = postRepository.findPageByAuthor(currentUserId, size, offset)
+        List<PostSummaryResponse> items = postRepository.findPageByAuthor(
+                        currentUserId,
+                        keyword,
+                        normalizedTag,
+                        size,
+                        offset)
                 .stream()
                 .map(record -> PostSummaryResponse.from(record, preview(record.content())))
                 .toList();
-        long totalCount = postRepository.countByAuthor(currentUserId);
+        long totalCount = postRepository.countByAuthor(currentUserId, keyword, normalizedTag);
         int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
 
         return new PostListResponse(items, new PageResponse(page, size, totalCount, totalPages));
@@ -45,12 +53,6 @@ class PostQueryService {
         if (!SUPPORTED_SCOPE.equals(scope)) {
             throw new PostInvalidQueryException("Only scope=me is supported in P0-BE-12.");
         }
-        if (hasText(q)) {
-            throw new PostInvalidQueryException("q search is supported from P0-BE-13.");
-        }
-        if (hasText(tag)) {
-            throw new PostInvalidQueryException("tag filtering is supported from P0-BE-13.");
-        }
         if (page < 0) {
             throw new PostInvalidQueryException("page must be greater than or equal to 0.");
         }
@@ -64,6 +66,14 @@ class PostQueryService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    private String normalizeKeyword(String value) {
+        return hasText(value) ? value.trim() : null;
+    }
+
+    private String normalizeTag(String value) {
+        return hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
     }
 
     private int offset(int page, int size) {
