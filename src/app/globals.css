@@ -132,6 +132,11 @@ textarea {
   font-weight: 700;
 }
 
+.community-chip-compact {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
 .community-chip-accent {
   border-color: #fecdd3;
   background: #fff1f2;
@@ -264,6 +269,12 @@ textarea {
 
 .community-input-large {
   height: 44px;
+}
+
+.community-input-compact {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
 }
 
 .community-textarea {

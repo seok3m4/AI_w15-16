@@ -60,7 +60,7 @@ type PostListProps = {
   onSelectTeam?: (teamName: string) => void;
 };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 20;
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -88,8 +88,8 @@ function renderTagButton(
     <button
       className={
         variant === "primary"
-          ? "community-chip community-chip-link px-2 py-1"
-          : "community-chip px-2 py-1"
+          ? "community-chip community-chip-compact community-chip-link"
+          : "community-chip community-chip-compact"
       }
       onClick={onClick}
       type="button"
@@ -273,7 +273,7 @@ export function PostList({
       <div className="community-panel">
         <div className="community-panel-header">
           <div>
-            <h2 className="text-base font-black text-[#071a3d]">게시판</h2>
+            <h2 className="text-sm font-black text-[#071a3d]">게시판</h2>
             <p className="mt-0.5 text-xs text-[#667085]">
               {selectedTeam
                 ? `${selectedTeam} 게시판 · ${pagination.total}개 글`
@@ -282,14 +282,14 @@ export function PostList({
           </div>
           {currentUser ? (
             <Link
-              className="community-button-primary px-4 text-sm"
+              className="community-button-primary community-button-compact px-4"
               href="/posts/new"
             >
               글쓰기
             </Link>
           ) : (
             <Link
-              className="community-button-secondary px-4 text-sm"
+              className="community-button-secondary community-button-compact px-4"
               href="/login"
             >
               로그인 후 글쓰기
@@ -297,23 +297,26 @@ export function PostList({
           )}
         </div>
 
-        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-3">
+        <div className="border-b border-[#d8deea] bg-[#f6f8fc] px-3 py-2">
           <form
-            className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_88px_88px]"
+            className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_72px_72px]"
             onSubmit={handleSearch}
           >
             <input
-              className="community-input text-sm"
+              className="community-input community-input-compact"
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="제목 또는 내용을 검색하세요"
               type="search"
               value={searchInput}
             />
-            <button className="community-button-primary" type="submit">
+            <button
+              className="community-button-primary community-button-compact"
+              type="submit"
+            >
               검색
             </button>
             <button
-              className="community-button-secondary disabled:cursor-not-allowed disabled:opacity-40"
+              className="community-button-secondary community-button-compact disabled:cursor-not-allowed disabled:opacity-40"
               disabled={!hasActiveFilter}
               onClick={handleResetFilters}
               type="button"
@@ -322,30 +325,30 @@ export function PostList({
             </button>
           </form>
 
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-bold text-[#667085]">
-            <span className="rounded-sm bg-white px-2 py-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-[#667085]">
+            <span className="rounded-sm bg-white px-2 py-0.5">
               {selectedTeam ? `${selectedTeam} 게시판` : "전체 게시판"}
             </span>
-            <span className="rounded-sm bg-white px-2 py-1">
+            <span className="rounded-sm bg-white px-2 py-0.5">
               페이지 {pagination.page} / {Math.max(pagination.totalPages, 1)}
             </span>
-            <span className="rounded-sm bg-white px-2 py-1">
+            <span className="rounded-sm bg-white px-2 py-0.5">
               태그 {selectedTags.length}개
             </span>
           </div>
         </div>
 
         {hasActiveFilter ? (
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-[#d8deea] bg-[#fbfcff] px-3 py-2 text-xs text-[#667085]">
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-[#d8deea] bg-[#fbfcff] px-3 py-1.5 text-xs text-[#667085]">
             <span className="font-bold text-[#1f3470]">필터</span>
             {searchQuery ? (
-              <span className="community-chip px-2 py-1">
+              <span className="community-chip community-chip-compact">
                 검색어: {searchQuery}
               </span>
             ) : null}
             {selectedTeam ? (
               <button
-                className="community-chip community-chip-dark px-2 py-1"
+                className="community-chip community-chip-compact community-chip-dark"
                 onClick={() => onSelectTeam?.("")}
                 type="button"
               >
@@ -354,7 +357,7 @@ export function PostList({
             ) : null}
             {selectedTags.map((tagName) => (
               <button
-                className="community-chip community-chip-link px-2 py-1"
+                className="community-chip community-chip-compact community-chip-link"
                 key={tagName}
                 onClick={() => handleSelectTag(tagName)}
                 type="button"
@@ -373,13 +376,13 @@ export function PostList({
         ) : null}
 
         {isLoading ? (
-          <div className="px-3 py-8 text-center text-sm text-[#667085]">
+          <div className="px-3 py-5 text-center text-sm text-[#667085]">
             게시글을 불러오는 중입니다.
           </div>
         ) : null}
 
         {!isLoading && posts.length === 0 ? (
-          <div className="px-3 py-10 text-center">
+          <div className="px-3 py-8 text-center">
             <h3 className="text-base font-black text-[#1f3470]">
               게시글이 없습니다.
             </h3>
@@ -481,17 +484,17 @@ export function PostList({
             </div>
 
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[780px] table-fixed border-collapse text-sm">
-                <thead className="border-b border-[#d8deea] bg-[#f6f8fc] text-xs font-bold text-[#667085]">
+              <table className="w-full min-w-[760px] table-fixed border-collapse text-[13px]">
+                <thead className="border-b border-[#d8deea] bg-[#f6f8fc] text-[11px] font-bold text-[#667085]">
                   <tr>
-                    <th className="w-12 px-2 py-2 text-center">번호</th>
-                    <th className="w-32 px-2 py-2 text-center">태그</th>
-                    <th className="px-2 py-2 text-left">제목</th>
-                    <th className="w-20 px-2 py-2 text-center">글쓴이</th>
-                    <th className="w-24 px-2 py-2 text-center">작성일</th>
-                    <th className="w-14 px-2 py-2 text-center">조회</th>
-                    <th className="w-14 px-2 py-2 text-center">추천</th>
-                    <th className="w-12 px-2 py-2 text-center">댓글</th>
+                    <th className="w-10 px-2 py-1.5 text-center">번호</th>
+                    <th className="w-28 px-2 py-1.5 text-center">태그</th>
+                    <th className="px-2 py-1.5 text-left">제목</th>
+                    <th className="w-20 px-2 py-1.5 text-center">글쓴이</th>
+                    <th className="w-24 px-2 py-1.5 text-center">작성일</th>
+                    <th className="w-12 px-2 py-1.5 text-center">조회</th>
+                    <th className="w-12 px-2 py-1.5 text-center">추천</th>
+                    <th className="w-12 px-2 py-1.5 text-center">댓글</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -501,17 +504,17 @@ export function PostList({
 
                     return (
                       <tr
-                        className="border-b border-[#edf1f7] align-middle hover:bg-[#f8fafc]"
+                        className="h-9 border-b border-[#edf1f7] align-middle hover:bg-[#f8fafc]"
                         key={post.id}
                       >
-                        <td className="px-2 py-2 text-center text-xs text-[#8a94a6]">
+                        <td className="px-2 py-1.5 text-center text-[11px] text-[#8a94a6]">
                           {postNumber}
                         </td>
-                        <td className="px-2 py-2">
-                          <div className="flex flex-col items-center gap-1">
+                        <td className="px-2 py-1.5">
+                          <div className="flex flex-col items-center gap-0.5">
                             <div className="flex max-w-full items-center justify-center gap-1">
                               <button
-                                className="community-chip community-chip-link max-w-[96px] truncate px-2 py-1"
+                                className="community-chip community-chip-compact community-chip-link max-w-[82px] truncate"
                                 onClick={() =>
                                   handleSelectTag(getPrimaryTag(post.tags))
                                 }
@@ -521,7 +524,7 @@ export function PostList({
                               </button>
                               {post.tags.length > 1 ? (
                                 <button
-                                  className="community-chip community-chip-link shrink-0 px-1.5 py-1"
+                                  className="community-chip community-chip-compact community-chip-link shrink-0"
                                   onClick={() => handleTogglePostTags(post.id)}
                                   type="button"
                                 >
@@ -537,7 +540,7 @@ export function PostList({
                               <div className="flex max-w-32 flex-wrap justify-center gap-1">
                                 {post.tags.slice(1).map((tag) => (
                                   <button
-                                    className="community-chip max-w-full truncate px-1.5 py-0.5"
+                                    className="community-chip community-chip-compact max-w-full truncate"
                                     key={tag.id}
                                     onClick={() => handleSelectTag(tag.name)}
                                     type="button"
@@ -549,10 +552,10 @@ export function PostList({
                             ) : null}
                           </div>
                         </td>
-                        <td className="min-w-0 px-2 py-2">
+                        <td className="min-w-0 px-2 py-1.5">
                           <div className="flex min-w-0 items-center gap-2">
                             <Link
-                              className="min-w-0 truncate font-bold text-[#202632] hover:text-[#2f4f9f] hover:underline"
+                              className="min-w-0 truncate font-bold leading-5 text-[#202632] hover:text-[#2f4f9f] hover:underline"
                               href={`/posts/${post.id}`}
                             >
                               {post.title}
@@ -564,19 +567,19 @@ export function PostList({
                             ) : null}
                           </div>
                         </td>
-                        <td className="px-2 py-2 text-center text-xs font-bold text-[#4b5563]">
+                        <td className="px-2 py-1.5 text-center text-xs font-bold text-[#4b5563]">
                           {post.author.nickname}
                         </td>
-                        <td className="px-2 py-2 text-center text-xs text-[#667085]">
+                        <td className="px-2 py-1.5 text-center text-xs text-[#667085]">
                           {formatDate(post.createdAt)}
                         </td>
-                        <td className="px-2 py-2 text-center text-xs font-bold text-[#4b5563]">
+                        <td className="px-2 py-1.5 text-center text-xs font-bold text-[#4b5563]">
                           {post.counts.views}
                         </td>
-                        <td className="px-2 py-2 text-center text-xs font-bold text-[#2f4f9f]">
+                        <td className="px-2 py-1.5 text-center text-xs font-bold text-[#2f4f9f]">
                           {post.counts.voteScore}
                         </td>
-                        <td className="px-2 py-2 text-center text-xs font-bold text-[#d71920]">
+                        <td className="px-2 py-1.5 text-center text-xs font-bold text-[#d71920]">
                           {post.counts.comments}
                         </td>
                       </tr>
