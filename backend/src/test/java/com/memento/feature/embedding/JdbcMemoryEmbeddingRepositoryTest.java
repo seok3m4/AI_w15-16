@@ -95,6 +95,29 @@ class JdbcMemoryEmbeddingRepositoryTest {
     }
 
     @Test
+    void savePendingIgnoresDuplicateActiveEmbeddingRowsForSameChunkProviderAndModel() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcMemoryEmbeddingRepository repository = new JdbcMemoryEmbeddingRepository(jdbcTemplate);
+
+        repository.savePending(List.of(new NewMemoryEmbedding(
+                UUID.fromString("33333333-3333-3333-3333-333333333333"),
+                CHUNK_ID,
+                "mock",
+                "text-embedding-3-small",
+                1536,
+                JOB_ID)));
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).batchUpdate(sqlCaptor.capture(), ArgumentMatchers.<List<Object[]>>any());
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("insert into memory_embeddings")
+                .contains("on conflict (chunk_id, provider, model)")
+                .contains("where status in ('pending', 'running', 'succeeded')")
+                .contains("do nothing");
+    }
+
+    @Test
     void markFailedByJobClearsVectorAndStoresSanitizedReason() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcMemoryEmbeddingRepository repository = new JdbcMemoryEmbeddingRepository(jdbcTemplate);

@@ -19,6 +19,8 @@ class DatabaseMigrationScriptTest {
             Pattern.compile("V\\d{12}__relax_memory_embedding_vector_nullability\\.sql");
     private static final Pattern ASYNC_JOB_ATTEMPTS_NAME =
             Pattern.compile("V\\d{12}__add_async_job_attempt_limits\\.sql");
+    private static final Pattern MEMORY_REINDEX_DEDUPE_NAME =
+            Pattern.compile("V\\d{12}__add_memory_reindex_dedupe_indexes\\.sql");
 
     @Test
     void baselineMigrationCreatesP0P1SchemaWith1536DimensionEmbedding() throws IOException {
@@ -80,6 +82,26 @@ class DatabaseMigrationScriptTest {
         assertThat(sql).contains("add column attempt_count integer not null default 0");
         assertThat(sql).contains("add column max_attempts integer not null default 1");
         assertThat(sql).contains("constraint ck_async_jobs_attempts_non_negative");
+    }
+
+    @Test
+    void followUpMigrationAddsMemoryReindexDedupeIndexesWithoutVectorIndex() throws IOException {
+        assertThat(MIGRATION_DIR).isDirectory();
+
+        List<Path> migrations = findMigrations(MEMORY_REINDEX_DEDUPE_NAME);
+
+        assertThat(migrations).hasSize(1);
+
+        String sql = normalizedSql(migrations.getFirst());
+
+        assertThat(sql).contains("create unique index uq_async_jobs_memory_reindex_pending_post");
+        assertThat(sql).contains("on async_jobs (owner_id, (input ->> 'postid'))");
+        assertThat(sql).contains("where type = 'memory_reindex' and status = 'pending'");
+        assertThat(sql).contains("create unique index uq_memory_embeddings_active_chunk_provider_model");
+        assertThat(sql).contains("on memory_embeddings (chunk_id, provider, model)");
+        assertThat(sql).contains("where status in ('pending', 'running', 'succeeded')");
+        assertThat(sql).doesNotContain(" using hnsw ");
+        assertThat(sql).doesNotContain(" using ivfflat ");
     }
 
     private static List<Path> findMigrations(Pattern fileNamePattern) throws IOException {

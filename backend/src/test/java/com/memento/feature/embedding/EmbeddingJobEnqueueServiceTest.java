@@ -51,6 +51,7 @@ class EmbeddingJobEnqueueServiceTest {
 
         assertThat(job).isPresent();
         assertThat(job.get().id()).isEqualTo(JOB_ID);
+        assertThat(jobRepository.findPendingCalls).isEqualTo(1);
         assertThat(jobRepository.ownerId).isEqualTo(OWNER_ID);
         assertThat(jobRepository.type).isEqualTo(AsyncJobType.MEMORY_REINDEX);
         assertThat(jobRepository.retryable).isTrue();
@@ -60,6 +61,35 @@ class EmbeddingJobEnqueueServiceTest {
         assertThat(jobRepository.input.path("chunkIds").get(0).asText()).isEqualTo(CHUNK_ID.toString());
         assertThat(jobRepository.input.path("embeddingIds").get(0).asText()).isEqualTo(EMBEDDING_ID.toString());
 
+        assertThat(embeddingRepository.saved)
+                .containsExactly(new NewMemoryEmbedding(
+                        EMBEDDING_ID,
+                        CHUNK_ID,
+                        "mock",
+                        "text-embedding-3-small",
+                        1536,
+                        JOB_ID));
+    }
+
+    @Test
+    void enqueueForChunksReusesPendingMemoryReindexJobForSamePost() {
+        RecordingAsyncJobRepository jobRepository = new RecordingAsyncJobRepository();
+        jobRepository.pendingJob = jobRecord(JOB_ID, pendingInput());
+        RecordingMemoryEmbeddingRepository embeddingRepository = new RecordingMemoryEmbeddingRepository();
+        EmbeddingJobEnqueueService service = new EmbeddingJobEnqueueService(
+                jobRepository,
+                embeddingRepository,
+                new EmbeddingProperties(),
+                () -> EMBEDDING_ID);
+
+        Optional<AsyncJobRecord> job = service.enqueueForChunks(
+                OWNER_ID,
+                POST_ID,
+                List.of(new EmbeddingInputChunk(CHUNK_ID, "Memory chunk text")),
+                "post_updated");
+
+        assertThat(job).contains(jobRepository.pendingJob);
+        assertThat(jobRepository.enqueueCalled).isFalse();
         assertThat(embeddingRepository.saved)
                 .containsExactly(new NewMemoryEmbedding(
                         EMBEDDING_ID,
@@ -87,13 +117,49 @@ class EmbeddingJobEnqueueServiceTest {
         assertThat(embeddingRepository.saved).isEmpty();
     }
 
+    private AsyncJobRecord jobRecord(UUID jobId, JsonNode input) {
+        return new AsyncJobRecord(
+                jobId,
+                OWNER_ID,
+                AsyncJobType.MEMORY_REINDEX,
+                AsyncJobStatus.PENDING,
+                0,
+                input,
+                null,
+                null,
+                true,
+                0,
+                3,
+                CLOCK.instant(),
+                CLOCK.instant(),
+                null,
+                null);
+    }
+
+    private JsonNode pendingInput() {
+        return objectMapper.createObjectNode()
+                .put("ownerId", OWNER_ID.toString())
+                .put("postId", POST_ID.toString())
+                .put("reason", "post_created");
+    }
+
     private final class RecordingAsyncJobRepository implements EmbeddingAsyncJobQueue {
 
         private boolean enqueueCalled;
+        private int findPendingCalls;
         private UUID ownerId;
         private AsyncJobType type;
         private JsonNode input;
         private boolean retryable;
+        private AsyncJobRecord pendingJob;
+
+        @Override
+        public Optional<AsyncJobRecord> findPendingMemoryReindex(UUID ownerId, UUID postId) {
+            findPendingCalls++;
+            assertThat(ownerId).isEqualTo(OWNER_ID);
+            assertThat(postId).isEqualTo(POST_ID);
+            return Optional.ofNullable(pendingJob);
+        }
 
         @Override
         public AsyncJobRecord enqueueMemoryReindex(
@@ -105,22 +171,7 @@ class EmbeddingJobEnqueueServiceTest {
             this.type = AsyncJobType.MEMORY_REINDEX;
             this.input = input;
             this.retryable = retryable;
-            return new AsyncJobRecord(
-                    JOB_ID,
-                    ownerId,
-                    AsyncJobType.MEMORY_REINDEX,
-                    AsyncJobStatus.PENDING,
-                    0,
-                    input,
-                    null,
-                    null,
-                    retryable,
-                    0,
-                    3,
-                    CLOCK.instant(),
-                    CLOCK.instant(),
-                    null,
-                    null);
+            return jobRecord(JOB_ID, input);
         }
     }
 
