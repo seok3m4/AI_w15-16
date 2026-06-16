@@ -13,6 +13,11 @@ class Settings:
     ai_summary_model: str = "gpt-5.4-mini"
     ai_summary_max_sources: int = 5
     ai_summary_max_source_chars: int = 1200
+    ai_capsule_model: str = "gpt-5.4-mini"
+    ai_capsule_max_sources: int = 5
+    ai_capsule_max_source_chars: int = 1200
+    ai_capsule_max_key_facts: int = 5
+    ai_capsule_max_tags: int = 8
 
 
 def get_settings() -> Settings:
@@ -27,5 +32,12 @@ def get_settings() -> Settings:
         ai_summary_max_source_chars=int(
             os.getenv("AI_SUMMARY_MAX_SOURCE_CHARS", "1200")
         ),
+        ai_capsule_model=os.getenv("AI_CAPSULE_MODEL", "gpt-5.4-mini"),
+        ai_capsule_max_sources=int(os.getenv("AI_CAPSULE_MAX_SOURCES", "5")),
+        ai_capsule_max_source_chars=int(
+            os.getenv("AI_CAPSULE_MAX_SOURCE_CHARS", "1200")
+        ),
+        ai_capsule_max_key_facts=int(os.getenv("AI_CAPSULE_MAX_KEY_FACTS", "5")),
+        ai_capsule_max_tags=int(os.getenv("AI_CAPSULE_MAX_TAGS", "8")),
         ai_timeout_seconds=float(os.getenv("AI_TIMEOUT_SECONDS", "10")),
     )

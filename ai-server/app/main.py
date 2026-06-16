@@ -2,10 +2,12 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.capsule.router import router as capsule_router
 from app.embedding.router import router as embedding_router
 from app.summary.router import router as summary_router
 
 app = FastAPI(title="Memento AI Server")
+app.include_router(capsule_router)
 app.include_router(embedding_router)
 app.include_router(summary_router)
 

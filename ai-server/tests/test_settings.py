@@ -16,6 +16,11 @@ def test_settings_load_local_defaults(monkeypatch) -> None:
     assert settings.ai_summary_model == "gpt-5.4-mini"
     assert settings.ai_summary_max_sources == 5
     assert settings.ai_summary_max_source_chars == 1200
+    assert settings.ai_capsule_model == "gpt-5.4-mini"
+    assert settings.ai_capsule_max_sources == 5
+    assert settings.ai_capsule_max_source_chars == 1200
+    assert settings.ai_capsule_max_key_facts == 5
+    assert settings.ai_capsule_max_tags == 8
     assert settings.ai_timeout_seconds == 10
 
 
@@ -28,6 +33,11 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     monkeypatch.setenv("AI_SUMMARY_MODEL", "gpt-5.5")
     monkeypatch.setenv("AI_SUMMARY_MAX_SOURCES", "3")
     monkeypatch.setenv("AI_SUMMARY_MAX_SOURCE_CHARS", "800")
+    monkeypatch.setenv("AI_CAPSULE_MODEL", "gpt-5.5-mini")
+    monkeypatch.setenv("AI_CAPSULE_MAX_SOURCES", "4")
+    monkeypatch.setenv("AI_CAPSULE_MAX_SOURCE_CHARS", "600")
+    monkeypatch.setenv("AI_CAPSULE_MAX_KEY_FACTS", "4")
+    monkeypatch.setenv("AI_CAPSULE_MAX_TAGS", "6")
     monkeypatch.setenv("AI_TIMEOUT_SECONDS", "5")
 
     settings = get_settings()
@@ -40,4 +50,9 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     assert settings.ai_summary_model == "gpt-5.5"
     assert settings.ai_summary_max_sources == 3
     assert settings.ai_summary_max_source_chars == 800
+    assert settings.ai_capsule_model == "gpt-5.5-mini"
+    assert settings.ai_capsule_max_sources == 4
+    assert settings.ai_capsule_max_source_chars == 600
+    assert settings.ai_capsule_max_key_facts == 4
+    assert settings.ai_capsule_max_tags == 6
     assert settings.ai_timeout_seconds == 5
