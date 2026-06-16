@@ -4,6 +4,7 @@ import java.sql.Array;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -83,12 +84,64 @@ class JdbcPostRepository implements PostRepository {
                 Timestamp.from(post.createdAt()),
                 Timestamp.from(post.createdAt()));
 
-        return findById(post.id())
+        linkTags(post.id(), post.authorId(), tagNames, post.createdAt());
+
+        return findInsertedPost(post.id())
                 .orElseThrow(() -> new PostCreationFailedException(post.id()));
     }
 
-    @Override
-    public Optional<PostRecord> findById(UUID postId) {
+    private void linkTags(UUID postId, UUID authorId, List<String> tagNames, Instant linkedAt) {
+        for (String tagName : tagNames) {
+            String normalizedName = tagName.toLowerCase(Locale.ROOT);
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO tags (
+                        id,
+                        owner_id,
+                        name,
+                        normalized_name,
+                        created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (owner_id, normalized_name) DO NOTHING
+                    """,
+                    UUID.randomUUID(),
+                    authorId,
+                    tagName,
+                    normalizedName,
+                    Timestamp.from(linkedAt));
+
+            UUID tagId = jdbcTemplate.queryForObject(
+                    """
+                    SELECT id
+                    FROM tags
+                    WHERE owner_id = ?
+                      AND normalized_name = ?
+                    """,
+                    UUID.class,
+                    authorId,
+                    normalizedName);
+            if (tagId == null) {
+                throw new IllegalStateException("Tag was upserted but could not be loaded.");
+            }
+
+            jdbcTemplate.update(
+                    """
+                    INSERT INTO post_tags (
+                        post_id,
+                        tag_id,
+                        created_at
+                    )
+                    VALUES (?, ?, ?)
+                    ON CONFLICT (post_id, tag_id) DO NOTHING
+                    """,
+                    postId,
+                    tagId,
+                    Timestamp.from(linkedAt));
+        }
+    }
+
+    private Optional<PostRecord> findInsertedPost(UUID postId) {
         try {
             return Optional.ofNullable(jdbcTemplate.queryForObject(
                     POST_SELECT_COLUMNS
@@ -153,6 +206,84 @@ class JdbcPostRepository implements PostRepository {
         } catch (EmptyResultDataAccessException exception) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Optional<PostRecord> updateByAuthor(
+            UUID postId,
+            UUID authorId,
+            String title,
+            String content,
+            List<String> tagNames,
+            Instant updatedAt) {
+        int updatedRows = jdbcTemplate.update(
+                """
+                UPDATE posts
+                SET title = ?,
+                    content = ?,
+                    memory_status = 'pending',
+                    updated_at = ?
+                WHERE id = ?
+                  AND author_id = ?
+                  AND deleted_at IS NULL
+                """,
+                title,
+                content,
+                Timestamp.from(updatedAt),
+                postId,
+                authorId);
+        if (updatedRows == 0) {
+            return Optional.empty();
+        }
+
+        jdbcTemplate.update(
+                """
+                DELETE FROM post_tags
+                WHERE post_id = ?
+                """,
+                postId);
+        linkTags(postId, authorId, tagNames, updatedAt);
+
+        return findByIdAndAuthor(postId, authorId);
+    }
+
+    @Override
+    public boolean softDeleteByAuthor(UUID postId, UUID authorId, Instant deletedAt) {
+        int deletedRows = jdbcTemplate.update(
+                """
+                UPDATE posts
+                SET deleted_at = ?,
+                    updated_at = ?
+                WHERE id = ?
+                  AND author_id = ?
+                  AND deleted_at IS NULL
+                """,
+                Timestamp.from(deletedAt),
+                Timestamp.from(deletedAt),
+                postId,
+                authorId);
+        if (deletedRows == 0) {
+            return false;
+        }
+
+        jdbcTemplate.update(
+                """
+                UPDATE comments
+                SET deleted_at = ?,
+                    updated_at = ?
+                WHERE post_id = ?
+                  AND deleted_at IS NULL
+                """,
+                Timestamp.from(deletedAt),
+                Timestamp.from(deletedAt),
+                postId);
+        jdbcTemplate.update(
+                """
+                DELETE FROM post_tags
+                WHERE post_id = ?
+                """,
+                postId);
+        return true;
     }
 
     private PostRecord mapPost(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {

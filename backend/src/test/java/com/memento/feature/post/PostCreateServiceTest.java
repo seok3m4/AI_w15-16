@@ -47,7 +47,7 @@ class PostCreateServiceTest {
         assertThat(response.author().nickname()).isEqualTo("cutan");
         assertThat(response.title()).isEqualTo("오늘의 회고");
         assertThat(response.content()).isEqualTo("오늘 프로젝트에서 배운 점...");
-        assertThat(response.tags()).isEmpty();
+        assertThat(response.tags()).containsExactly("회고", "프로젝트");
         assertThat(response.commentCount()).isZero();
         assertThat(response.likeCount()).isZero();
         assertThat(response.likedByMe()).isFalse();
@@ -55,6 +55,24 @@ class PostCreateServiceTest {
         assertThat(response.memoryStatus()).isEqualTo("pending");
         assertThat(response.createdAt()).isEqualTo(NOW);
         assertThat(response.updatedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void createDeduplicatesTagNamesByLowercaseButPreservesFirstDisplayName() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        PostCreateService service = new PostCreateService(
+                repository,
+                () -> POST_ID,
+                CLOCK);
+
+        service.create(
+                USER_ID,
+                new CreatePostRequest(
+                        "오늘의 회고",
+                        "태그 표시명을 확인한다.",
+                        List.of(" Java ", "java", " Spring ")));
+
+        assertThat(repository.capturedTagNames).containsExactly("Java", "Spring");
     }
 
     private static class CapturingPostRepository implements PostRepository {
@@ -72,7 +90,7 @@ class PostCreateServiceTest {
                     "cutan",
                     post.title(),
                     post.content(),
-                    List.of(),
+                    tagNames,
                     0,
                     0,
                     false,
@@ -80,11 +98,6 @@ class PostCreateServiceTest {
                     post.memoryStatus(),
                     post.createdAt(),
                     post.createdAt());
-        }
-
-        @Override
-        public Optional<PostRecord> findById(UUID postId) {
-            return Optional.empty();
         }
 
         @Override
@@ -100,6 +113,22 @@ class PostCreateServiceTest {
         @Override
         public Optional<PostRecord> findByIdAndAuthor(UUID postId, UUID authorId) {
             return Optional.empty();
+        }
+
+        @Override
+        public Optional<PostRecord> updateByAuthor(
+                UUID postId,
+                UUID authorId,
+                String title,
+                String content,
+                List<String> tagNames,
+                Instant updatedAt) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean softDeleteByAuthor(UUID postId, UUID authorId, Instant deletedAt) {
+            return false;
         }
     }
 }

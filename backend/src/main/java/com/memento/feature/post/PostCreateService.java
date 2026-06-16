@@ -2,9 +2,6 @@ package com.memento.feature.post;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,24 +39,6 @@ class PostCreateService {
                 INITIAL_MEMORY_STATUS,
                 now);
 
-        return PostResponse.from(postRepository.save(post, normalizeTagNames(request.tagNames())));
-    }
-
-    private List<String> normalizeTagNames(List<String> tagNames) {
-        if (tagNames == null || tagNames.isEmpty()) {
-            return List.of();
-        }
-
-        LinkedHashSet<String> normalizedNames = new LinkedHashSet<>();
-        for (String tagName : tagNames) {
-            if (tagName == null) {
-                continue;
-            }
-            String trimmed = tagName.trim();
-            if (!trimmed.isEmpty()) {
-                normalizedNames.add(trimmed.toLowerCase(Locale.ROOT));
-            }
-        }
-        return List.copyOf(normalizedNames);
+        return PostResponse.from(postRepository.save(post, PostTagNames.normalize(request.tagNames())));
     }
 }

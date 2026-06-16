@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,6 +45,14 @@ class PostQueryServiceTest {
 
         assertThat(repository.capturedDetailAuthorId).isEqualTo(USER_ID);
         assertThat(repository.capturedDetailPostId).isEqualTo(POST_ID);
+    }
+
+    @Test
+    void repositoryContractDoesNotExposeUnscopedPostLookup() {
+        assertThat(Arrays.stream(PostRepository.class.getDeclaredMethods())
+                        .filter(method -> method.getName().equals("findById"))
+                        .toList())
+                .isEmpty();
     }
 
     @Test
@@ -95,11 +104,6 @@ class PostQueryServiceTest {
         }
 
         @Override
-        public Optional<PostRecord> findById(UUID postId) {
-            return Optional.empty();
-        }
-
-        @Override
         public List<PostRecord> findPageByAuthor(UUID authorId, int limit, int offset) {
             capturedAuthorId = authorId;
             capturedLimit = limit;
@@ -117,6 +121,22 @@ class PostQueryServiceTest {
             capturedDetailPostId = postId;
             capturedDetailAuthorId = authorId;
             return Optional.empty();
+        }
+
+        @Override
+        public Optional<PostRecord> updateByAuthor(
+                UUID postId,
+                UUID authorId,
+                String title,
+                String content,
+                List<String> tagNames,
+                Instant updatedAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean softDeleteByAuthor(UUID postId, UUID authorId, Instant deletedAt) {
+            throw new UnsupportedOperationException();
         }
     }
 }
