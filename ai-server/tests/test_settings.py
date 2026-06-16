@@ -13,6 +13,9 @@ def test_settings_load_local_defaults(monkeypatch) -> None:
     assert settings.openai_api_key == ""
     assert settings.ai_embedding_model == "text-embedding-3-small"
     assert settings.ai_embedding_dimension == 1536
+    assert settings.ai_summary_model == "gpt-5.4-mini"
+    assert settings.ai_summary_max_sources == 5
+    assert settings.ai_summary_max_source_chars == 1200
     assert settings.ai_timeout_seconds == 10
 
 
@@ -22,6 +25,9 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("AI_EMBEDDING_MODEL", "text-embedding-3-large")
     monkeypatch.setenv("AI_EMBEDDING_DIMENSION", "1536")
+    monkeypatch.setenv("AI_SUMMARY_MODEL", "gpt-5.5")
+    monkeypatch.setenv("AI_SUMMARY_MAX_SOURCES", "3")
+    monkeypatch.setenv("AI_SUMMARY_MAX_SOURCE_CHARS", "800")
     monkeypatch.setenv("AI_TIMEOUT_SECONDS", "5")
 
     settings = get_settings()
@@ -31,4 +37,7 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     assert settings.openai_api_key == "test-key"
     assert settings.ai_embedding_model == "text-embedding-3-large"
     assert settings.ai_embedding_dimension == 1536
+    assert settings.ai_summary_model == "gpt-5.5"
+    assert settings.ai_summary_max_sources == 3
+    assert settings.ai_summary_max_source_chars == 800
     assert settings.ai_timeout_seconds == 5

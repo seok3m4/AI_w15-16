@@ -3,9 +3,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.embedding.router import router as embedding_router
+from app.summary.router import router as summary_router
 
 app = FastAPI(title="Memento AI Server")
 app.include_router(embedding_router)
+app.include_router(summary_router)
 
 
 @app.exception_handler(RequestValidationError)
