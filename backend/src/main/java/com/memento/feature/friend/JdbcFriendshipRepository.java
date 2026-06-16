@@ -58,6 +58,26 @@ class JdbcFriendshipRepository implements FriendshipRepository {
     }
 
     @Override
+    public boolean existsAcceptedBetween(UUID userId, UUID otherUserId) {
+        UUID leastUserId = least(userId, otherUserId);
+        UUID greatestUserId = greatest(userId, otherUserId);
+        Boolean exists = jdbcTemplate.queryForObject(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM friendships
+                    WHERE least_user_id = ?
+                      AND greatest_user_id = ?
+                      AND status = 'accepted'
+                )
+                """,
+                Boolean.class,
+                leastUserId,
+                greatestUserId);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    @Override
     public void insertPending(NewFriendship friendship) {
         jdbcTemplate.update(
                 """

@@ -49,4 +49,12 @@ class PostMemoryController {
             @Valid @RequestBody MemorySearchRequest request) {
         return service.searchMemories(currentUser.userId(), request);
     }
+
+    @PostMapping("/api/v1/friends/{friendId}/memory-search")
+    FriendMemorySearchResponse searchFriendMemories(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @PathVariable UUID friendId,
+            @Valid @RequestBody FriendMemorySearchRequest request) {
+        return service.searchFriendMemories(currentUser.userId(), friendId, request);
+    }
 }

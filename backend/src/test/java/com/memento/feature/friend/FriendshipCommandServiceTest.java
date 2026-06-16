@@ -170,6 +170,11 @@ class FriendshipCommandServiceTest {
         }
 
         @Override
+        public boolean existsAcceptedBetween(UUID userId, UUID otherUserId) {
+            return false;
+        }
+
+        @Override
         public void insertPending(NewFriendship friendship) {
             inserted = friendship;
         }

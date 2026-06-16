@@ -11,6 +11,8 @@ interface FriendshipRepository {
 
     boolean existsPendingOrAcceptedBetween(UUID userId, UUID otherUserId);
 
+    boolean existsAcceptedBetween(UUID userId, UUID otherUserId);
+
     void insertPending(NewFriendship friendship);
 
     Optional<FriendshipStatusRecord> updatePendingForAddressee(

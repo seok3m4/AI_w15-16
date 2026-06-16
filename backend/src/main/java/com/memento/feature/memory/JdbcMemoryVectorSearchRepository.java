@@ -65,6 +65,65 @@ class JdbcMemoryVectorSearchRepository {
                 limit);
     }
 
+    List<MemoryVectorSearchCandidate> searchFriend(
+            UUID requesterId,
+            UUID ownerId,
+            List<Double> embedding,
+            String provider,
+            String model,
+            int dimension,
+            int limit) {
+        String embeddingLiteral = "["
+                + embedding.stream().map(String::valueOf).reduce((left, right) -> left + "," + right).orElse("")
+                + "]";
+
+        UUID leastUserId = least(requesterId, ownerId);
+        UUID greatestUserId = greatest(requesterId, ownerId);
+
+        return jdbcTemplate.query(
+                """
+                SELECT
+                    p.id as post_id,
+                    c.id as chunk_id,
+                    c.owner_id,
+                    u.nickname as owner_nickname,
+                    p.title,
+                    c.content as snippet,
+                    c.source_kind as source_kind,
+                    e.embedding <=> ?::vector as score,
+                    c.created_at
+                FROM memory_embeddings e
+                JOIN memory_chunks c ON c.id = e.chunk_id
+                JOIN posts p ON p.id = c.post_id
+                JOIN users u ON u.id = c.owner_id
+                WHERE c.owner_id = ?
+                  AND c.status = 'active'
+                  AND p.deleted_at IS NULL
+                  AND e.status = 'succeeded'
+                  AND e.provider = ?
+                  AND e.model = ?
+                  AND e.dimension = ?
+                  AND EXISTS (
+                      SELECT 1
+                      FROM friendships f
+                      WHERE f.least_user_id = ?
+                        AND f.greatest_user_id = ?
+                        AND f.status = 'accepted'
+                  )
+                ORDER BY score ASC
+                LIMIT ?
+                """,
+                rowMapper(),
+                embeddingLiteral,
+                ownerId,
+                provider,
+                model,
+                dimension,
+                leastUserId,
+                greatestUserId,
+                limit);
+    }
+
     private RowMapper<MemoryVectorSearchCandidate> rowMapper() {
         return (ResultSet rs, int rowNum) -> new MemoryVectorSearchCandidate(
                 rs.getObject("post_id", UUID.class),
@@ -81,5 +140,13 @@ class JdbcMemoryVectorSearchRepository {
     private Instant instant(ResultSet rs, String column) throws SQLException {
         Timestamp timestamp = rs.getTimestamp(column);
         return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    private UUID least(UUID userId, UUID otherUserId) {
+        return userId.compareTo(otherUserId) <= 0 ? userId : otherUserId;
+    }
+
+    private UUID greatest(UUID userId, UUID otherUserId) {
+        return userId.compareTo(otherUserId) >= 0 ? userId : otherUserId;
     }
 }

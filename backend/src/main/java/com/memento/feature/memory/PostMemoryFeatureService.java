@@ -4,8 +4,10 @@ import com.memento.feature.embedding.EmbeddingInputChunk;
 import com.memento.feature.embedding.MemoryEmbeddingJobEnqueuer;
 import com.memento.feature.embedding.QueryEmbedding;
 import com.memento.feature.embedding.QueryEmbeddingService;
+import com.memento.feature.friend.FriendshipAccessService;
 import com.memento.feature.jobs.AsyncJobCommandService;
 import com.memento.feature.jobs.AsyncJobRecord;
+import com.memento.feature.privacy.AiSharingConsentReader;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,18 +27,24 @@ class PostMemoryFeatureService {
     private final AsyncJobCommandService asyncJobCommandService;
     private final JdbcMemoryVectorSearchRepository memoryVectorSearchRepository;
     private final QueryEmbeddingService queryEmbeddingService;
+    private final FriendshipAccessService friendshipAccessService;
+    private final AiSharingConsentReader aiSharingConsentReader;
 
     PostMemoryFeatureService(
             PostMemoryStatusRepository postMemoryStatusRepository,
             MemoryEmbeddingJobEnqueuer memoryEmbeddingJobEnqueuer,
             AsyncJobCommandService asyncJobCommandService,
             JdbcMemoryVectorSearchRepository memoryVectorSearchRepository,
-            QueryEmbeddingService queryEmbeddingService) {
+            QueryEmbeddingService queryEmbeddingService,
+            FriendshipAccessService friendshipAccessService,
+            AiSharingConsentReader aiSharingConsentReader) {
         this.postMemoryStatusRepository = postMemoryStatusRepository;
         this.memoryEmbeddingJobEnqueuer = memoryEmbeddingJobEnqueuer;
         this.asyncJobCommandService = asyncJobCommandService;
         this.memoryVectorSearchRepository = memoryVectorSearchRepository;
         this.queryEmbeddingService = queryEmbeddingService;
+        this.friendshipAccessService = friendshipAccessService;
+        this.aiSharingConsentReader = aiSharingConsentReader;
     }
 
     @Transactional(readOnly = true)
@@ -110,6 +118,38 @@ class PostMemoryFeatureService {
                 queryEmbedding.dimension(),
                 limit);
         return MemorySearchResponse.of(query, scope, candidates);
+    }
+
+    @Transactional(readOnly = true)
+    FriendMemorySearchResponse searchFriendMemories(UUID currentUserId, UUID friendId, FriendMemorySearchRequest request) {
+        String query = normalizeQuery(request.query());
+        int limit = normalizeLimit(request.limit());
+
+        if (!isFriendMemoryContextAllowed(currentUserId, friendId)) {
+            return FriendMemorySearchResponse.of(friendId, query, false, List.of());
+        }
+
+        QueryEmbedding queryEmbedding;
+        try {
+            queryEmbedding = queryEmbeddingService.create(query);
+        } catch (RuntimeException exception) {
+            throw new MemorySearchEmbeddingFailedException(exception);
+        }
+
+        List<MemoryVectorSearchCandidate> candidates = memoryVectorSearchRepository.searchFriend(
+                currentUserId,
+                friendId,
+                queryEmbedding.vector(),
+                queryEmbedding.provider(),
+                queryEmbedding.model(),
+                queryEmbedding.dimension(),
+                limit);
+        return FriendMemorySearchResponse.of(friendId, query, true, candidates);
+    }
+
+    private boolean isFriendMemoryContextAllowed(UUID currentUserId, UUID friendId) {
+        return friendshipAccessService.hasAcceptedFriendship(currentUserId, friendId)
+                && aiSharingConsentReader.isFriendAiSharingEnabled(friendId);
     }
 
     private List<UUID> normalizePostIds(List<UUID> postIds) {

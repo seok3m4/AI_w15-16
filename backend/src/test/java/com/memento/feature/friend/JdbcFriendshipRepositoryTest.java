@@ -76,6 +76,22 @@ class JdbcFriendshipRepositoryTest {
     }
 
     @Test
+    void existsAcceptedBetweenChecksOrderedAcceptedPair() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(USER_ID), eq(FRIEND_ID)))
+                .thenReturn(true);
+
+        assertThat(repository.existsAcceptedBetween(USER_ID, FRIEND_ID)).isTrue();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), eq(Boolean.class), eq(USER_ID), eq(FRIEND_ID));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("least_user_id = ?")
+                .contains("greatest_user_id = ?")
+                .contains("status = 'accepted'");
+    }
+
+    @Test
     void insertPendingStoresRequesterAddresseeOrderedPairAndTimestamps() {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcFriendshipRepository repository = new JdbcFriendshipRepository(jdbcTemplate);

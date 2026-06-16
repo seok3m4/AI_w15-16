@@ -1286,6 +1286,8 @@ Response `201 Created`:
 
 친구 데이터가 포함된 Capsule은 친구 관계와 친구 AI 공유 동의가 유지되는 경우에만 생성할 수 있다.
 
+P2-BE-8 구현 범위에서는 `scope=me`만 허용한다. `sourcePostIds`가 있으면 Spring Boot가 현재 사용자 소유의 삭제되지 않은 게시글과 active memory chunk를 재검증해 사용하고, `sourcePostIds`가 없으면 `query`로 본인 Memory Search top 5 근거를 선택한다. `sourcePostIds`와 `query`가 모두 없거나 검증된 근거가 없으면 `400`, 명시한 source 게시글이 없거나 접근 불가이면 `404`를 반환한다. FastAPI Capsule draft 생성 실패나 timeout 시에는 부분 저장 없이 `502`를 반환한다.
+
 ### 8.2 Capsule 목록 조회
 
 ```http
