@@ -110,7 +110,7 @@ export class AgentService {
           '단, 후기 본문을 그대로 베껴 쓰지 말고, 사용자가 물어본 핵심(예: 바다·맛집)에 초점을 맞춰 그 부분 위주로 정리해라. ' +
           '사용자가 교통·이동을 직접 묻지 않았다면, 교통수단이나 이동 편의(지하철·버스·차·뚜벅이 등)에 대한 내용은 답변에 절대 넣지 마라. ' +
           '3. search_similar_posts가 아무 코스도 반환하지 않으면 거기서 끝내지 말고, place_search를 호출해서 외부 장소 후보를 찾아라. 이때 답변에는 "게시판 코스가 아니라 외부 장소 검색을 참고했다"는 점을 분명히 밝혀라. ' +
-          '4. 답변에서 장소(해수욕장·시장·명소 등)를 언급할 때는 place_search로 확인해 정확한 이름으로 적어라(사용자가 카카오맵에서 찾을 수 있게). ' +
+          '4. 코스를 추천하거나 답변에서 장소(해수욕장·시장·명소 등)를 언급할 때는, 언급하는 주요 장소들을 반드시 place_search로 한 번씩 검색해라. 이는 선택이 아니라 필수다 — 사용자가 그 장소를 카카오맵에서 바로 열 수 있도록 하기 위함이다. 장소를 말로만 언급하고 place_search를 생략하지 마라. ' +
           '5. 특정 장소가 어디인지/어떤 곳인지만 묻는 질문이면 place_search로 답해라. ' +
           '\n\n[출력 형식]\n' +
           '한국어로 친근하지만 간결하게 답해. Markdown을 사용해 읽기 쉽게 구성해라. ' +
@@ -177,6 +177,12 @@ export class AgentService {
       answer =
         final.content ??
         '죄송해요, 답변을 정리하지 못했어요. 다시 질문해 주세요.';
+    }
+
+    // 모델이 place_search를 생략한 경우, 답변에 언급된 코스 경유지를 직접 검색해
+    // 카카오맵 장소 칩(좌표·URL)을 채운다. (프롬프트만으로는 호출을 보장하기 어려움)
+    if (collectedPlaces.length === 0 && collectedPosts.size > 0) {
+      await this.enrichPlacesFromAnswer(answer, collectedPosts, collectedPlaces);
     }
 
     return {
@@ -251,6 +257,39 @@ export class AgentService {
       return JSON.parse(raw) as Record<string, unknown>;
     } catch {
       return {};
+    }
+  }
+
+  // 답변에 언급된 코스 경유지를 place_search로 찾아 장소 칩(좌표·URL)을 채운다.
+  // 모델이 place_search를 호출하지 않았을 때의 보완책이다.
+  private async enrichPlacesFromAnswer(
+    answer: string,
+    collectedPosts: Map<string, SimilarPost>,
+    collectedPlaces: PlaceResult[],
+  ): Promise<void> {
+    const answerKey = answer.replace(/\s/g, '').toLowerCase();
+
+    // 추천된 코스들의 경유지 중 답변 본문에 실제로 언급된 장소만 고른다.
+    const names = new Set<string>();
+    for (const post of collectedPosts.values()) {
+      for (const place of post.places ?? []) {
+        if (answerKey.includes(place.name.replace(/\s/g, '').toLowerCase())) {
+          names.add(place.name);
+        }
+      }
+    }
+
+    // 외부 호출이 과도해지지 않도록 최대 6곳까지만 확인한다.
+    for (const name of [...names].slice(0, 6)) {
+      try {
+        const found = await this.mcp.searchPlaces(name, 1);
+        const top = found[0];
+        if (top && !collectedPlaces.some((p) => p.name === top.name)) {
+          collectedPlaces.push(top);
+        }
+      } catch {
+        // 장소 보강 실패는 무시한다. (칩만 안 뜰 뿐 답변에는 영향 없음)
+      }
     }
   }
 
