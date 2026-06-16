@@ -28,6 +28,8 @@ class PostMemoryControllerTest {
             UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID CHUNK_ID =
             UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final UUID FRIEND_ID =
+            UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final Instant CREATED_AT = Instant.parse("2026-06-16T09:30:00Z");
 
     @Autowired
@@ -141,5 +143,80 @@ class PostMemoryControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("EMBEDDING_PROVIDER_UNAVAILABLE"));
+    }
+
+    @Test
+    void searchFriendMemoriesReturnsFriendContextResults() throws Exception {
+        FriendMemorySearchRequest request = new FriendMemorySearchRequest("friend memory", 5);
+        FriendMemorySearchResponse response = new FriendMemorySearchResponse(
+                FRIEND_ID,
+                "friend memory",
+                true,
+                List.of(new MemorySearchResultItem(
+                        POST_ID,
+                        CHUNK_ID,
+                        FRIEND_ID,
+                        "friend",
+                        "Retrospective",
+                        "JWT Bearer decision",
+                        0.91d,
+                        "post_content",
+                        CREATED_AT)));
+        given(service.searchFriendMemories(USER_ID, FRIEND_ID, request)).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/friends/{friendId}/memory-search", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friendId").value("44444444-4444-4444-4444-444444444444"))
+                .andExpect(jsonPath("$.query").value("friend memory"))
+                .andExpect(jsonPath("$.usedFriendContext").value(true))
+                .andExpect(jsonPath("$.results[0].ownerUserId").value("44444444-4444-4444-4444-444444444444"))
+                .andExpect(jsonPath("$.results[0].sourceType").value("post_content"));
+
+        verify(service).searchFriendMemories(USER_ID, FRIEND_ID, request);
+    }
+
+    @Test
+    void searchFriendMemoriesReturnsEmptyWhenConsentDisabledOrNotFriend() throws Exception {
+        FriendMemorySearchRequest request = new FriendMemorySearchRequest("friend memory", 5);
+        FriendMemorySearchResponse response = new FriendMemorySearchResponse(
+                FRIEND_ID,
+                "friend memory",
+                false,
+                List.of());
+        given(service.searchFriendMemories(USER_ID, FRIEND_ID, request)).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/friends/{friendId}/memory-search", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friendId").value("44444444-4444-4444-4444-444444444444"))
+                .andExpect(jsonPath("$.query").value("friend memory"))
+                .andExpect(jsonPath("$.usedFriendContext").value(false))
+                .andExpect(jsonPath("$.results").isArray())
+                .andExpect(jsonPath("$.results").isEmpty());
+
+        verify(service).searchFriendMemories(USER_ID, FRIEND_ID, request);
+    }
+
+    @Test
+    void searchFriendMemoriesRejectsBlankQuery() throws Exception {
+        mockMvc.perform(post("/api/v1/friends/{friendId}/memory-search", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "query", " ",
+                                "limit", 5))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_MEMORY_SEARCH_REQUEST"));
     }
 }

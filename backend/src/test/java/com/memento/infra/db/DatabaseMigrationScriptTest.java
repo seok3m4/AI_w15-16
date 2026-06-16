@@ -21,6 +21,8 @@ class DatabaseMigrationScriptTest {
             Pattern.compile("V\\d{12}__add_async_job_attempt_limits\\.sql");
     private static final Pattern MEMORY_REINDEX_DEDUPE_NAME =
             Pattern.compile("V\\d{12}__add_memory_reindex_dedupe_indexes\\.sql");
+    private static final Pattern CONTEXT_CAPSULES_NAME =
+            Pattern.compile("V\\d{12}__add_context_capsules\\.sql");
 
     @Test
     void baselineMigrationCreatesP0P1SchemaWith1536DimensionEmbedding() throws IOException {
@@ -102,6 +104,28 @@ class DatabaseMigrationScriptTest {
         assertThat(sql).contains("where status in ('pending', 'running', 'succeeded')");
         assertThat(sql).doesNotContain(" using hnsw ");
         assertThat(sql).doesNotContain(" using ivfflat ");
+    }
+
+    @Test
+    void followUpMigrationAddsContextCapsuleTables() throws IOException {
+        assertThat(MIGRATION_DIR).isDirectory();
+
+        List<Path> migrations = findMigrations(CONTEXT_CAPSULES_NAME);
+
+        assertThat(migrations).hasSize(1);
+
+        String sql = normalizedSql(migrations.getFirst());
+
+        assertThat(sql).contains("create table context_capsules");
+        assertThat(sql).contains("owner_id uuid not null references users (id) on delete cascade");
+        assertThat(sql).contains("key_facts jsonb not null default '[]'::jsonb");
+        assertThat(sql).contains("tags jsonb not null default '[]'::jsonb");
+        assertThat(sql).contains("contains_friend_context boolean not null default false");
+        assertThat(sql).contains("create table context_capsule_sources");
+        assertThat(sql).contains("capsule_id uuid not null references context_capsules (id) on delete cascade");
+        assertThat(sql).contains("chunk_id uuid null references memory_chunks (id) on delete set null");
+        assertThat(sql).contains("create index idx_context_capsules_owner_active_created");
+        assertThat(sql).contains("create index idx_capsule_sources_owner_user");
     }
 
     private static List<Path> findMigrations(Pattern fileNamePattern) throws IOException {

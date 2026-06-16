@@ -141,7 +141,7 @@ class PostMemoryExceptionHandler {
     }
 
     private boolean isMemorySearch(HttpServletRequest request) {
-        return request.getRequestURI().contains("/api/v1/memory-search");
+        return request.getRequestURI().endsWith("/memory-search");
     }
 
     record ProblemDetailsResponse(
