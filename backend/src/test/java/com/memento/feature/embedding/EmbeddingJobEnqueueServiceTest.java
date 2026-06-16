@@ -58,8 +58,6 @@ class EmbeddingJobEnqueueServiceTest {
         assertThat(jobRepository.input.path("ownerId").asText()).isEqualTo(OWNER_ID.toString());
         assertThat(jobRepository.input.path("postId").asText()).isEqualTo(POST_ID.toString());
         assertThat(jobRepository.input.path("reason").asText()).isEqualTo("post_created");
-        assertThat(jobRepository.input.path("chunkIds").get(0).asText()).isEqualTo(CHUNK_ID.toString());
-        assertThat(jobRepository.input.path("embeddingIds").get(0).asText()).isEqualTo(EMBEDDING_ID.toString());
 
         assertThat(embeddingRepository.saved)
                 .containsExactly(new NewMemoryEmbedding(

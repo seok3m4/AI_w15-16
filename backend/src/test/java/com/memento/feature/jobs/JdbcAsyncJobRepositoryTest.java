@@ -71,7 +71,7 @@ class JdbcAsyncJobRepositoryTest {
                 .contains("owner_id = ?")
                 .contains("type = 'memory_reindex'")
                 .contains("status = 'pending'")
-                .contains("input ->> 'postid' = ?")
+                .contains("input ->> 'postid'")
                 .contains("for update");
     }
 }

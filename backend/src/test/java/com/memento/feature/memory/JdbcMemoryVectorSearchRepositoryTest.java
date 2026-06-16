@@ -35,11 +35,11 @@ class JdbcMemoryVectorSearchRepositoryTest {
         when(jdbcTemplate.query(
                         anyString(),
                         any(RowMapper.class),
+                        eq("[0.1,0.2]"),
                         eq(OWNER_ID),
                         eq("mock"),
                         eq("text-embedding-3-small"),
                         eq(1536),
-                        eq("[0.1,0.2]"),
                         eq(5)))
                 .thenAnswer(invocation -> {
                     @SuppressWarnings("unchecked")
@@ -68,11 +68,11 @@ class JdbcMemoryVectorSearchRepositoryTest {
         verify(jdbcTemplate).query(
                 sqlCaptor.capture(),
                 any(RowMapper.class),
+                eq("[0.1,0.2]"),
                 eq(OWNER_ID),
                 eq("mock"),
                 eq("text-embedding-3-small"),
                 eq(1536),
-                eq("[0.1,0.2]"),
                 eq(5));
         String sql = sqlCaptor.getValue().toLowerCase();
         assertThat(sql)
@@ -87,7 +87,7 @@ class JdbcMemoryVectorSearchRepositoryTest {
                 .contains("e.model = ?")
                 .contains("e.dimension = ?")
                 .contains("e.embedding <=> ?::vector")
-                .contains("order by distance asc");
+                .contains("order by score asc");
     }
 
     private ResultSet resultSet() throws Exception {

@@ -63,6 +63,9 @@ class EmbeddingJobEnqueueService implements MemoryEmbeddingJobEnqueuer {
             return Optional.empty();
         }
 
+        AsyncJobRecord job = asyncJobQueue.findPendingMemoryReindex(ownerId, postId)
+                .orElseGet(() -> createPendingReindexJob(ownerId, postId, reason));
+
         List<NewMemoryEmbedding> pendingEmbeddings = new ArrayList<>();
         ObjectNode input = objectMapper.createObjectNode()
                 .put("ownerId", ownerId.toString())
@@ -84,7 +87,6 @@ class EmbeddingJobEnqueueService implements MemoryEmbeddingJobEnqueuer {
                     null));
         }
 
-        AsyncJobRecord job = asyncJobQueue.enqueueMemoryReindex(ownerId, input, true);
         List<NewMemoryEmbedding> embeddingsWithJob = pendingEmbeddings.stream()
                 .map(embedding -> new NewMemoryEmbedding(
                         embedding.id(),
@@ -96,5 +98,16 @@ class EmbeddingJobEnqueueService implements MemoryEmbeddingJobEnqueuer {
                 .toList();
         embeddingRepository.savePending(embeddingsWithJob);
         return Optional.of(job);
+    }
+
+    private AsyncJobRecord createPendingReindexJob(
+            UUID ownerId,
+            UUID postId,
+            String reason) {
+        ObjectNode input = objectMapper.createObjectNode()
+                .put("ownerId", ownerId.toString())
+                .put("postId", postId.toString())
+                .put("reason", reason);
+        return asyncJobQueue.enqueueMemoryReindex(ownerId, input, true);
     }
 }

@@ -55,4 +55,9 @@ public class AsyncJobCommandService {
     public Optional<AsyncJobRecord> findForOwner(UUID ownerId, UUID jobId) {
         return repository.findForOwner(ownerId, jobId);
     }
+
+    @Transactional(readOnly = true)
+    public Optional<AsyncJobRecord> findPendingMemoryReindexForPost(UUID ownerId, UUID postId) {
+        return repository.findPendingMemoryReindexForPost(ownerId, postId);
+    }
 }

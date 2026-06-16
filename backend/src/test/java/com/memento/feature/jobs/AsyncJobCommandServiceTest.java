@@ -87,6 +87,11 @@ class AsyncJobCommandServiceTest {
         }
 
         @Override
+        public Optional<AsyncJobRecord> findPendingMemoryReindexForPost(UUID ownerId, UUID postId) {
+            return Optional.empty();
+        }
+
+        @Override
         public Optional<ClaimedAsyncJob> claimNext(Collection<AsyncJobType> supportedTypes, Instant now) {
             return Optional.empty();
         }

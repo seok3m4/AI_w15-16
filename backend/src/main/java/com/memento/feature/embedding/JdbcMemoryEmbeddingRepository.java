@@ -35,6 +35,9 @@ class JdbcMemoryEmbeddingRepository implements MemoryEmbeddingRepository {
                     id, chunk_id, provider, model, dimension, embedding, status, job_id
                 )
                 VALUES (?, ?, ?, ?, ?, NULL, 'pending', ?)
+                ON CONFLICT (chunk_id, provider, model)
+                    WHERE status IN ('pending', 'running', 'succeeded')
+                DO NOTHING
                 """,
                 batchArgs);
     }

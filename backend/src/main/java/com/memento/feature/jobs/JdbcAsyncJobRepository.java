@@ -68,10 +68,31 @@ class JdbcAsyncJobRepository implements AsyncJobRepository {
     @Override
     public Optional<AsyncJobRecord> findForOwner(UUID ownerId, UUID jobId) {
         return jdbcTemplate.query(
-                        "SELECT * FROM async_jobs WHERE owner_id = ? AND id = ?",
+                "SELECT * FROM async_jobs WHERE owner_id = ? AND id = ?",
+                jobRowMapper(),
+                ownerId,
+                jobId)
+                .stream()
+                .findFirst();
+    }
+
+    @Override
+    public Optional<AsyncJobRecord> findPendingMemoryReindexForPost(UUID ownerId, UUID postId) {
+        return jdbcTemplate.query(
+                        """
+                SELECT *
+                FROM async_jobs
+                WHERE owner_id = ?
+                  AND type = 'memory_reindex'
+                  AND status = 'pending'
+                  AND (input ->> 'postId') = ?
+                  FOR UPDATE
+                ORDER BY created_at ASC
+                LIMIT 1
+                """,
                         jobRowMapper(),
                         ownerId,
-                        jobId)
+                        postId.toString())
                 .stream()
                 .findFirst();
     }

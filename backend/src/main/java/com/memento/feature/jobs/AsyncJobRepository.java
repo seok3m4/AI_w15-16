@@ -20,6 +20,8 @@ interface AsyncJobRepository {
 
     Optional<AsyncJobRecord> findForOwner(UUID ownerId, UUID jobId);
 
+    Optional<AsyncJobRecord> findPendingMemoryReindexForPost(UUID ownerId, UUID postId);
+
     Optional<ClaimedAsyncJob> claimNext(Collection<AsyncJobType> supportedTypes, Instant now);
 
     void markSucceeded(UUID jobId, JsonNode result, Instant now);
