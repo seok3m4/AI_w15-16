@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from './app/ProtectedRoute';
 import { LoginPage, SignupPage } from './features/auth/AuthPages';
+import { postRoutes } from './features/post/postRoutes';
 import { clearAccessToken, getAccessToken } from './lib/auth/tokenStorage';
 import './styles/globals.css';
 
@@ -27,7 +28,9 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/app" element={<ProtectedRoute />} />
+          <Route path="/app" element={<ProtectedRoute />}>
+            {postRoutes}
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

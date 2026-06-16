@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { me } from '../lib/api/auth';
 import { ApiError } from '../lib/api/types';
 import { getAccessToken } from '../lib/auth/tokenStorage';
@@ -39,5 +39,9 @@ export function ProtectedRoute() {
     );
   }
 
-  return <AppShell user={userQuery.data} />;
+  return (
+    <AppShell user={userQuery.data}>
+      <Outlet />
+    </AppShell>
+  );
 }

@@ -61,3 +61,69 @@ export type LoginRequest = {
   email: string;
   password: string;
 };
+
+export type PageResponse = {
+  page: number;
+  size: number;
+  totalCount: number;
+  totalPages: number;
+};
+
+export type UserPublicSummary = {
+  id: string;
+  nickname: string;
+};
+
+export type MemoryStatus = 'pending' | 'running' | 'succeeded' | 'failed' | string;
+
+export type PostSummaryResponse = {
+  id: string;
+  author: UserPublicSummary;
+  title: string;
+  contentPreview: string;
+  tags: string[];
+  commentCount: number;
+  likeCount: number;
+  likedByMe: boolean;
+  accessScope: 'me' | 'friend' | string;
+  memoryStatus: MemoryStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PostRecentCommentResponse = {
+  id: string;
+  author: UserPublicSummary;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PostDetailResponse = {
+  id: string;
+  author: UserPublicSummary;
+  title: string;
+  content: string;
+  tags: string[];
+  recentComments: PostRecentCommentResponse[];
+  commentCount: number;
+  likeCount: number;
+  likedByMe: boolean;
+  accessScope: 'me' | 'friend' | string;
+  memoryStatus: MemoryStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PostResponse = Omit<PostDetailResponse, 'recentComments'>;
+
+export type PostListResponse = {
+  items: PostSummaryResponse[];
+  page: PageResponse;
+};
+
+export type CreatePostRequest = {
+  title: string;
+  content: string;
+  tagNames: string[];
+};

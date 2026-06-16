@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'memento.accessToken';
+const USER_ID = '11111111-1111-1111-1111-111111111111';
+const FIRST_POST_ID = '22222222-2222-2222-2222-222222222222';
 
 function mockFetch(
   handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -15,6 +17,50 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
+}
+
+function noContentResponse() {
+  return new Response(null, { status: 204 });
+}
+
+function authMeResponse() {
+  return {
+    id: USER_ID,
+    email: 'user@example.com',
+    nickname: 'cutan',
+    friendAiSharingEnabled: false,
+    createdAt: '2026-06-15T03:10:00Z',
+  };
+}
+
+function postSummary(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: FIRST_POST_ID,
+    author: {
+      id: USER_ID,
+      nickname: 'cutan',
+    },
+    title: '비 오는 날 회고',
+    contentPreview: '오늘은 비가 와서 프로젝트 회고를 길게 남겼다.',
+    tags: ['회고'],
+    commentCount: 0,
+    likeCount: 0,
+    likedByMe: false,
+    accessScope: 'me',
+    memoryStatus: 'pending',
+    createdAt: '2026-06-15T03:10:00Z',
+    updatedAt: '2026-06-15T03:10:00Z',
+    ...overrides,
+  };
+}
+
+function postDetail(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    ...postSummary(),
+    content: '오늘은 비가 와서 프로젝트 회고를 길게 남겼다.\n다음에는 더 작게 쪼개서 진행한다.',
+    recentComments: [],
+    ...overrides,
+  };
 }
 
 describe('App auth flow', () => {
@@ -239,5 +285,181 @@ describe('App auth flow', () => {
 
     expect(loginButton).toHaveClass('button-primary');
     expect(container.querySelector('.button-icon')).toBeInTheDocument();
+  });
+
+  it('loads the authenticated post feed and opens a post detail', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [postSummary()],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        });
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail());
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '내 기억' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /비 오는 날 회고/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: /비 오는 날 회고/ }));
+
+    expect(
+      await screen.findByRole('heading', { name: '비 오는 날 회고' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/다음에는 더 작게 쪼개서 진행한다/)).toBeInTheDocument();
+  });
+
+  it('creates a post and navigates to the created detail page', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 0,
+            totalPages: 0,
+          },
+        });
+      }
+      if (url.endsWith('/posts') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: '새 기록',
+          content: '처음 남기는 텍스트 기억',
+          tagNames: [],
+        });
+        return jsonResponse(
+          postDetail({
+            title: '새 기록',
+            content: '처음 남기는 텍스트 기억',
+            tags: [],
+          }),
+          { status: 201 },
+        );
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(
+          postDetail({
+            title: '새 기록',
+            content: '처음 남기는 텍스트 기억',
+            tags: [],
+          }),
+        );
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('link', { name: '첫 기록 작성' }));
+    fireEvent.change(screen.getByLabelText('제목'), {
+      target: { value: '새 기록' },
+    });
+    fireEvent.change(screen.getByLabelText('본문'), {
+      target: { value: '처음 남기는 텍스트 기억' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe(`/app/posts/${FIRST_POST_ID}`));
+    expect(await screen.findByRole('heading', { name: '새 기록' })).toBeInTheDocument();
+  });
+
+  it('prefills, updates, and deletes an existing post', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let detailTitle = '비 오는 날 회고';
+    let detailContent = '오늘은 비가 와서 프로젝트 회고를 길게 남겼다.';
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`) && init?.method === 'PUT') {
+        const body = JSON.parse(String(init.body));
+        expect(body).toEqual({
+          title: '수정된 회고',
+          content: '내용을 더 구체적으로 고쳤다.',
+          tagNames: ['회고'],
+        });
+        detailTitle = body.title;
+        detailContent = body.content;
+        return jsonResponse(
+          postDetail({
+            title: detailTitle,
+            content: detailContent,
+          }),
+        );
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`) && init?.method === 'DELETE') {
+        return noContentResponse();
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(
+          postDetail({
+            title: detailTitle,
+            content: detailContent,
+          }),
+        );
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 0,
+            totalPages: 0,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: '비 오는 날 회고' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: '수정' }));
+    expect(await screen.findByDisplayValue('비 오는 날 회고')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('제목'), {
+      target: { value: '수정된 회고' },
+    });
+    fireEvent.change(screen.getByLabelText('본문'), {
+      target: { value: '내용을 더 구체적으로 고쳤다.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      await screen.findByRole('heading', { name: '수정된 회고' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe('/app'));
+    expect(await screen.findByText('아직 기록이 없어요')).toBeInTheDocument();
   });
 });
