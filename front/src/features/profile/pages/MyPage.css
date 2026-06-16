@@ -200,9 +200,25 @@
   flex: 0 0 auto;
 }
 
+.mypage-check.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.mypage-check input:disabled {
+  cursor: not-allowed;
+}
+
 .mypage-check span {
   overflow-wrap: anywhere;
   line-height: 1.35;
+}
+
+.mypage-help {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .mypage-save {

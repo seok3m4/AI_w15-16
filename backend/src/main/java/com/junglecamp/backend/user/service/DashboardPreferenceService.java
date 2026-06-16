@@ -43,13 +43,16 @@ public class DashboardPreferenceService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown dashboard section: " + section);
 			}
 		}
+		if (visibleSections.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one dashboard section is required");
+		}
 
 		return new DashboardPreferences(
 				uniqueTrimmed(request.coreMetricIds()),
 				uniqueTrimmed(request.watchMetricIds()),
 				uniqueTrimmed(request.eventIds()),
 				uniqueTrimmed(request.reportIds()),
-				visibleSections.isEmpty() ? DashboardPreferences.ALLOWED_VISIBLE_SECTIONS : visibleSections);
+				visibleSections);
 	}
 
 	private List<String> uniqueTrimmed(List<String> values) {

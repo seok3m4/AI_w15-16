@@ -226,6 +226,38 @@
   flex: 0 0 auto;
 }
 
+.econ-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: var(--app-text);
+  background: transparent;
+  font: inherit;
+}
+
+.econ-search input::placeholder {
+  color: var(--app-muted);
+}
+
+.econ-search button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 6px;
+  color: var(--app-on-accent);
+  background: var(--app-accent-tint);
+  cursor: pointer;
+}
+
+.econ-search button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .econ-topbar__actions {
   justify-content: flex-end;
   gap: 10px;
@@ -246,6 +278,188 @@
   position: absolute;
   top: -6px;
   right: -6px;
+}
+
+.econ-notification-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  justify-items: end;
+  align-items: start;
+  padding: 78px 24px 24px;
+  pointer-events: none;
+}
+
+.econ-notification-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: rgba(4, 12, 18, 0.48);
+  cursor: default;
+  pointer-events: auto;
+}
+
+.econ-notification-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 480px);
+  max-height: min(720px, calc(100vh - 108px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.econ-notification-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.econ-notification-dialog__header > div {
+  min-width: 0;
+}
+
+.econ-notification-dialog__header > div:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.econ-notification-dialog__header strong {
+  display: block;
+  color: var(--app-heading);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.econ-notification-dialog__header span {
+  display: block;
+  margin-top: 3px;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+}
+
+.econ-notification-dialog__header button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--app-border);
+  border-radius: 6px;
+  color: var(--app-text);
+  background: var(--app-input-bg);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.econ-notification-dialog__header button:last-child {
+  width: 34px;
+  padding: 0;
+}
+
+.econ-notification-message {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--app-danger);
+  border-radius: 8px;
+  color: var(--app-danger);
+  background: var(--app-surface-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.econ-notification-list {
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.econ-notification-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 8px;
+  color: var(--app-text);
+  background: var(--app-surface-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.econ-notification-item.is-unread {
+  border-color: var(--app-accent);
+  box-shadow: inset 3px 0 0 var(--app-accent);
+}
+
+.econ-notification-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.econ-notification-item__meta strong,
+.econ-notification-item__category,
+.econ-notification-item__action {
+  color: var(--app-accent);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.econ-notification-item__meta small {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.econ-notification-item h2,
+.econ-notification-item p,
+.econ-notification-item blockquote {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.econ-notification-item h2 {
+  color: var(--app-heading);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.econ-notification-item p {
+  color: var(--app-body);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.econ-notification-item blockquote {
+  padding: 9px 10px;
+  border-left: 3px solid var(--app-accent);
+  border-radius: 6px;
+  color: var(--app-body);
+  background: var(--app-input-bg);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.econ-notification-item__action {
+  justify-self: start;
 }
 
 .econ-login-button,
@@ -346,6 +560,12 @@
 .econ-state.is-error {
   border-color: var(--app-danger);
   color: var(--app-danger);
+}
+
+.econ-event.is-linked-target,
+.econ-report.is-linked-target {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 22%, transparent);
 }
 
 .econ-sync-status {
@@ -1190,6 +1410,24 @@
   .econ-search,
   .econ-freshness {
     width: 100%;
+  }
+
+  .econ-notification-modal {
+    padding: 72px 14px 14px;
+  }
+
+  .econ-notification-dialog {
+    width: 100%;
+    max-height: calc(100vh - 92px);
+  }
+
+  .econ-notification-dialog__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .econ-notification-dialog__header > div:last-child {
+    justify-content: flex-end;
   }
 
   .econ-brief__copy,

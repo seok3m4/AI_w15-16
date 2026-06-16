@@ -6,6 +6,7 @@ import HomePage from "../features/economy/pages/HomePage";
 import MyPage from "../features/profile/pages/MyPage";
 import AuthPage from "../features/auth/pages/AuthPage";
 import AdminPage from "../features/admin/pages/AdminPage";
+import HomeSearchPage from "../features/search/pages/HomeSearchPage";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
@@ -31,6 +32,7 @@ export default function App() {
           <IonReactRouter>
             <IonRouterOutlet>
               <Route exact path="/home" component={HomePage} />
+              <Route exact path="/search" component={HomeSearchPage} />
               <Route exact path="/auth" component={AuthPage} />
               <Route exact path="/mypage" component={MyPage} />
               <Route exact path="/admin" component={AdminPage} />

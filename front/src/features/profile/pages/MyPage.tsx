@@ -42,6 +42,11 @@ function nextItemSelection(saved: string[], allIds: string[], id: string) {
   return next.length === allIds.length ? [] : next;
 }
 
+function nextVisibleSectionSelection(saved: string[], id: string) {
+  const next = toggleValue(saved, id);
+  return next.length === 0 ? saved : next;
+}
+
 export default function MyPage() {
   const { locale, t } = useI18n();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -122,6 +127,10 @@ export default function MyPage() {
 
   async function handleSave() {
     if (!draft) {
+      return;
+    }
+    if (draft.visibleSections.length === 0) {
+      setErrorMessage(t("mypage.sectionsMinimum"));
       return;
     }
 
@@ -250,22 +259,31 @@ export default function MyPage() {
                     <span>{t("mypage.sectionsSubtitle")}</span>
                   </div>
                   <div className="mypage-toggle-list">
-                    {SECTION_OPTIONS.map((section) => (
-                      <label className="mypage-check" key={section.id}>
-                        <input
-                          checked={draft.visibleSections.includes(section.id)}
-                          type="checkbox"
-                          onChange={() =>
-                            updateDraft({
-                              ...draft,
-                              visibleSections: toggleValue(draft.visibleSections, section.id),
-                            })
-                          }
-                        />
-                        <span>{t(section.labelKey)}</span>
-                      </label>
-                    ))}
+                    {SECTION_OPTIONS.map((section) => {
+                      const isChecked = draft.visibleSections.includes(section.id);
+                      const isOnlyVisibleSection = isChecked && draft.visibleSections.length === 1;
+                      return (
+                        <label
+                          className={isOnlyVisibleSection ? "mypage-check is-disabled" : "mypage-check"}
+                          key={section.id}
+                        >
+                          <input
+                            checked={isChecked}
+                            disabled={isOnlyVisibleSection}
+                            type="checkbox"
+                            onChange={() =>
+                              updateDraft({
+                                ...draft,
+                                visibleSections: nextVisibleSectionSelection(draft.visibleSections, section.id),
+                              })
+                            }
+                          />
+                          <span>{t(section.labelKey)}</span>
+                        </label>
+                      );
+                    })}
                   </div>
+                  <p className="mypage-help">{t("mypage.sectionsMinimum")}</p>
                 </article>
 
                 <article className="mypage-card">
