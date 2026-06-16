@@ -44,6 +44,14 @@ class AppUserServiceTests {
 					UNIQUE (provider, provider_user_id)
 				)
 				""");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS nickname VARCHAR(40)");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS roles TEXT NOT NULL DEFAULT 'ROLE_USER'");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMP");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMP");
+		jdbcTemplate.execute("ALTER TABLE app_users ADD COLUMN IF NOT EXISTS marketing_opt_in BOOLEAN NOT NULL DEFAULT FALSE");
 		jdbcTemplate.update("DELETE FROM app_users");
 	}
 
