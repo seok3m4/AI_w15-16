@@ -62,7 +62,7 @@
 | P0-BE-1 | users 모델 + 회원가입 API | 완료 | sjin | | 2026-06-16: `POST /api/v1/auth/signup` 구현. 단위 테스트와 로컬 HTTP smoke 통과. 보완: auth crypto fallback은 local profile로 격리하고 base profile은 env 필수값으로 변경. |
 | P0-BE-2~3 | 로그인·인증필터 | 완료 | | | 2026-06-16: P0-BE-2 완료. `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, access JWT, HttpOnly refresh cookie, refresh token HMAC 저장·rotation·reuse family revoke 구현. 2026-06-16: P0-BE-3 완료. Bearer access JWT 검증 필터, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` refresh session 폐기와 cookie clear 구현. `backend\\gradlew.bat test` 통과. |
 | P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 완료 | | | 2026-06-16: `/login`, `/signup`, `/app` 보호 라우트, access token `sessionStorage`, HttpOnly refresh cookie 기반 401 재발급 1회 재시도, logout, 공통 API client 구현. `npm run test`, `npm run build` 통과. 2026-06-16: `memento-style-preview.html` 기준 보정 반영(SNB collapse, 모바일 drawer, primary button icon treatment, motion primitives). |
-| P2-BE-7 | 친구 AI 동의 toggle | 대기 | | | |
+| P2-BE-7 | 친구 AI 동의 toggle | 완료 | | | 2026-06-16: `PUT /api/v1/privacy/ai-sharing` 구현. `user_privacy_settings.friend_ai_sharing_enabled`를 active user 범위에서 upsert하고 `updated_at`을 갱신하며, P3 친구 AI 게이트가 재사용할 `AiSharingConsentReader` read port를 추가. 기본값 false는 기존 signup/default schema를 유지. `cd backend; .\gradlew.bat --no-daemon --no-watch-fs compileJava` 통과. focused privacy/auth test 실행은 unrelated `feature/embedding`, `feature/jobs`, `feature/memory` test compile 오류로 `compileTestJava` 단계에서 차단됨. |
 
 ### T2 · Content
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
