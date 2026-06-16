@@ -64,7 +64,20 @@ class JdbcMemoryChunkRepository implements MemoryChunkRepository {
         if (chunks.isEmpty()) {
             return;
         }
-
+        List<Object[]> batchArgs = chunks.stream()
+                .map(chunk -> new Object[] {
+                    chunk.id(),
+                    chunk.ownerId(),
+                    chunk.postId(),
+                    chunk.commentId(),
+                    chunk.tagId(),
+                    chunk.sourceKind().databaseValue(),
+                    chunk.content(),
+                    chunk.contentHash(),
+                    Timestamp.from(chunk.createdAt()),
+                    Timestamp.from(chunk.createdAt())
+                })
+                .toList();
         jdbcTemplate.batchUpdate(
                 """
                 INSERT INTO memory_chunks (
@@ -83,20 +96,7 @@ class JdbcMemoryChunkRepository implements MemoryChunkRepository {
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, 'active', ?, ?)
                 """,
-                chunks.stream()
-                        .map(chunk -> new Object[] {
-                            chunk.id(),
-                            chunk.ownerId(),
-                            chunk.postId(),
-                            chunk.commentId(),
-                            chunk.tagId(),
-                            chunk.sourceKind().databaseValue(),
-                            chunk.content(),
-                            chunk.contentHash(),
-                            Timestamp.from(chunk.createdAt()),
-                            Timestamp.from(chunk.createdAt())
-                        })
-                        .toList());
+                batchArgs);
     }
 
     private PostMemorySourceRow mapPostMemorySourceRow(java.sql.ResultSet rs, int rowNum)

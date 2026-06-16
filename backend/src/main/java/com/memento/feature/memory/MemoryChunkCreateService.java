@@ -1,5 +1,7 @@
 package com.memento.feature.memory;
 
+import com.memento.feature.embedding.EmbeddingInputChunk;
+import com.memento.feature.embedding.MemoryEmbeddingJobEnqueuer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -7,6 +9,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,25 +20,49 @@ import org.springframework.transaction.annotation.Transactional;
 class MemoryChunkCreateService {
 
     private final MemoryChunkRepository memoryChunkRepository;
+    private final MemoryEmbeddingJobEnqueuer embeddingJobEnqueuer;
     private final Supplier<UUID> idSupplier;
     private final Clock clock;
 
     @Autowired
-    MemoryChunkCreateService(MemoryChunkRepository memoryChunkRepository, Clock clock) {
-        this(memoryChunkRepository, UUID::randomUUID, clock);
+    MemoryChunkCreateService(
+            MemoryChunkRepository memoryChunkRepository,
+            MemoryEmbeddingJobEnqueuer embeddingJobEnqueuer,
+            Clock clock) {
+        this(memoryChunkRepository, embeddingJobEnqueuer, UUID::randomUUID, clock);
     }
 
     MemoryChunkCreateService(MemoryChunkRepository memoryChunkRepository, Supplier<UUID> idSupplier, Clock clock) {
+        this(memoryChunkRepository, (ownerId, postId, chunks, reason) -> Optional.empty(), idSupplier, clock);
+    }
+
+    MemoryChunkCreateService(
+            MemoryChunkRepository memoryChunkRepository,
+            MemoryEmbeddingJobEnqueuer embeddingJobEnqueuer,
+            Supplier<UUID> idSupplier,
+            Clock clock) {
         this.memoryChunkRepository = memoryChunkRepository;
+        this.embeddingJobEnqueuer = embeddingJobEnqueuer;
         this.idSupplier = idSupplier;
         this.clock = clock;
     }
 
     @Transactional
     void createForPost(UUID postId, UUID ownerId) {
-        memoryChunkRepository.findActivePostSource(postId, ownerId)
-                .map(this::toChunks)
-                .ifPresent(memoryChunkRepository::saveAll);
+        Optional<PostMemorySource> source = memoryChunkRepository.findActivePostSource(postId, ownerId);
+        if (source.isEmpty()) {
+            return;
+        }
+
+        List<NewMemoryChunk> chunks = toChunks(source.get());
+        memoryChunkRepository.saveAll(chunks);
+        embeddingJobEnqueuer.enqueueForChunks(
+                ownerId,
+                postId,
+                chunks.stream()
+                        .map(chunk -> new EmbeddingInputChunk(chunk.id(), chunk.content()))
+                        .toList(),
+                "post_created");
     }
 
     private List<NewMemoryChunk> toChunks(PostMemorySource source) {

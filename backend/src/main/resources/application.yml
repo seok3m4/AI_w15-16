@@ -15,6 +15,11 @@ memento:
       stale-timeout: ${ASYNC_JOB_STALE_TIMEOUT:60s}
       claim-limit: ${ASYNC_JOB_CLAIM_LIMIT:1}
       default-max-attempts: ${ASYNC_JOB_DEFAULT_MAX_ATTEMPTS:3}
+  embedding:
+    base-url: ${AI_SERVER_URL:http://ai-server:8000}
+    provider: ${AI_PROVIDER:mock}
+    model: ${AI_EMBEDDING_MODEL:text-embedding-3-small}
+    dimension: ${AI_EMBEDDING_DIMENSION:1536}
   auth:
     email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64}
     email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID}
