@@ -136,7 +136,11 @@ def test_openai_summary_provider_sends_responses_request_and_maps_json_response(
     response = provider.summarize(SummaryRequest(**_summary_payload()))
 
     assert captured_request["authorization"] == "Bearer test-key"
+    assert '"store":false' in captured_request["json"]
     assert '"model":"gpt-5.4-mini"' in captured_request["json"]
+    assert '"text":{"format":{"type":"json_schema"' in captured_request["json"]
+    assert '"name":"memory_summary"' in captured_request["json"]
+    assert '"strict":true' in captured_request["json"]
     assert "인증 방식 결정 요약해줘" in captured_request["json"]
     assert "Bearer access JWT" in captured_request["json"]
     assert response.provider == "openai"
@@ -173,3 +177,31 @@ def test_openai_summary_provider_invalid_json_fails_safely() -> None:
         assert exc.code == "SUMMARY_PROVIDER_INVALID_RESPONSE"
     else:
         raise AssertionError("Expected invalid response error")
+
+
+def test_openai_summary_provider_refusal_fails_safely() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"refusal": "cannot comply"})
+
+    settings = Settings(
+        ai_profile="local",
+        ai_provider="openai",
+        openai_api_key="test-key",
+        ai_embedding_model="text-embedding-3-small",
+        ai_embedding_dimension=1536,
+        ai_summary_model="gpt-5.4-mini",
+        ai_summary_max_sources=5,
+        ai_summary_max_source_chars=1200,
+        ai_timeout_seconds=5,
+    )
+    provider = OpenAISummaryProvider(
+        settings,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    try:
+        provider.summarize(SummaryRequest(**_summary_payload()))
+    except SummaryProviderError as exc:
+        assert exc.code == "SUMMARY_PROVIDER_REFUSED"
+    else:
+        raise AssertionError("Expected refusal error")

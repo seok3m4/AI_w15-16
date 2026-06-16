@@ -76,8 +76,17 @@ class OpenAISummaryProvider:
                     "Content-Type": "application/json",
                 },
                 json={
+                    "store": False,
                     "model": self.settings.ai_summary_model,
                     "input": _build_prompt(request, sources, self.settings),
+                    "text": {
+                        "format": {
+                            "type": "json_schema",
+                            "name": "memory_summary",
+                            "strict": True,
+                            "schema": _summary_response_schema(),
+                        }
+                    },
                 },
             )
         except httpx.TimeoutException as exc:
@@ -200,6 +209,14 @@ def _build_prompt(
 
 
 def _parse_summary_payload(payload: dict) -> dict:
+    refusal = payload.get("refusal")
+    if isinstance(refusal, str) and refusal.strip():
+        raise SummaryProviderError(
+            502,
+            "SUMMARY_PROVIDER_REFUSED",
+            "Summary provider refused the request.",
+        )
+
     output_text = payload.get("output_text")
     if not isinstance(output_text, str):
         output_text = _extract_output_text(payload)
@@ -283,3 +300,26 @@ def _truncate_source_text(text: str, max_chars: int) -> str:
     if len(normalized) <= max_chars:
         return normalized
     return normalized[: max_chars - 3].rstrip() + "..."
+
+
+def _summary_response_schema() -> dict:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["answer", "sources"],
+        "properties": {
+            "answer": {"type": "string"},
+            "sources": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["postId", "summary"],
+                    "properties": {
+                        "postId": {"type": "string"},
+                        "summary": {"type": "string"},
+                    },
+                },
+            },
+        },
+    }
