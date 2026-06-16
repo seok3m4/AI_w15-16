@@ -38,6 +38,7 @@ type BoardAssistantPanelProps = {
 const quickQuestions = [
   "오늘 경기 결과 알려줘",
   "KIA 관련 글 요약해줘",
+  "기록실 타자 홈런 순위 알려줘",
   "6월 14일 경기 리뷰 포인트 알려줘",
 ];
 
@@ -46,8 +47,12 @@ function getStepLabel(step: AssistantStep): string {
     return "게시글";
   }
 
+  if (step.toolName === "fetch_board_overview") {
+    return "인기/최신";
+  }
+
   if (step.toolName === "get_kbo_games") {
-    return "경기";
+    return "경기방";
   }
 
   if (step.toolName === "search_baseball_news") {
@@ -62,6 +67,14 @@ function getStepLabel(step: AssistantStep): string {
     return "순위";
   }
 
+  if (step.toolName === "fetch_player_records") {
+    return "기록실";
+  }
+
+  if (step.toolName === "search_player_record") {
+    return "선수검색";
+  }
+
   return "정보";
 }
 
@@ -70,7 +83,7 @@ export function BoardAssistantPanel({ selectedTeam }: BoardAssistantPanelProps) 
     {
       role: "assistant",
       content:
-        "궁금한 경기, 팀, 뉴스 링크를 물어보세요. 게시판 글과 경기 정보를 같이 찾아볼게요.",
+        "궁금한 경기, 팀, 선수 기록, 뉴스 링크를 물어보세요. 게시글, 순위표, 기록실, 경기방 정보를 같이 찾아볼게요.",
     },
   ]);
   const [question, setQuestion] = useState("");
