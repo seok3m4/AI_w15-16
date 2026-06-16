@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/memento}
+    username: ${DATABASE_USERNAME:${POSTGRES_USER:memento}}
+    password: ${DATABASE_PASSWORD:${POSTGRES_PASSWORD:memento_local_password}}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
