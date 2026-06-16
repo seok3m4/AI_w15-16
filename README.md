@@ -120,8 +120,8 @@ Spring Boot Backend API
 ### Track A. 로컬 Docker 실행
 
 ```bash
-cp .env.example .env
-docker compose up --build
+cp .env.example .env.local
+docker compose --env-file .env.local up --build
 ```
 
 로컬 Docker 실행 계획과 smoke check는 [배포 설계 — Track A 로컬](docs/04-deployment/DEPLOYMENT.md)를 따른다.

@@ -9,6 +9,7 @@
 build/
 backend/.gradle/
 backend/build/
+backend/bin/
 
 # Node / Vite
 node_modules/
