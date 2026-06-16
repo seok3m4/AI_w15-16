@@ -25,7 +25,7 @@ class PostQueryServiceTest {
         repository.totalCount = 1;
         PostQueryService service = new PostQueryService(repository);
 
-        PostListResponse response = service.list(USER_ID, "me", 0, 20, "createdAt,desc");
+        PostListResponse response = service.list(USER_ID, "me", null, null, 0, 20, "createdAt,desc");
 
         assertThat(repository.capturedAuthorId).isEqualTo(USER_ID);
         assertThat(repository.capturedLimit).isEqualTo(20);
@@ -48,6 +48,32 @@ class PostQueryServiceTest {
     }
 
     @Test
+    void listRoundsUpTotalPagesAndKeepsRequestedOutOfRangePage() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.totalCount = 5;
+        PostQueryService service = new PostQueryService(repository);
+
+        PostListResponse response = service.list(USER_ID, "me", null, null, 3, 2, "createdAt,desc");
+
+        assertThat(repository.capturedLimit).isEqualTo(2);
+        assertThat(repository.capturedOffset).isEqualTo(6);
+        assertThat(response.items()).isEmpty();
+        assertThat(response.page()).isEqualTo(new PageResponse(3, 2, 5, 3));
+    }
+
+    @Test
+    void listReturnsZeroTotalPagesForEmptyFeed() {
+        CapturingPostRepository repository = new CapturingPostRepository();
+        repository.totalCount = 0;
+        PostQueryService service = new PostQueryService(repository);
+
+        PostListResponse response = service.list(USER_ID, "me", null, null, 0, 20, "createdAt,desc");
+
+        assertThat(response.items()).isEmpty();
+        assertThat(response.page()).isEqualTo(new PageResponse(0, 20, 0, 0));
+    }
+
+    @Test
     void repositoryContractDoesNotExposeUnscopedPostLookup() {
         assertThat(Arrays.stream(PostRepository.class.getDeclaredMethods())
                         .filter(method -> method.getName().equals("findById"))
@@ -59,7 +85,7 @@ class PostQueryServiceTest {
     void listRejectsUnsupportedScopeUntilFriendSearchTasksExtendIt() {
         PostQueryService service = new PostQueryService(new CapturingPostRepository());
 
-        assertThatThrownBy(() -> service.list(USER_ID, "friends", 0, 20, "createdAt,desc"))
+        assertThatThrownBy(() -> service.list(USER_ID, "friends", null, null, 0, 20, "createdAt,desc"))
                 .isInstanceOf(PostInvalidQueryException.class);
     }
 
@@ -67,7 +93,17 @@ class PostQueryServiceTest {
     void listRejectsPageValuesThatWouldOverflowOffset() {
         PostQueryService service = new PostQueryService(new CapturingPostRepository());
 
-        assertThatThrownBy(() -> service.list(USER_ID, "me", Integer.MAX_VALUE, 100, "createdAt,desc"))
+        assertThatThrownBy(() -> service.list(USER_ID, "me", null, null, Integer.MAX_VALUE, 100, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+    }
+
+    @Test
+    void listRejectsKeywordAndTagFiltersUntilSearchTaskExtendsIt() {
+        PostQueryService service = new PostQueryService(new CapturingPostRepository());
+
+        assertThatThrownBy(() -> service.list(USER_ID, "me", "memo", null, 0, 20, "createdAt,desc"))
+                .isInstanceOf(PostInvalidQueryException.class);
+        assertThatThrownBy(() -> service.list(USER_ID, "me", null, "project", 0, 20, "createdAt,desc"))
                 .isInstanceOf(PostInvalidQueryException.class);
     }
 

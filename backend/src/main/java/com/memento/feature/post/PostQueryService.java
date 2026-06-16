@@ -20,8 +20,8 @@ class PostQueryService {
     }
 
     @Transactional(readOnly = true)
-    PostListResponse list(UUID currentUserId, String scope, int page, int size, String sort) {
-        validateListQuery(scope, page, size, sort);
+    PostListResponse list(UUID currentUserId, String scope, String q, String tag, int page, int size, String sort) {
+        validateListQuery(scope, q, tag, page, size, sort);
 
         int offset = offset(page, size);
         List<PostSummaryResponse> items = postRepository.findPageByAuthor(currentUserId, size, offset)
@@ -41,9 +41,15 @@ class PostQueryService {
                 .orElseThrow(() -> new PostNotFoundException(postId));
     }
 
-    private void validateListQuery(String scope, int page, int size, String sort) {
+    private void validateListQuery(String scope, String q, String tag, int page, int size, String sort) {
         if (!SUPPORTED_SCOPE.equals(scope)) {
-            throw new PostInvalidQueryException("Only scope=me is supported in P0-BE-5.");
+            throw new PostInvalidQueryException("Only scope=me is supported in P0-BE-12.");
+        }
+        if (hasText(q)) {
+            throw new PostInvalidQueryException("q search is supported from P0-BE-13.");
+        }
+        if (hasText(tag)) {
+            throw new PostInvalidQueryException("tag filtering is supported from P0-BE-13.");
         }
         if (page < 0) {
             throw new PostInvalidQueryException("page must be greater than or equal to 0.");
@@ -52,8 +58,12 @@ class PostQueryService {
             throw new PostInvalidQueryException("size must be between 1 and 100.");
         }
         if (!SUPPORTED_SORT.equals(sort)) {
-            throw new PostInvalidQueryException("Only sort=createdAt,desc is supported in P0-BE-5.");
+            throw new PostInvalidQueryException("Only sort=createdAt,desc is supported in P0-BE-12.");
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private int offset(int page, int size) {

@@ -121,7 +121,7 @@ class PostControllerTest {
                         NOW,
                         NOW)),
                 new PageResponse(0, 20, 1, 1));
-        given(postQueryService.list(USER_ID, "me", 0, 20, "createdAt,desc")).willReturn(response);
+        given(postQueryService.list(USER_ID, "me", null, null, 0, 20, "createdAt,desc")).willReturn(response);
 
         mockMvc.perform(get("/api/v1/posts")
                         .requestAttr(
@@ -136,7 +136,43 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.page.totalCount").value(1))
                 .andExpect(jsonPath("$.page.totalPages").value(1));
 
-        verify(postQueryService).list(USER_ID, "me", 0, 20, "createdAt,desc");
+        verify(postQueryService).list(USER_ID, "me", null, null, 0, 20, "createdAt,desc");
+    }
+
+    @Test
+    void listPostsPassesPagingAndSearchQueryParamsToService() throws Exception {
+        PostListResponse response = new PostListResponse(List.of(), new PageResponse(1, 10, 0, 0));
+        given(postQueryService.list(USER_ID, "me", "memo", "project", 1, 10, "createdAt,desc"))
+                .willReturn(response);
+
+        mockMvc.perform(get("/api/v1/posts")
+                        .param("q", "memo")
+                        .param("tag", "project")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.page.page").value(1))
+                .andExpect(jsonPath("$.page.size").value(10));
+
+        verify(postQueryService).list(USER_ID, "me", "memo", "project", 1, 10, "createdAt,desc");
+    }
+
+    @Test
+    void listPostsReturnsBadRequestForUnsupportedSearchUntilP0Be13() throws Exception {
+        given(postQueryService.list(USER_ID, "me", "memo", null, 0, 20, "createdAt,desc"))
+                .willThrow(new PostInvalidQueryException("q search is supported from P0-BE-13."));
+
+        mockMvc.perform(get("/api/v1/posts")
+                        .param("q", "memo")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_POST_QUERY"));
     }
 
     @Test

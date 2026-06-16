@@ -45,10 +45,12 @@ class PostController {
     PostListResponse list(
             @CurrentUser AuthenticatedUserPrincipal currentUser,
             @RequestParam(defaultValue = "me") String scope,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String tag,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
-        return postQueryService.list(currentUser.userId(), scope, page, size, sort);
+        return postQueryService.list(currentUser.userId(), scope, q, tag, page, size, sort);
     }
 
     @GetMapping("/{postId}")

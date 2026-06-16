@@ -65,6 +65,28 @@ class JdbcPostRepositoryTest {
                 .anyMatch(sql -> sql.toLowerCase().contains("insert into post_tags"));
     }
 
+    @Test
+    void findPageByAuthorUsesStableLatestPagingInsideAuthorScope() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcPostRepository repository = new JdbcPostRepository(jdbcTemplate);
+
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        List<PostRecord> records = repository.findPageByAuthor(USER_ID, 10, 20);
+
+        assertThat(records).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), eq(USER_ID), eq(USER_ID), eq(10), eq(20));
+        String sql = sqlCaptor.getValue().toLowerCase();
+        assertThat(sql)
+                .contains("where p.author_id = ?")
+                .contains("and p.deleted_at is null")
+                .contains("order by p.created_at desc, p.id desc")
+                .contains("limit ?")
+                .contains("offset ?");
+    }
+
     private ResultSet postResultSet() throws Exception {
         ResultSet rs = mock(ResultSet.class);
         Array tags = mock(Array.class);
