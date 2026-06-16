@@ -27,12 +27,13 @@
 | D18 | `memory_embeddings.embedding`은 nullable, `succeeded` 상태에서만 필수 | P1에서 pending/running/failed embedding row를 같은 테이블로 추적해야 함 | pending은 `async_jobs`/`posts.memory_status`에만 저장, 결과 전용 테이블 분리 | P0-INFRA-5, P1-BE-4~6 |
 | D19 | Auth 암호화/lookup pepper local dev 기본값은 `application-local.yml`에만 둔다 | base profile에 dev key가 있으면 운영 env 누락을 놓칠 수 있음 | `application.yml`에 fallback 기본값 유지 | P0-BE-1, 배포 설정 |
 | D10 | 인증 방식은 **Bearer access JWT + HttpOnly refresh token rotation**으로 확정 | FE 계약과 API 명세가 access token은 `Authorization: Bearer`, refresh token은 cookie+rotation을 전제함. refresh token 원문은 저장하지 않고 HMAC hash만 저장 | 서버 세션 쿠키 단일 방식 | P0-BE-2, P0-BE-3, P0-FE-1 |
+| D11 | embedding provider/model은 **mock + OpenAI `text-embedding-3-small`**, 내부 endpoint는 `POST /internal/v1/embeddings` | `text-embedding-3-small` 기본 차원이 D8의 1536과 일치하고, mock은 로컬/테스트 비용을 없애며 OpenAI provider는 P1에서 실제 통합 smoke를 가능하게 함 | mock만 구현하고 real provider를 P4로 지연 | P1-AI-1, P1-BE-4~6, P4-X-2 |
+| D20 | P1-BE-3 worker는 **등록된 handler type만 claim**하고 기본 `stale-timeout=60s`, `default-max-attempts=3`으로 둔다 | T6 공통 큐가 T3 embedding handler 없이도 안전하게 배포되어야 하며, 미지원 job을 선점하면 후속 트랙 작업을 막을 수 있음 | worker가 모든 pending job을 claim하거나 P1-BE-3에서 embedding 호출까지 포함 | P1-BE-3, P1-BE-4~7, P3-BE-5~13 |
 
 ### A-2. 후행 결정 (해당 단계 진입 직전, 담당 트랙이 결정) — 상태: 보류
 
 | ID | 결정 항목 | 담당 트랙 | 차단 단계 | 권장 기본값 | 상태 |
 |----|-----------|-----------|-----------|-------------|------|
-| D11 | embedding provider/model (차원은 D8로 고정) | T4 | P1 | mock 우선, real은 P4 | 보류 |
 | D12 | stale memory 보존 기간 | T3 | P1 | 예: 30일 | 보류 |
 | D13 | Capsule compact context JSON 구조 | T5 | P2 | `purpose,summary,keyFacts[],sourcePostIds[],tags[]` | 보류 |
 | D14 | 친구 AI 동의 철회 후 기존 Capsule/Agent 결과 정책 | T5 | P3 | 신규 사용 차단 + 기존 산출물 출처 무효 표시 | 보류 |
@@ -59,8 +60,8 @@
 |------|------|------|--------|--------|------|
 | P0-INFRA(공동) | INFRA-0 + 스키마 베이스라인(차원 1536) | 대기 | | | T6와 공동 |
 | P0-BE-1 | users 모델 + 회원가입 API | 완료 | sjin | | 2026-06-16: `POST /api/v1/auth/signup` 구현. 단위 테스트와 로컬 HTTP smoke 통과. 보완: auth crypto fallback은 local profile로 격리하고 base profile은 env 필수값으로 변경. |
-| P0-BE-2~3 | 로그인·인증필터 | 진행 | | | 2026-06-16: P0-BE-2 완료. `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, access JWT, HttpOnly refresh cookie, refresh token HMAC 저장·rotation·reuse family revoke 구현. 품질 검토 blocker 반영: JWT/refresh secret dev fallback을 local profile로 격리하고 refresh rotation 조건부 update로 경쟁 조건 보강. `backend\\gradlew.bat test` 통과. P0-BE-3 인증 필터·logout·me 대기. |
-| P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 대기 | | | |
+| P0-BE-2~3 | 로그인·인증필터 | 완료 | | | 2026-06-16: P0-BE-2 완료. `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, access JWT, HttpOnly refresh cookie, refresh token HMAC 저장·rotation·reuse family revoke 구현. 2026-06-16: P0-BE-3 완료. Bearer access JWT 검증 필터, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` refresh session 폐기와 cookie clear 구현. `backend\\gradlew.bat test` 통과. |
+| P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 완료 | | | 2026-06-16: `/login`, `/signup`, `/app` 보호 라우트, access token `sessionStorage`, HttpOnly refresh cookie 기반 401 재발급 1회 재시도, logout, 공통 API client 구현. `npm run test`, `npm run build` 통과. |
 | P2-BE-7 | 친구 AI 동의 toggle | 대기 | | | |
 
 ### T2 · Content
@@ -82,7 +83,7 @@
 ### T4 · AI
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
-| P1-AI-1 | embedding endpoint(mock→real, 차원 1536) | 대기 | | | 1단계 선구현 가능 |
+| P1-AI-1 | embedding endpoint(mock→real, 차원 1536) | 완료 | | | 2026-06-16: FastAPI `POST /internal/v1/embeddings` 구현. `AI_PROVIDER=mock` deterministic 1536차원 vector와 `AI_PROVIDER=openai`(`text-embedding-3-small`) provider 호출, 검증 실패 400/ provider 실패 502 처리 추가. `cd ai-server && python -m pytest` 통과. |
 | P2-AI-1~2 | 요약·Capsule 보조 생성 | 대기 | | | |
 | P3-AI-1~2 | Agent graph·Notion Client | 대기 | | | |
 | P4-X-2 | provider 전환·관측성 | 대기 | | | |
@@ -99,7 +100,7 @@
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
 | INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료. P0-INFRA-2 완료: PostgreSQL+pgvector compose 및 `CREATE EXTENSION vector` 초기화 추가, `pg_extension` vector 조회와 vector 캐스팅 검증 통과. 검토 반영: 병렬 compose 실행을 위해 고정 `container_name` 제거. P0-INFRA-3 완료: Spring Boot `/api/health`, FastAPI `/health` 200 반환. P0-INFRA-4 완료: `.env.example` 및 서비스별 환경 변수 로딩 추가, `docker compose --env-file .env.local up -d`로 postgres/backend/ai-server/frontend 4개 서비스 동시 기동과 backend·ai-server health, frontend 200 응답 검증. P0-INFRA-5 완료: Spring Boot Flyway/PostgreSQL 의존성 및 timestamp baseline migration 추가, P0/P1 핵심 테이블과 `memory_embeddings.embedding vector(1536)` 생성 검증 통과. 보완: D18에 따라 `embedding` nullable + `succeeded` 상태 필수 제약 follow-up migration 추가. T1과 공동 |
-| P1-BE-3 | async_jobs 작업큐·worker | 대기 | | | T3가 사용 |
+| P1-BE-3 | async_jobs 작업큐·worker | 완료 | | | 2026-06-16: `feature/jobs` 공통 큐 구현. `async_jobs` attempt 제한 migration 추가, enqueue/find/claim/succeed/fail-or-retry/timeout recovery와 handler 기반 worker 골격 구현. 아직 REST polling API와 embedding handler는 P1-BE-4~7에서 연결. `backend\\gradlew.bat test` 통과. |
 | P3-BE-5~8 | Agent tool·실행·승인 게이트 | 대기 | | | |
 | P3-BE-9~13 | MCP Server/Client BE | 대기 | | | |
 | P4 전체 | 이력 API·smoke·AWS 배포·문서 동기화 | 대기 | | | |

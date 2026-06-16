@@ -151,6 +151,58 @@ AWS ALB와 ECS service health check는 다음 endpoint를 사용한다.
 
 health check는 DB migration, embedding provider, 외부 LLM provider 장애를 모두 강하게 검사하지 않는다. 외부 의존성 상태는 별도 readiness 또는 운영 로그/알람으로 확인한다.
 
+### 2.9 Spring Boot ↔ FastAPI 내부 Embedding API
+
+이 API는 React가 직접 호출하지 않고 Spring Boot worker가 `memory_chunks`와 `async_jobs` 상태를 만든 뒤 호출한다. 인증·소유권·scope 검증은 Spring Boot에서 끝난 것으로 간주하며, FastAPI는 전달받은 텍스트의 embedding 계산만 수행한다.
+
+```http
+POST /internal/v1/embeddings
+```
+
+Request:
+
+```json
+{
+  "requestId": "req-uuid",
+  "jobId": "job-uuid",
+  "idempotencyKey": "memory-chunk-job-key",
+  "inputType": "memory_chunk",
+  "items": [
+    {
+      "id": "chunk-uuid",
+      "text": "게시글 제목과 본문, 댓글, 태그 context"
+    }
+  ]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "provider": "openai",
+  "model": "text-embedding-3-small",
+  "dimension": 1536,
+  "embeddings": [
+    {
+      "id": "chunk-uuid",
+      "vector": [0.0123],
+      "usage": {
+        "promptTokens": 12,
+        "totalTokens": 12
+      }
+    }
+  ]
+}
+```
+
+처리 규칙:
+
+- `AI_PROVIDER=mock`이면 외부 API 호출 없이 같은 입력에 대해 deterministic 1536차원 vector를 반환한다.
+- `AI_PROVIDER=openai`이면 OpenAI embeddings API에 `model`, `input`, `encoding_format=float`, `dimensions=1536`을 전달한다.
+- 입력 검증 실패는 `400`, provider timeout·오류·차원 불일치는 `502`로 반환한다.
+- API key, provider 원문 응답, 사용자 memory 원문은 오류 응답이나 로그에 저장하지 않는다.
+
 ## 3. 공통 스키마
 
 ### 3.1 UserPublicSummary
