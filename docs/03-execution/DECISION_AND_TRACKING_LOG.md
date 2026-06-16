@@ -34,7 +34,7 @@
 
 | ID | 결정 항목 | 담당 트랙 | 차단 단계 | 권장 기본값 | 상태 |
 |----|-----------|-----------|-----------|-------------|------|
-| D12 | stale memory 보존 기간 | T3 | P1 | 예: 30일 | 보류 |
+| D12 | stale memory 보존 기간 | T3 | P1 | 수정된 chunk는 `stale`로 30일 보존, 삭제된 게시물 chunk는 즉시 `deleted` 처리해 검색 제외 | 확정 |
 | D13 | Capsule compact context JSON 구조 | T5 | P2 | `purpose,summary,keyFacts[],sourcePostIds[],tags[]` | 보류 |
 | D14 | 친구 AI 동의 철회 후 기존 Capsule/Agent 결과 정책 | T5 | P3 | 신규 사용 차단 + 기존 산출물 출처 무효 표시 | 보류 |
 | D15 | Agent 최대 step·시간·retry 한도 | T6/T4 | P3 | step≤8, 60s, retry≤1 | 확정 |
@@ -78,7 +78,7 @@
 ### T3 · Memory
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
-| P1-BE-1~2 | memory chunk 파이프라인 | 진행 | | | 2026-06-16: P1-BE-1 완료. 게시글 생성 후 `PostCreatedEvent`를 발행하고, AFTER_COMMIT 리스너가 `memory_chunks`에 제목·본문·태그 chunk를 `owner_id/post_id` 경계로 생성하도록 구현. 댓글 chunk와 수정/삭제 stale 처리는 후속 P1-BE-2 범위로 유지. `cd backend; .\gradlew.bat --no-daemon --no-watch-fs test` 통과. |
+| P1-BE-1~2 | memory chunk 파이프라인 | 완료 | | | 2026-06-16: P1-BE-1 완료. 게시글 생성 후 `PostCreatedEvent`를 발행하고, AFTER_COMMIT 리스너가 `memory_chunks`에 제목·본문·태그 chunk를 `owner_id/post_id` 경계로 생성하도록 구현. 댓글 chunk와 수정/삭제 stale 처리는 후속 P1-BE-2 범위로 유지. `cd backend; .\gradlew.bat --no-daemon --no-watch-fs test` 통과. 2026-06-16: P1-BE-2 완료. 게시글 수정 성공 후 `PostUpdatedEvent`로 기존 active chunk를 `stale` 처리하고 최신 title/content/tag chunk와 `memory_reindex` pending embedding job을 `post_updated` reason으로 재생성. 게시글 삭제 성공 후 `PostDeletedEvent`로 해당 owner/post chunk를 `deleted` 처리해 검색 대상에서 제외. D12는 stale 30일 보존으로 확정. `cd backend; .\gradlew.bat --no-daemon --no-watch-fs test --tests "com.memento.feature.post.PostCommandServiceTest" --tests "com.memento.feature.memory.MemoryChunkCreateServiceTest" --tests "com.memento.feature.memory.JdbcMemoryChunkRepositoryTest" --tests "com.memento.feature.memory.MemoryPostEventListenerTest"` 통과. |
 | P1-BE-4~7 | embedding 저장·상태·검색 기반 | 진행 | | | 2026-06-16: P1-BE-4 완료. 게시글 생성 AFTER_COMMIT memory chunk 생성 뒤 `memory_reindex` job을 enqueue하고 chunk별 `memory_embeddings` pending row(`embedding=NULL`, `job_id` 연결)를 생성하는 흐름 구현. FastAPI `POST /internal/v1/embeddings` 요청/응답 DTO와 client mapping을 추가하되, worker handler 등록·vector 저장·`posts.memory_status` 상태 전이는 P1-BE-5~7로 유지. `cd backend; .\gradlew.bat --no-daemon test` 통과. |
 | P1-BE-8~9, P1-FE-1 | Memory Search·화면 | 대기 | | | |
 
@@ -95,7 +95,7 @@
 ### T5 · Social
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
-| P2-BE-2~5 | 친구 관계·좋아요·친구 게시물 | 대기 | | | |
+| P2-BE-2~5 | 친구 관계·좋아요·친구 게시물 | 진행 | | | 2026-06-16: P2-BE-2 착수. `friendships` 요청/승인/거절 API를 우선 구현하고, 목록 조회·삭제/해제·친구 게시물·좋아요는 P2-BE-3~5로 분리 유지. 2026-06-16: P2-BE-2 완료. `POST /api/v1/friendships/requests`, `POST /api/v1/friendships/{friendshipId}/accept`, `POST /api/v1/friendships/{friendshipId}/reject` 구현. 자기 요청 400, 중복 pending/accepted 409, 대상/요청 없음 404, 수신자만 승인·거절 가능. `cd backend; .\gradlew.bat --no-daemon test --tests "com.memento.feature.friend.*"`, `cd backend; .\gradlew.bat --no-daemon test` 통과. |
 | P2-BE-8~10, P2-AI-2 연계 | 본인 Capsule | 대기 | | | |
 | P2-FE-2~3 | 친구·Capsule 화면 | 대기 | | | |
 | P3-BE-1~4, P3-FE-1 | 친구 AI 게이트·Search·선물·친구 Capsule | 대기 | | | T1 동의·T3 벡터 의존 |
