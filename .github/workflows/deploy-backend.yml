@@ -6,6 +6,7 @@ on:
     branches: [gyugo]
     paths:
       - "backend/**"
+      - "agent-worker/**"
       - ".github/workflows/deploy-backend.yml"
 
 permissions:
@@ -15,12 +16,16 @@ permissions:
 env:
   AWS_REGION: ap-northeast-2
   AWS_ACCOUNT_ID: "489535778783"
-  ECR_REPOSITORY: nammanmu/gyugo/backend
+  AWS_DEPLOY_ROLE_ARN: arn:aws:iam::489535778783:role/NammanmuGithubOidcTrustPolicy
+
+  ECR_BACKEND_REPOSITORY: nammanmu/gyugo/backend
+  ECR_AGENT_WORKER_REPOSITORY: nammanmu/gyugo/agent-worker
 
   ECS_CLUSTER: nammanmu-dev
   ECS_SERVICE: nammanmu-gyugo-backend
   ECS_TASK_DEFINITION: nammanmu-dev-nammanmu-gyugo-backend
-  CONTAINER_NAME: backend
+  BACKEND_CONTAINER_NAME: backend
+  AGENT_WORKER_CONTAINER_NAME: agent-worker
 
   # Set to an ALB endpoint such as http://example-alb/api/status to enable smoke tests.
   HEALTH_CHECK_URL: ""
@@ -42,10 +47,18 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push backend image
-        id: build-image
+        id: build-backend
         run: |
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${GITHUB_SHA}
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_BACKEND_REPOSITORY}:${GITHUB_SHA}
           docker build -t "$IMAGE_URI" ./backend
+          docker push "$IMAGE_URI"
+          echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push agent-worker image
+        id: build-agent-worker
+        run: |
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_AGENT_WORKER_REPOSITORY}:${GITHUB_SHA}
+          docker build -t "$IMAGE_URI" ./agent-worker
           docker push "$IMAGE_URI"
           echo "image=$IMAGE_URI" >> "$GITHUB_OUTPUT"
 
@@ -56,18 +69,26 @@ jobs:
             --query taskDefinition \
             > task-definition.json
 
-      - name: Render new ECS task definition
-        id: render-task-definition
+      - name: Render backend container image
+        id: render-backend
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
+          container-name: ${{ env.BACKEND_CONTAINER_NAME }}
+          image: ${{ steps.build-backend.outputs.image }}
+
+      - name: Render agent-worker container image
+        id: render-agent-worker
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-backend.outputs.task-definition }}
+          container-name: ${{ env.AGENT_WORKER_CONTAINER_NAME }}
+          image: ${{ steps.build-agent-worker.outputs.image }}
 
       - name: Deploy ECS service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.render-task-definition.outputs.task-definition }}
+          task-definition: ${{ steps.render-agent-worker.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
@@ -84,5 +105,3 @@ jobs:
             --retry-all-errors \
             --retry-delay 10 \
             "$HEALTH_CHECK_URL"
-
-

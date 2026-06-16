@@ -48,23 +48,76 @@ AI 적용 기술을 활용한 게시판 서비스 과제 저장소입니다. 현
 
 ```text
 .
-+-- .github/workflows/              # CI, ECR 이미지 푸시, AWS OIDC 검증, 프로젝트 자동화
-+-- backend/                        # Spring Boot 백엔드
-|   +-- src/main/java/               # 애플리케이션, 보안 설정, API/페이지 컨트롤러
-|   +-- src/main/resources/          # Thymeleaf 템플릿, 정적 CSS, 설정 파일
-|   +-- src/test/java/               # 백엔드 기본/보안/API 테스트
-|   +-- Dockerfile                   # 백엔드 컨테이너 이미지 빌드
++-- .github/
+|   +-- workflows/                  # CI, 백엔드/프론트 배포, AWS OIDC 검증, 프로젝트 자동화
++-- agent-worker/                   # Python 기반 AI Agent worker와 MCP 도구 서버
+|   +-- app/                        # Agent 실행 진입점, guardrail, MCP tool, RAG 검색 보조 로직
+|   +-- tests/                      # Agent worker 단위 테스트
+|   +-- requirements.txt            # Python 의존성 목록
++-- backend/                        # Spring Boot 백엔드 API 서버
+|   +-- src/main/java/com/junglecamp/backend/
+|   |   +-- admin/                  # 관리자 콘솔 API, 숨김 콘텐츠/감사 로그 관리
+|   |   +-- agent/                  # Agent run 저장, 조회, 백엔드 연동 API
+|   |   +-- auth/                   # JWT 쿠키 인증, 이메일 인증, OAuth, MFA, CAPTCHA, rate limit
+|   |   +-- board/                  # 토론 게시글, 댓글, 태그, 좋아요, 신고, 알림, RAG 연동
+|   |   +-- config/                 # Spring Security, CORS, OpenAPI, 공통 설정
+|   |   +-- economy/                # 경제 지표, 일정, 리포트, AI 브리프, 동기화 서비스
+|   |   +-- i18n/                   # 서버 메시지 국제화 보조
+|   |   +-- rag/                    # pgvector 기반 문서/청크 인덱싱 서비스
+|   |   +-- search/                 # 홈 통합 검색 API
+|   |   +-- system/                 # 상태 확인, 시스템성 API
+|   |   +-- user/                   # 사용자, 대시보드 선호 설정, 프로필 관리
+|   |   +-- web/                    # 웹 페이지/리다이렉트 보조 컨트롤러
+|   +-- src/main/resources/
+|   |   +-- db/migration/           # Flyway SQL migration, PostgreSQL/pgvector 스키마
+|   |   +-- static/                 # 백엔드 정적 리소스
+|   |   +-- templates/              # Thymeleaf 템플릿
+|   |   +-- application.properties  # 서버 기본 설정
+|   +-- src/test/java/              # 백엔드 통합/서비스/인증 테스트
+|   +-- Dockerfile                  # 백엔드 컨테이너 이미지 빌드
+|   +-- pom.xml                     # Java/Maven 의존성 정의
++-- common/
+|   +-- workflows/                  # 대화형 작업 트리거와 공통 작업 절차
++-- docs/                           # 프로젝트 문서 허브
+|   +-- concepts/                   # 주요 구현 개념, 패턴, 검증 방법
+|   +-- prompt-history/             # 사용자 동의가 있을 때만 저장하는 프롬프트 이력
+|   +-- superpowers/                # 설계/구현 계획 문서
+|   +-- work-logs/                  # 날짜별 작업 로그와 검증 결과
 +-- front/                          # Ionic React + Vite 프론트엔드
-|   +-- src/api/                     # 백엔드 API 호출 모듈
-|   +-- src/app/                     # Ionic 앱 셸과 라우터
-|   +-- src/pages/                   # 초기 홈 화면
-|   +-- src/theme/                   # Ionic 테마 파일
-+-- docs/                           # 설계, 작업 로그, 개념, 배포 운영 문서
+|   +-- src/
+|   |   +-- api/                    # 공통 백엔드 요청 유틸과 현재 사용자 타입
+|   |   +-- app/                    # Ionic 앱 셸, 라우터, 보호 라우트
+|   |   +-- features/
+|   |   |   +-- admin/              # 관리자 콘솔 화면/API
+|   |   |   +-- agents/             # Agent workbench 화면/API
+|   |   |   +-- auth/               # 로그인/회원가입, 이메일 코드 인증, MFA, CAPTCHA UI
+|   |   |   +-- board/              # 토론 게시판, 댓글, 관리자 숨김/삭제 UI
+|   |   |   +-- economy/            # 홈 대시보드, 경제 일정/리포트/알림 모달
+|   |   |   +-- profile/            # My Page와 대시보드 표시 설정
+|   |   |   +-- search/             # 홈 통합 검색 결과 화면
+|   |   +-- i18n/                   # 다국어 문구와 언어 컨트롤
+|   |   +-- pages/                  # 공통 페이지 진입점
+|   |   +-- theme/                  # 테마, 다크모드, 표시 설정 UI
+|   +-- package.json                # 프론트엔드 npm 스크립트와 의존성
+|   +-- vite.config.ts              # Vite 개발 서버와 proxy 설정
+|   +-- capacitor.config.ts         # Capacitor 앱 설정
++-- scripts/                        # 로컬 PostgreSQL, 백엔드, Agent worker 실행 스크립트
++-- study/                          # 학습 노트, 기술 조사, 마이크로서비스 개발 절차 정리
 +-- myself/                         # 회의록과 개인 정리 노트
-+-- common/workflows/               # 대화형 작업 트리거 문서
++-- AGENTS.md                       # Codex 작업 규칙과 문서화 규칙
++-- README.md                       # 프로젝트 소개와 실행/검증 가이드
 +-- 과제내용.md                     # 과제 요구사항 정리
-+-- README.md
++-- *.drawio                        # AWS/CI/CD 아키텍처 다이어그램
 ```
+
+### 구조를 보는 기준
+
+- `backend/`, `front/`, `agent-worker/`는 실행 가능한 애플리케이션 단위입니다. 현재는 하나의 저장소에 함께 두고 있지만, 책임은 백엔드 API, 프론트 UI, AI Agent worker로 나뉩니다.
+- `backend/src/main/java/com/junglecamp/backend/*`는 기능 도메인 중심으로 나뉩니다. 인증, 경제 데이터, 토론, RAG, Agent, 관리자 기능을 각각 독립 패키지로 관리합니다.
+- `front/src/features/*`는 화면 기능 기준으로 나뉩니다. 각 feature 안에 API 호출 모듈, 페이지 컴포넌트, CSS를 함께 배치해 화면 단위 변경 범위를 좁힙니다.
+- `docs/concepts/`는 코드에 적용한 개념을 설명하고, `docs/work-logs/`는 실제 작업 기록과 검증 결과를 남깁니다.
+- `study/`는 구현 산출물이 아니라 학습과 의사결정 정리 공간입니다. ERD, 아키텍처, MSA 진행 절차 같은 발표/회고 자료가 들어갑니다.
+- `node_modules/`, `backend/target/`, 로그 파일, 로컬 `.env.*` 값은 실행 중 생성되거나 개인 환경에 속하므로 구조 설명에서는 제외합니다.
 
 ## 현재 구현 내용
 
