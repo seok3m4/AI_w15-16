@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { IonContent, IonIcon, IonPage } from "@ionic/react";
+import { IonContent, IonIcon, IonPage, useIonViewWillEnter } from "@ionic/react";
 import {
   alertCircleOutline,
   arrowBackOutline,
@@ -15,15 +15,16 @@ import {
   type CurrentUser,
 } from "../../../api/backend";
 import {
+  dismissAdminReport,
   fetchAdminAgentRuns,
   fetchAdminAuditLogs,
   fetchAdminEconomySyncRuns,
+  fetchAdminHiddenContent,
   fetchAdminReports,
   fetchAdminUsers,
+  hardDeleteAdminAgentRun,
   hardDeleteAdminComment,
   hardDeleteAdminPost,
-  hideAdminComment,
-  hideAdminPost,
   retryAdminAgentRun,
   suspendAdminUser,
   triggerAdminEconomySync,
@@ -34,6 +35,7 @@ import {
   type AuditLogItem,
   type BoardReportItem,
   type EconomySyncRunItem,
+  type HiddenContentItem,
 } from "../api/admin";
 
 import "./AdminPage.css";
@@ -48,13 +50,17 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "audit", label: "감사 로그" },
 ];
 
+const adminTabs = tabs;
+
 export default function AdminPage() {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [tab, setTab] = useState<AdminTab>("users");
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [reports, setReports] = useState<BoardReportItem[]>([]);
+  const [hiddenContent, setHiddenContent] = useState<HiddenContentItem[]>([]);
   const [syncRuns, setSyncRuns] = useState<EconomySyncRunItem[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunItem[]>([]);
+  const [hiddenAgentRuns, setHiddenAgentRuns] = useState<AgentRunItem[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -62,45 +68,43 @@ export default function AdminPage() {
   const isAdmin = currentUser?.roles.includes("ROLE_ADMIN") ?? false;
 
   const loadAdminData = useCallback(async () => {
-    const [userPage, reportItems, economyItems, agentItems, auditPage] = await Promise.all([
+    const [userPage, reportItems, hiddenContentItems, economyItems, agentItems, hiddenAgentItems, auditPage] = await Promise.all([
       fetchAdminUsers(),
       fetchAdminReports(),
+      fetchAdminHiddenContent(),
       fetchAdminEconomySyncRuns(),
-      fetchAdminAgentRuns(),
+      fetchAdminAgentRuns("active"),
+      fetchAdminAgentRuns("hidden"),
       fetchAdminAuditLogs(),
     ]);
     setUsers(userPage.items);
     setReports(reportItems);
+    setHiddenContent(hiddenContentItems);
     setSyncRuns(economyItems);
     setAgentRuns(agentItems);
+    setHiddenAgentRuns(hiddenAgentItems);
     setAuditLogs(auditPage.items);
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
-    async function boot() {
-      try {
-        setIsLoading(true);
-        setMessage(null);
-        const user = await fetchCurrentUser();
-        if (ignore) return;
-        setCurrentUser(user);
-        if (user?.roles.includes("ROLE_ADMIN") && (!user.adminMfaRequired || user.adminMfaVerified)) {
-          await loadAdminData();
-        }
-      } catch (error) {
-        if (!ignore) {
-          setMessage(error instanceof Error ? error.message : "관리자 데이터를 불러오지 못했습니다.");
-        }
-      } finally {
-        if (!ignore) setIsLoading(false);
+  const refreshAdminSession = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setMessage(null);
+      const user = await fetchCurrentUser();
+      setCurrentUser(user);
+      if (user?.roles.includes("ROLE_ADMIN") && (!user.adminMfaRequired || user.adminMfaVerified)) {
+        await loadAdminData();
       }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "관리자 데이터를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
     }
-    void boot();
-    return () => {
-      ignore = true;
-    };
   }, [loadAdminData]);
+
+  useIonViewWillEnter(() => {
+    void refreshAdminSession();
+  }, [refreshAdminSession]);
 
   async function reload() {
     try {
@@ -174,7 +178,7 @@ export default function AdminPage() {
               <IonIcon icon={shieldCheckmarkOutline} />
               <strong>관리자 MFA 인증이 필요합니다.</strong>
               <span>TOTP 앱으로 6자리 코드를 확인한 뒤 관리자 콘솔에 접근할 수 있습니다.</span>
-              <Link to="/auth">MFA 인증하러 가기</Link>
+              <Link to="/auth?mfa=1">MFA 인증하러 가기</Link>
             </section>
           )}
 
@@ -187,7 +191,7 @@ export default function AdminPage() {
           {!isLoading && isAdmin && (!currentUser?.adminMfaRequired || currentUser.adminMfaVerified) && (
             <>
               <nav className="admin-tabs" aria-label="관리자 탭">
-                {tabs.map((item) => (
+                {adminTabs.map((item) => (
                   <button
                     className={tab === item.id ? "is-active" : ""}
                     key={item.id}
@@ -241,43 +245,81 @@ export default function AdminPage() {
 
               {tab === "reports" && (
                 <section className="admin-panel">
-                  <h2>신고/콘텐츠</h2>
+                  <div className="admin-subsection">
+                    <h3>신고 접수 내역</h3>
+                    <div className="admin-table">
+                      {reports.length === 0 && <p className="admin-empty">접수된 신고가 없습니다.</p>}
+                      {reports.map((report) => (
+                        <article className="admin-row admin-row--report" key={report.id}>
+                          <div>
+                            <strong>
+                              {report.targetType === "COMMENT" ? "댓글" : "게시글"} #{report.commentId ?? report.postId}
+                            </strong>
+                            <span>{report.postTitle}</span>
+                            <small>
+                              신고자 #{report.reporterUserId} · 대상 작성자 {report.targetAuthor ?? "unknown"} · {report.createdAt ?? "unknown"}
+                            </small>
+                            <dl className="admin-report-detail">
+                              <div>
+                                <dt>신고 사유</dt>
+                                <dd>{report.reason}</dd>
+                              </div>
+                              <div>
+                                <dt>신고 내용</dt>
+                                <dd>{report.detail || "상세 내용 없음"}</dd>
+                              </div>
+                              <div>
+                                <dt>신고 대상</dt>
+                                <dd>{report.targetContent ?? "대상 내용을 불러올 수 없습니다."}</dd>
+                              </div>
+                            </dl>
+                          </div>
+                          <div className="admin-actions">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!window.confirm("이 신고 내역을 삭제할까요? 게시글/댓글은 삭제되지 않습니다.")) return;
+                                void runAction(
+                                  () => dismissAdminReport(report.id),
+                                  "신고 내역을 삭제했습니다.",
+                                );
+                              }}
+                            >
+                              <IonIcon icon={trashOutline} />
+                              <span>신고 내역 삭제</span>
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <h2>숨김 콘텐츠 검토</h2>
                   <div className="admin-table">
-                    {reports.length === 0 && <p className="admin-empty">현재 신고가 없습니다.</p>}
-                    {reports.map((report) => (
-                      <article className="admin-row" key={report.id}>
+                    {hiddenContent.length === 0 && <p className="admin-empty">현재 숨김 처리된 토론 콘텐츠가 없습니다.</p>}
+                    {hiddenContent.map((item) => (
+                      <article className="admin-row" key={`${item.targetType}-${item.commentId ?? item.postId}`}>
                         <div>
-                          <strong>{report.targetType} #{report.postId}</strong>
-                          <span>{report.reason} · {report.detail || "상세 없음"}</span>
-                          <small>{report.createdAt}</small>
+                          <strong>{item.targetType === "COMMENT" ? "댓글" : "토론글"} #{item.commentId ?? item.postId}</strong>
+                          <span>{item.postTitle}</span>
+                          <small>{item.author} · 숨김: {item.hiddenAt ?? "unknown"}</small>
+                          <p className="admin-row__body">{item.content}</p>
                         </div>
                         <div className="admin-actions">
-                          <button
-                            type="button"
-                            onClick={() => void runAction(
-                              () => report.commentId
-                                ? hideAdminComment(report.commentId)
-                                : hideAdminPost(report.postId),
-                              "콘텐츠를 숨김 처리했습니다.",
-                            )}
-                          >
-                            숨김
-                          </button>
                           <button
                             className="is-danger"
                             type="button"
                             onClick={() => {
-                              if (!window.confirm("이 콘텐츠를 영구 삭제할까요?")) return;
+                              if (!window.confirm("이 숨김 콘텐츠를 영구삭제할까요? 연결된 댓글, 신고, 알림, RAG 데이터도 함께 정리됩니다.")) return;
                               void runAction(
-                                () => report.commentId
-                                  ? hardDeleteAdminComment(report.commentId)
-                                  : hardDeleteAdminPost(report.postId),
-                                "콘텐츠를 영구 삭제했습니다.",
+                                () => item.commentId
+                                  ? hardDeleteAdminComment(item.commentId)
+                                  : hardDeleteAdminPost(item.postId),
+                                "숨김 콘텐츠를 영구삭제했습니다.",
                               );
                             }}
                           >
                             <IonIcon icon={trashOutline} />
-                            <span>Hard delete</span>
+                            <span>영구삭제</span>
                           </button>
                         </div>
                       </article>
@@ -285,7 +327,6 @@ export default function AdminPage() {
                   </div>
                 </section>
               )}
-
               {tab === "economy" && (
                 <section className="admin-panel">
                   <div className="admin-panel__title">
@@ -314,31 +355,65 @@ export default function AdminPage() {
               {tab === "agents" && (
                 <section className="admin-panel">
                   <h2>Agent runs</h2>
-                  <div className="admin-table">
-                    {agentRuns.map((run) => (
-                      <article className="admin-row" key={run.id}>
-                        <div>
-                          <strong>#{run.id} · {run.runType}</strong>
-                          <span>{run.status} · {run.model}</span>
-                          <small>{run.errorMessage ?? run.summary}</small>
-                        </div>
-                        <div className="admin-actions">
-                          <button
-                            type="button"
-                            onClick={() => void runAction(
-                              () => retryAdminAgentRun(run.id),
-                              "Agent run 재시도를 요청했습니다.",
-                            )}
-                          >
-                            재시도
-                          </button>
-                        </div>
-                      </article>
-                    ))}
+                  <div className="admin-subsection">
+                    <h3>활성 실행 내역</h3>
+                    <div className="admin-table">
+                      {agentRuns.length === 0 && <p className="admin-empty">현재 활성 Agent 실행 내역이 없습니다.</p>}
+                      {agentRuns.map((run) => (
+                        <article className="admin-row" key={run.id}>
+                          <div>
+                            <strong>#{run.id} · {run.runType}</strong>
+                            <span>{run.status} · {run.model}</span>
+                            <small>{run.errorMessage ?? run.summary}</small>
+                          </div>
+                          <div className="admin-actions">
+                            <button
+                              type="button"
+                              onClick={() => void runAction(
+                                () => retryAdminAgentRun(run.id),
+                                "Agent run 재시도를 요청했습니다.",
+                              )}
+                            >
+                              재시도
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="admin-subsection">
+                    <h3>숨김 처리된 Agent 대화 내역</h3>
+                    <div className="admin-table">
+                      {hiddenAgentRuns.length === 0 && <p className="admin-empty">현재 숨김 처리된 Agent 대화 내역이 없습니다.</p>}
+                      {hiddenAgentRuns.map((run) => (
+                        <article className="admin-row" key={run.id}>
+                          <div>
+                            <strong>#{run.id} · {run.runType}</strong>
+                            <span>{run.status} · user #{run.userId}</span>
+                            <small>숨김: {run.hiddenAt ?? "unknown"} · {run.errorMessage ?? run.summary}</small>
+                          </div>
+                          <div className="admin-actions">
+                            <button
+                              className="is-danger"
+                              type="button"
+                              onClick={() => {
+                                if (!window.confirm("이 Agent 대화 내역을 영구삭제할까요? 메시지, 단계, 근거 데이터도 함께 정리됩니다.")) return;
+                                void runAction(
+                                  () => hardDeleteAdminAgentRun(run.id),
+                                  "Agent 대화 내역을 영구삭제했습니다.",
+                                );
+                              }}
+                            >
+                              <IonIcon icon={trashOutline} />
+                              <span>영구삭제</span>
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 </section>
               )}
-
               {tab === "audit" && (
                 <section className="admin-panel">
                   <h2>감사 로그</h2>

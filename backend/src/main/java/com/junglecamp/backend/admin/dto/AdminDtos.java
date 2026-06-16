@@ -45,9 +45,24 @@ public final class AdminDtos {
 			String targetType,
 			Long postId,
 			Long commentId,
+			String postTitle,
+			String targetContent,
+			String targetAuthor,
 			Long reporterUserId,
 			String reason,
 			String detail,
+			String createdAt) {
+	}
+
+	public record HiddenContentItem(
+			String targetType,
+			Long postId,
+			Long commentId,
+			String postTitle,
+			String content,
+			Long authorUserId,
+			String author,
+			String hiddenAt,
 			String createdAt) {
 	}
 
@@ -69,7 +84,8 @@ public final class AdminDtos {
 			String model,
 			String errorMessage,
 			String createdAt,
-			String completedAt) {
+			String completedAt,
+			String hiddenAt) {
 	}
 
 	public record AdminActionResponse(String status) {

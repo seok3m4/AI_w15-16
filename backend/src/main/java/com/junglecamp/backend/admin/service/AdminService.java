@@ -8,6 +8,7 @@ import com.junglecamp.backend.admin.dto.AdminDtos.AgentRunItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.AuditLogItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.BoardReportItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.EconomySyncRunItem;
+import com.junglecamp.backend.admin.dto.AdminDtos.HiddenContentItem;
 import com.junglecamp.backend.admin.repository.AdminAuditRepository;
 import com.junglecamp.backend.economy.service.EconomySyncService;
 import com.junglecamp.backend.rag.service.RagIndexService;
@@ -108,11 +109,104 @@ public class AdminService {
 	@Transactional(readOnly = true)
 	public List<BoardReportItem> reports() {
 		return jdbcTemplate.query("""
-				SELECT id, target_type, post_id, comment_id, reporter_user_id, reason, detail, created_at
-				FROM board_reports
-				ORDER BY created_at DESC, id DESC
+				SELECT
+					r.id,
+					r.target_type,
+					r.post_id,
+					r.comment_id,
+					p.title AS post_title,
+					CASE
+						WHEN r.target_type = 'COMMENT' THEN c.content
+						ELSE p.content
+					END AS target_content,
+					CASE
+						WHEN r.target_type = 'COMMENT' THEN c.author
+						ELSE p.author
+					END AS target_author,
+					r.reporter_user_id,
+					r.reason,
+					r.detail,
+					r.created_at
+				FROM board_reports r
+				JOIN board_posts p ON p.id = r.post_id
+				LEFT JOIN board_comments c ON c.id = r.comment_id
+				ORDER BY r.created_at DESC, r.id DESC
 				LIMIT 100
 				""", this::mapReport);
+	}
+
+	@Transactional
+	public void dismissReport(Long reportId, Authentication authentication) {
+		AppUser admin = currentAdmin(authentication);
+		List<ReportSummary> reports = jdbcTemplate.query("""
+				SELECT target_type, post_id, comment_id, reason
+				FROM board_reports
+				WHERE id = ?
+				""", (resultSet, rowNumber) -> {
+			Long commentId = resultSet.getLong("comment_id");
+			if (resultSet.wasNull()) {
+				commentId = null;
+			}
+			return new ReportSummary(
+					resultSet.getString("target_type"),
+					resultSet.getLong("post_id"),
+					commentId,
+					resultSet.getString("reason"));
+		}, reportId);
+		if (reports.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
+		}
+		int deleted = jdbcTemplate.update("DELETE FROM board_reports WHERE id = ?", reportId);
+		if (deleted == 0) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found");
+		}
+		ReportSummary report = reports.get(0);
+		auditRepository.record(
+				admin.id(),
+				"REPORT_DISMISS",
+				"BOARD_REPORT",
+				String.valueOf(reportId),
+				"targetType=" + report.targetType()
+						+ ",postId=" + report.postId()
+						+ ",commentId=" + (report.commentId() == null ? "" : report.commentId())
+						+ ",reason=" + report.reason());
+	}
+
+	@Transactional(readOnly = true)
+	public List<HiddenContentItem> hiddenContent() {
+		return jdbcTemplate.query("""
+				SELECT *
+				FROM (
+					SELECT
+						'POST' AS target_type,
+						p.id AS post_id,
+						CAST(NULL AS BIGINT) AS comment_id,
+						p.title AS post_title,
+						p.content AS content,
+						p.author_user_id AS author_user_id,
+						p.author AS author,
+						p.hidden_at AS hidden_at,
+						p.created_at AS created_at
+					FROM board_posts p
+					WHERE p.hidden_at IS NOT NULL
+					UNION ALL
+					SELECT
+						'COMMENT' AS target_type,
+						c.post_id AS post_id,
+						c.id AS comment_id,
+						p.title AS post_title,
+						c.content AS content,
+						c.author_user_id AS author_user_id,
+						c.author AS author,
+						c.hidden_at AS hidden_at,
+						c.created_at AS created_at
+					FROM board_comments c
+					JOIN board_posts p ON p.id = c.post_id
+					WHERE c.hidden_at IS NOT NULL
+				) hidden_items
+				ORDER BY hidden_at DESC, post_id DESC, comment_id DESC
+				LIMIT 100
+				""", this::mapHiddenContent);
 	}
 
 	@Transactional
@@ -165,8 +259,18 @@ public class AdminService {
 	public void hardDeleteComment(Long commentId, Authentication authentication) {
 		AppUser admin = currentAdmin(authentication);
 		ensureExists("board_comments", commentId, "Comment not found");
-		jdbcTemplate.update("DELETE FROM board_notifications WHERE comment_id = ?", commentId);
-		jdbcTemplate.update("DELETE FROM board_reports WHERE comment_id = ?", commentId);
+		jdbcTemplate.update("""
+				DELETE FROM board_notifications
+				WHERE comment_id IN (
+					SELECT id FROM board_comments WHERE id = ? OR parent_comment_id = ?
+				)
+				""", commentId, commentId);
+		jdbcTemplate.update("""
+				DELETE FROM board_reports
+				WHERE comment_id IN (
+					SELECT id FROM board_comments WHERE id = ? OR parent_comment_id = ?
+				)
+				""", commentId, commentId);
 		jdbcTemplate.update("DELETE FROM board_comments WHERE parent_comment_id = ?", commentId);
 		jdbcTemplate.update("DELETE FROM board_comments WHERE id = ?", commentId);
 		auditRepository.record(admin.id(), "COMMENT_HARD_DELETE", "BOARD_COMMENT", String.valueOf(commentId), "");
@@ -191,13 +295,23 @@ public class AdminService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<AgentRunItem> agentRuns() {
+	public List<AgentRunItem> agentRuns(String visibility) {
+		String normalizedVisibility = visibility == null || visibility.isBlank()
+				? "active"
+				: visibility.trim().toLowerCase();
+		String filter = switch (normalizedVisibility) {
+			case "active" -> "WHERE hidden_at IS NULL";
+			case "hidden" -> "WHERE hidden_at IS NOT NULL";
+			case "all" -> "";
+			default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown visibility");
+		};
 		return jdbcTemplate.query("""
-				SELECT id, user_id, run_type, status, summary, model, error_message, created_at, completed_at
+				SELECT id, user_id, run_type, status, summary, model, error_message, created_at, completed_at, hidden_at
 				FROM agent_runs
+				%s
 				ORDER BY created_at DESC, id DESC
 				LIMIT 100
-				""", this::mapAgentRun);
+				""".formatted(filter), this::mapAgentRun);
 	}
 
 	@Transactional
@@ -206,6 +320,17 @@ public class AdminService {
 		ensureExists("agent_runs", runId, "Agent run not found");
 		auditRepository.record(admin.id(), "AGENT_RUN_RETRY_REQUEST", "AGENT_RUN", String.valueOf(runId), "");
 		return new AdminActionResponse("queued");
+	}
+
+	@Transactional
+	public void hardDeleteAgentRun(Long runId, Authentication authentication) {
+		AppUser admin = currentAdmin(authentication);
+		ensureExists("agent_runs", runId, "Agent run not found");
+		jdbcTemplate.update("DELETE FROM agent_evidence_items WHERE run_id = ?", runId);
+		jdbcTemplate.update("DELETE FROM agent_steps WHERE run_id = ?", runId);
+		jdbcTemplate.update("DELETE FROM agent_messages WHERE run_id = ?", runId);
+		jdbcTemplate.update("DELETE FROM agent_runs WHERE id = ?", runId);
+		auditRepository.record(admin.id(), "AGENT_RUN_HARD_DELETE", "AGENT_RUN", String.valueOf(runId), "");
 	}
 
 	@Transactional(readOnly = true)
@@ -238,6 +363,9 @@ public class AdminService {
 		}
 	}
 
+	private record ReportSummary(String targetType, Long postId, Long commentId, String reason) {
+	}
+
 	private BoardReportItem mapReport(ResultSet resultSet, int rowNumber) throws SQLException {
 		Long commentId = resultSet.getLong("comment_id");
 		if (resultSet.wasNull()) {
@@ -248,9 +376,33 @@ public class AdminService {
 				resultSet.getString("target_type"),
 				resultSet.getLong("post_id"),
 				commentId,
+				resultSet.getString("post_title"),
+				resultSet.getString("target_content"),
+				resultSet.getString("target_author"),
 				resultSet.getLong("reporter_user_id"),
 				resultSet.getString("reason"),
 				resultSet.getString("detail"),
+				timestamp(resultSet.getTimestamp("created_at")));
+	}
+
+	private HiddenContentItem mapHiddenContent(ResultSet resultSet, int rowNumber) throws SQLException {
+		Long commentId = resultSet.getLong("comment_id");
+		if (resultSet.wasNull()) {
+			commentId = null;
+		}
+		Long authorUserId = resultSet.getLong("author_user_id");
+		if (resultSet.wasNull()) {
+			authorUserId = null;
+		}
+		return new HiddenContentItem(
+				resultSet.getString("target_type"),
+				resultSet.getLong("post_id"),
+				commentId,
+				resultSet.getString("post_title"),
+				resultSet.getString("content"),
+				authorUserId,
+				resultSet.getString("author"),
+				timestamp(resultSet.getTimestamp("hidden_at")),
 				timestamp(resultSet.getTimestamp("created_at")));
 	}
 
@@ -274,7 +426,8 @@ public class AdminService {
 				resultSet.getString("model"),
 				resultSet.getString("error_message"),
 				timestamp(resultSet.getTimestamp("created_at")),
-				timestamp(resultSet.getTimestamp("completed_at")));
+				timestamp(resultSet.getTimestamp("completed_at")),
+				timestamp(resultSet.getTimestamp("hidden_at")));
 	}
 
 	private String timestamp(Timestamp timestamp) {

@@ -40,6 +40,7 @@ export interface BoardPostSummary {
   commentCount: number;
   likeCount: number;
   likedByMe: boolean;
+  deleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +57,7 @@ export interface BoardPostDetail {
   commentCount: number;
   likeCount: number;
   likedByMe: boolean;
+  deleted: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -92,6 +94,10 @@ export interface BoardNotificationItem {
   commentId: number | null;
   type: string;
   message: string;
+  postTitle: string;
+  postCategory: BoardCategory;
+  postExcerpt: string;
+  commentContent: string | null;
   actor: BoardAuthorProfile;
   read: boolean;
   createdAt: string;
@@ -277,6 +283,12 @@ export function fetchBoardNotifications(): Promise<BoardNotificationResponse> {
 
 export function markBoardNotificationsRead(): Promise<void> {
   return requestJson<void>("/api/board/notifications/read-all", {
+    method: "POST",
+  });
+}
+
+export function markBoardNotificationRead(notificationId: number): Promise<void> {
+  return requestJson<void>(`/api/board/notifications/${notificationId}/read`, {
     method: "POST",
   });
 }

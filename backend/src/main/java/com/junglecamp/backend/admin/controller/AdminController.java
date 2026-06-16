@@ -8,6 +8,7 @@ import com.junglecamp.backend.admin.dto.AdminDtos.AgentRunItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.AuditLogItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.BoardReportItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.EconomySyncRunItem;
+import com.junglecamp.backend.admin.dto.AdminDtos.HiddenContentItem;
 import com.junglecamp.backend.admin.dto.AdminDtos.UpdateRolesRequest;
 import com.junglecamp.backend.admin.service.AdminService;
 import java.util.List;
@@ -66,6 +67,17 @@ public class AdminController {
 		return adminService.reports();
 	}
 
+	@DeleteMapping("/reports/{reportId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void dismissReport(@PathVariable Long reportId, Authentication authentication) {
+		adminService.dismissReport(reportId, authentication);
+	}
+
+	@GetMapping("/content/hidden")
+	public List<HiddenContentItem> hiddenContent() {
+		return adminService.hiddenContent();
+	}
+
 	@PostMapping("/posts/{postId}/hide")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void hidePost(@PathVariable Long postId, Authentication authentication) {
@@ -101,13 +113,19 @@ public class AdminController {
 	}
 
 	@GetMapping("/agents/runs")
-	public List<AgentRunItem> agentRuns() {
-		return adminService.agentRuns();
+	public List<AgentRunItem> agentRuns(@RequestParam(defaultValue = "active") String visibility) {
+		return adminService.agentRuns(visibility);
 	}
 
 	@PostMapping("/agents/runs/{runId}/retry")
 	public AdminActionResponse retryAgentRun(@PathVariable Long runId, Authentication authentication) {
 		return adminService.retryAgentRun(runId, authentication);
+	}
+
+	@DeleteMapping("/agents/runs/{runId}/hard-delete")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void hardDeleteAgentRun(@PathVariable Long runId, Authentication authentication) {
+		adminService.hardDeleteAgentRun(runId, authentication);
 	}
 
 	@GetMapping("/audit-logs")

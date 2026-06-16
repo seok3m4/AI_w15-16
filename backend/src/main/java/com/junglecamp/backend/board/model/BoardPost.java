@@ -45,6 +45,9 @@ public class BoardPost {
 	@Column(name = "hidden_at")
 	private Instant hiddenAt;
 
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
+
 	@Column(nullable = false)
 	private Instant createdAt;
 
@@ -96,6 +99,14 @@ public class BoardPost {
 		this.hiddenAt = Instant.now();
 	}
 
+	public void markDeleted() {
+		this.deletedAt = Instant.now();
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
+	}
+
 	public BoardComment addComment(String content, String author, Long authorUserId, Long parentCommentId) {
 		BoardComment comment = new BoardComment(this, content, author, authorUserId, parentCommentId);
 		comments.add(comment);
@@ -137,6 +148,10 @@ public class BoardPost {
 
 	public Instant getHiddenAt() {
 		return hiddenAt;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
 	}
 
 	public Instant getCreatedAt() {

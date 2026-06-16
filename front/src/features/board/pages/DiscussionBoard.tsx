@@ -1,12 +1,10 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { IonIcon } from "@ionic/react";
 import {
   chatbubbleOutline,
   flagOutline,
   heart,
   heartOutline,
-  logInOutline,
-  notificationsOutline,
   sendOutline,
   trashOutline,
 } from "ionicons/icons";
@@ -16,12 +14,10 @@ import {
   createPost,
   deleteComment,
   deletePost,
-  fetchBoardNotifications,
   fetchPost,
   fetchPosts,
   fetchTags,
   likePost,
-  markBoardNotificationsRead,
   parseTags,
   reportComment,
   reportPost,
@@ -29,12 +25,16 @@ import {
   type BoardCategory,
   type BoardComment,
   type BoardFeedResponse,
-  type BoardNotificationItem,
   type BoardPostDetail,
   type BoardPostSummary,
   type BoardTag,
 } from "../api/posts";
-import { getGoogleLoginUrl } from "../../auth/api/authApi";
+import {
+  hardDeleteAdminComment,
+  hardDeleteAdminPost,
+  hideAdminComment,
+  hideAdminPost,
+} from "../../admin/api/admin";
 import type { CurrentUser } from "../../../api/backend";
 import { useI18n } from "../../../i18n/I18nProvider";
 
@@ -42,7 +42,9 @@ import "./DiscussionBoard.css";
 
 interface DiscussionBoardProps {
   currentUser: CurrentUser | null;
-  onUnreadCountChange: (count: number) => void;
+  initialPostId?: number | null;
+  initialCommentId?: number | null;
+  targetVersion?: number;
 }
 
 const CATEGORIES = [
@@ -61,6 +63,9 @@ const CATEGORIES = [
 const CATEGORY_LABELS = Object.fromEntries(
   CATEGORIES.filter((item) => item.id !== "all").map((item) => [item.id, item.labelKey]),
 ) as Record<BoardCategory, (typeof CATEGORIES)[number]["labelKey"]>;
+
+const FEED_PAGE_SIZE = 2;
+const COLLAPSED_COMMENT_LENGTH = 130;
 
 function formatDateTime(value: string, locale: string, fallback: string) {
   const date = new Date(value);
@@ -83,12 +88,47 @@ function isAiSample(title: string, content = "") {
   return title.includes("[AI 생성 샘플]") || content.includes("AI가 생성한 샘플 토론 데이터입니다.");
 }
 
-export default function DiscussionBoard({ currentUser, onUnreadCountChange }: DiscussionBoardProps) {
+function isAiComment(comment: BoardComment) {
+  return comment.content.includes("AI가 작성한 샘플 댓글입니다.") || comment.authorProfile.nickname.startsWith("AI_");
+}
+
+function commentsPerPageForViewport(height: number, width: number) {
+  if (width <= 720) {
+    return height < 860 ? 1 : 2;
+  }
+  if (height < 760) {
+    return 1;
+  }
+  if (height < 920) {
+    return 2;
+  }
+  if (height < 1100) {
+    return 3;
+  }
+  return 4;
+}
+
+function initialCommentsPerPage() {
+  if (typeof window === "undefined") {
+    return 2;
+  }
+  return commentsPerPageForViewport(window.innerHeight, window.innerWidth);
+}
+
+function isLongComment(content: string) {
+  return content.length > COLLAPSED_COMMENT_LENGTH || content.split(/\r?\n/).length > 2;
+}
+
+export default function DiscussionBoard({
+  currentUser,
+  initialPostId,
+  initialCommentId,
+  targetVersion = 0,
+}: DiscussionBoardProps) {
   const { locale, t } = useI18n();
   const [feed, setFeed] = useState<BoardFeedResponse | null>(null);
   const [selectedPost, setSelectedPost] = useState<BoardPostDetail | null>(null);
   const [tags, setTags] = useState<BoardTag[]>([]);
-  const [notifications, setNotifications] = useState<BoardNotificationItem[]>([]);
   const [category, setCategory] = useState<BoardCategory | "all">("all");
   const [sort, setSort] = useState<"latest" | "popular">("latest");
   const [query, setQuery] = useState("");
@@ -104,12 +144,20 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
   const [commentDraft, setCommentDraft] = useState("");
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
+  const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
+  const [commentsPerPage, setCommentsPerPage] = useState(initialCommentsPerPage);
+  const [commentPage, setCommentPage] = useState(0);
+  const [expandedCommentIds, setExpandedCommentIds] = useState<Set<number>>(() => new Set());
 
+  const isAdmin = currentUser?.roles.includes("ROLE_ADMIN") ?? false;
   const selectedPostId = selectedPost?.id ?? null;
-  const unreadCount = useMemo(
-    () => notifications.filter((item) => !item.read).length,
-    [notifications],
-  );
+  const selectedCommentCount = selectedPost?.comments.length ?? 0;
+  const commentTotalPages = Math.max(1, Math.ceil(selectedCommentCount / commentsPerPage));
+  const safeCommentPage = Math.min(commentPage, commentTotalPages - 1);
+  const visibleComments = selectedPost?.comments.slice(
+    safeCommentPage * commentsPerPage,
+    safeCommentPage * commentsPerPage + commentsPerPage,
+  ) ?? [];
 
   useEffect(() => {
     let cancelled = false;
@@ -132,31 +180,23 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    async function loadNotifications() {
-      if (!currentUser) {
-        setNotifications([]);
-        onUnreadCountChange(0);
-        return;
-      }
-      try {
-        const response = await fetchBoardNotifications();
-        if (!cancelled) {
-          setNotifications(response.items);
-          onUnreadCountChange(response.unreadCount);
-        }
-      } catch {
-        if (!cancelled) {
-          setNotifications([]);
-          onUnreadCountChange(0);
-        }
-      }
+    function updateCommentsPerPage() {
+      setCommentsPerPage(commentsPerPageForViewport(window.innerHeight, window.innerWidth));
     }
-    void loadNotifications();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentUser, onUnreadCountChange]);
+
+    updateCommentsPerPage();
+    window.addEventListener("resize", updateCommentsPerPage);
+    return () => window.removeEventListener("resize", updateCommentsPerPage);
+  }, []);
+
+  useEffect(() => {
+    setCommentPage(0);
+    setExpandedCommentIds(new Set());
+  }, [selectedPostId]);
+
+  useEffect(() => {
+    setCommentPage((current) => Math.min(current, commentTotalPages - 1));
+  }, [commentTotalPages]);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,16 +210,16 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
           tag,
           sort,
           page,
-          size: 10,
+          size: FEED_PAGE_SIZE,
         });
         if (cancelled) {
           return;
         }
         setFeed(nextFeed);
-        const nextSelectedId =
-          selectedPostId && nextFeed.items.some((item) => item.id === selectedPostId)
-            ? selectedPostId
-            : nextFeed.items[0]?.id;
+        let nextSelectedId = initialPostId ?? nextFeed.items[0]?.id;
+        if (!initialPostId && selectedPostId && nextFeed.items.some((item) => item.id === selectedPostId)) {
+          nextSelectedId = selectedPostId;
+        }
         if (nextSelectedId) {
           const detail = await fetchPost(nextSelectedId);
           if (!cancelled) {
@@ -202,10 +242,39 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
     return () => {
       cancelled = true;
     };
-  }, [category, page, query, selectedPostId, sort, tag]);
+  }, [category, initialPostId, page, query, selectedPostId, sort, tag]);
+
+  useEffect(() => {
+    if (!initialCommentId || !initialPostId || selectedPost?.id !== initialPostId) {
+      return;
+    }
+
+    const hasTargetComment = selectedPost.comments.some(
+      (comment) => comment.id === initialCommentId
+        || comment.replies.some((reply) => reply.id === initialCommentId),
+    );
+    if (!hasTargetComment) {
+      return;
+    }
+
+    setHighlightedCommentId(initialCommentId);
+    const scrollTimer = window.setTimeout(() => {
+      document
+        .getElementById(`discussion-comment-${initialCommentId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    const clearTimer = window.setTimeout(() => {
+      setHighlightedCommentId((current) => current === initialCommentId ? null : current);
+    }, 4500);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [initialCommentId, initialPostId, selectedPost, targetVersion]);
 
   async function reloadFeed(preferredPostId?: number | null) {
-    const nextFeed = await fetchPosts({ category, query, tag, sort, page, size: 10 });
+    const nextFeed = await fetchPosts({ category, query, tag, sort, page, size: FEED_PAGE_SIZE });
     setFeed(nextFeed);
     const nextId =
       preferredPostId && nextFeed.items.some((item) => item.id === preferredPostId)
@@ -305,21 +374,11 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
       setReplyDraft("");
       setReplyTargetId(null);
       await refreshSelected(selectedPost.id);
-      await reloadNotifications();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t("discussion.error.comment"));
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  async function reloadNotifications() {
-    if (!currentUser) {
-      return;
-    }
-    const response = await fetchBoardNotifications();
-    setNotifications(response.items);
-    onUnreadCountChange(response.unreadCount);
   }
 
   async function handleDeletePost() {
@@ -342,6 +401,54 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
     }
     await deleteComment(selectedPost.id, commentId);
     await refreshSelected(selectedPost.id);
+  }
+
+  async function handleAdminHidePost() {
+    if (!selectedPost || !isAdmin) {
+      return;
+    }
+    if (!window.confirm("이 토론글을 숨김 처리할까요? 일반 사용자 화면과 RAG 검색에서 제외됩니다.")) {
+      return;
+    }
+    await hideAdminPost(selectedPost.id);
+    await reloadFeed(null);
+    setErrorMessage("토론글을 숨김 처리했습니다.");
+  }
+
+  async function handleAdminHardDeletePost() {
+    if (!selectedPost || !isAdmin) {
+      return;
+    }
+    if (!window.confirm("이 토론글을 영구삭제할까요? 댓글, 신고, 알림, RAG 데이터도 함께 삭제됩니다.")) {
+      return;
+    }
+    await hardDeleteAdminPost(selectedPost.id);
+    await reloadFeed(null);
+    setErrorMessage("토론글을 영구삭제했습니다.");
+  }
+
+  async function handleAdminHideComment(commentId: number) {
+    if (!selectedPost || !isAdmin) {
+      return;
+    }
+    if (!window.confirm("이 댓글을 숨김 처리할까요?")) {
+      return;
+    }
+    await hideAdminComment(commentId);
+    await refreshSelected(selectedPost.id);
+    setErrorMessage("댓글을 숨김 처리했습니다.");
+  }
+
+  async function handleAdminHardDeleteComment(commentId: number) {
+    if (!selectedPost || !isAdmin) {
+      return;
+    }
+    if (!window.confirm("이 댓글을 영구삭제할까요? 관련 신고와 알림도 함께 삭제됩니다.")) {
+      return;
+    }
+    await hardDeleteAdminComment(commentId);
+    await refreshSelected(selectedPost.id);
+    setErrorMessage("댓글을 영구삭제했습니다.");
   }
 
   async function handleReportPost() {
@@ -368,14 +475,6 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
     setErrorMessage(t("discussion.reportReceived"));
   }
 
-  async function handleReadNotifications() {
-    if (!currentUser) {
-      return;
-    }
-    await markBoardNotificationsRead();
-    await reloadNotifications();
-  }
-
   function renderAuthor(profile: BoardPostDetail["authorProfile"] | BoardComment["authorProfile"]) {
     return (
       <span className="discussion-author">
@@ -385,26 +484,76 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
     );
   }
 
+  function toggleCommentExpanded(commentId: number) {
+    setExpandedCommentIds((current) => {
+      const next = new Set(current);
+      if (next.has(commentId)) {
+        next.delete(commentId);
+      } else {
+        next.add(commentId);
+      }
+      return next;
+    });
+  }
+
+  function renderCommentBody(comment: BoardComment) {
+    const longComment = isLongComment(comment.content);
+    const expanded = expandedCommentIds.has(comment.id);
+    return (
+      <>
+        <p className={longComment && !expanded ? "discussion-comment__body is-collapsed" : "discussion-comment__body"}>
+          {comment.content}
+        </p>
+        {longComment && (
+          <button className="discussion-comment__more" type="button" onClick={() => toggleCommentExpanded(comment.id)}>
+            {expanded ? t("discussion.showLess") : t("discussion.showMore")}
+          </button>
+        )}
+      </>
+    );
+  }
+
   function renderComment(comment: BoardComment) {
     const ownsComment = currentUser?.id === comment.authorProfile.userId;
+    const aiComment = isAiComment(comment);
     return (
-      <article className="discussion-comment" key={comment.id}>
+      <article
+        className={comment.id === highlightedCommentId ? "discussion-comment is-highlighted" : "discussion-comment"}
+        id={`discussion-comment-${comment.id}`}
+        key={comment.id}
+      >
         <header>
           {renderAuthor(comment.authorProfile)}
-          <time>{formatDateTime(comment.createdAt, locale, t("discussion.justNow"))}</time>
+          <span className="discussion-comment-meta">
+            {aiComment && <em className="discussion-ai-badge">{t("discussion.aiCommentBadge")}</em>}
+            <time>{formatDateTime(comment.createdAt, locale, t("discussion.justNow"))}</time>
+          </span>
         </header>
-        <p>{comment.content}</p>
+        {renderCommentBody(comment)}
         <div className="discussion-comment__actions">
           <button type="button" onClick={() => setReplyTargetId(comment.id)}>
             {t("discussion.reply")}
           </button>
-          <button type="button" onClick={() => void handleReportComment(comment.id)}>
-            {t("discussion.report")}
-          </button>
-          {ownsComment && (
-            <button type="button" onClick={() => void handleDeleteComment(comment.id)}>
-              {t("discussion.hide")}
-            </button>
+          {isAdmin ? (
+            <>
+              <button type="button" onClick={() => void handleAdminHideComment(comment.id)}>
+                숨김처리
+              </button>
+              <button type="button" onClick={() => void handleAdminHardDeleteComment(comment.id)}>
+                영구삭제
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => void handleReportComment(comment.id)}>
+                {t("discussion.report")}
+              </button>
+              {ownsComment && (
+                <button type="button" onClick={() => void handleDeleteComment(comment.id)}>
+                  {t("discussion.hide")}
+                </button>
+              )}
+            </>
           )}
         </div>
         {replyTargetId === comment.id && (
@@ -423,21 +572,46 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
           <div className="discussion-replies">
             {comment.replies.map((reply) => {
               const ownsReply = currentUser?.id === reply.authorProfile.userId;
+              const aiReply = isAiComment(reply);
               return (
-                <article className="discussion-comment is-reply" key={reply.id}>
+                <article
+                  className={
+                    reply.id === highlightedCommentId
+                      ? "discussion-comment is-reply is-highlighted"
+                      : "discussion-comment is-reply"
+                  }
+                  id={`discussion-comment-${reply.id}`}
+                  key={reply.id}
+                >
                   <header>
                     {renderAuthor(reply.authorProfile)}
-                    <time>{formatDateTime(reply.createdAt, locale, t("discussion.justNow"))}</time>
+                    <span className="discussion-comment-meta">
+                      {aiReply && <em className="discussion-ai-badge">{t("discussion.aiCommentBadge")}</em>}
+                      <time>{formatDateTime(reply.createdAt, locale, t("discussion.justNow"))}</time>
+                    </span>
                   </header>
-                  <p>{reply.content}</p>
+                  {renderCommentBody(reply)}
                   <div className="discussion-comment__actions">
-                    <button type="button" onClick={() => void handleReportComment(reply.id)}>
-                      {t("discussion.report")}
-                    </button>
-                    {ownsReply && (
-                      <button type="button" onClick={() => void handleDeleteComment(reply.id)}>
-                        {t("discussion.hide")}
-                      </button>
+                    {isAdmin ? (
+                      <>
+                        <button type="button" onClick={() => void handleAdminHideComment(reply.id)}>
+                          숨김처리
+                        </button>
+                        <button type="button" onClick={() => void handleAdminHardDeleteComment(reply.id)}>
+                          영구삭제
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => void handleReportComment(reply.id)}>
+                          {t("discussion.report")}
+                        </button>
+                        {ownsReply && (
+                          <button type="button" onClick={() => void handleDeleteComment(reply.id)}>
+                            {t("discussion.hide")}
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </article>
@@ -448,28 +622,8 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
       </article>
     );
   }
-
   return (
     <section className="discussion-workbench" aria-label={t("discussion.aria.workbench")}>
-      <header className="discussion-hero">
-        <div>
-          <span>{t("discussion.heroKicker")}</span>
-          <h1>{t("discussion.heroTitle")}</h1>
-          <p>{t("discussion.heroSubtitle")}</p>
-        </div>
-        {!currentUser ? (
-          <a className="discussion-login" href={getGoogleLoginUrl()}>
-            <IonIcon icon={logInOutline} />
-            <span>{t("discussion.login")}</span>
-          </a>
-        ) : (
-          <button className="discussion-login" type="button" onClick={() => void handleReadNotifications()}>
-            <IonIcon icon={notificationsOutline} />
-            <span>{unreadCount > 0 ? `${unreadCount}${t("discussion.unreadSuffix")}` : t("discussion.noAlerts")}</span>
-          </button>
-        )}
-      </header>
-
       {errorMessage && <p className="discussion-message">{errorMessage}</p>}
 
       <section className="discussion-layout">
@@ -558,13 +712,17 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
             {!isLoading && feed?.items.length === 0 && <p className="discussion-empty">{t("discussion.empty")}</p>}
             {feed?.items.map((post) => (
               <button
-                className={selectedPost?.id === post.id ? "discussion-post is-active" : "discussion-post"}
+                className={[
+                  "discussion-post",
+                  selectedPost?.id === post.id ? "is-active" : "",
+                  post.deleted ? "is-deleted" : "",
+                ].filter(Boolean).join(" ")}
                 key={post.id}
                 type="button"
                 onClick={() => void handleSelectPost(post)}
               >
                 <span>{t(CATEGORY_LABELS[post.category])}</span>
-                {isAiSample(post.title) && <em className="discussion-ai-badge">{t("discussion.aiSample")}</em>}
+                {!post.deleted && isAiSample(post.title) && <em className="discussion-ai-badge">{t("discussion.aiSample")}</em>}
                 <strong>{post.title}</strong>
                 <p>{post.excerpt}</p>
                 <footer>
@@ -599,11 +757,11 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
         <section className="discussion-detail">
           {selectedPost ? (
             <>
-              <article className="discussion-detail__post">
+              <article className={selectedPost.deleted ? "discussion-detail__post is-deleted" : "discussion-detail__post"}>
                 <header>
                   <div>
                     <span>{t(CATEGORY_LABELS[selectedPost.category])}</span>
-                    {isAiSample(selectedPost.title, selectedPost.content) && (
+                    {!selectedPost.deleted && isAiSample(selectedPost.title, selectedPost.content) && (
                       <em className="discussion-ai-badge">{t("discussion.aiSample")}</em>
                     )}
                     <h2>{selectedPost.title}</h2>
@@ -611,27 +769,47 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
                   {renderAuthor(selectedPost.authorProfile)}
                 </header>
                 <p>{selectedPost.content}</p>
-                <div className="discussion-tags">
-                  {selectedPost.tags.map((item) => (
-                    <button key={item} type="button" onClick={() => setTag(item)}>
-                      #{item}
-                    </button>
-                  ))}
-                </div>
+                {!selectedPost.deleted && (
+                  <div className="discussion-tags">
+                    {selectedPost.tags.map((item) => (
+                      <button key={item} type="button" onClick={() => setTag(item)}>
+                        #{item}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <footer>
-                  <button type="button" onClick={() => void handleLike()}>
-                    <IonIcon icon={selectedPost.likedByMe ? heart : heartOutline} />
-                    <span>{selectedPost.likeCount}</span>
-                  </button>
-                  <button type="button" onClick={() => void handleReportPost()}>
-                    <IonIcon icon={flagOutline} />
-                    <span>{t("discussion.report")}</span>
-                  </button>
-                  {currentUser?.id === selectedPost.authorProfile.userId && (
-                    <button type="button" onClick={() => void handleDeletePost()}>
-                      <IonIcon icon={trashOutline} />
-                      <span>{t("discussion.hide")}</span>
-                    </button>
+                  {isAdmin ? (
+                    <>
+                      {!selectedPost.deleted && (
+                        <button type="button" onClick={() => void handleAdminHidePost()}>
+                          숨김처리
+                        </button>
+                      )}
+                      <button type="button" onClick={() => void handleAdminHardDeletePost()}>
+                        <IonIcon icon={trashOutline} />
+                        <span>영구삭제</span>
+                      </button>
+                    </>
+                  ) : !selectedPost.deleted ? (
+                    <>
+                      <button type="button" onClick={() => void handleLike()}>
+                        <IonIcon icon={selectedPost.likedByMe ? heart : heartOutline} />
+                        <span>{selectedPost.likeCount}</span>
+                      </button>
+                      <button type="button" onClick={() => void handleReportPost()}>
+                        <IonIcon icon={flagOutline} />
+                        <span>{t("discussion.report")}</span>
+                      </button>
+                      {currentUser?.id === selectedPost.authorProfile.userId && (
+                        <button type="button" onClick={() => void handleDeletePost()}>
+                          <IonIcon icon={trashOutline} />
+                          <span>{t("discussion.hide")}</span>
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <span>댓글은 계속 확인할 수 있습니다.</span>
                   )}
                   <time>{formatDateTime(selectedPost.createdAt, locale, t("discussion.justNow"))}</time>
                 </footer>
@@ -644,23 +822,46 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
                     {t("discussion.comments")} {selectedPost.commentCount}
                   </strong>
                 </div>
-                <div className="discussion-comment-box">
-                  <input
-                    placeholder={currentUser ? t("discussion.commentPlaceholder") : t("discussion.commentPlaceholderLogin")}
-                    value={commentDraft}
-                    onChange={(event) => setCommentDraft(event.target.value)}
-                  />
-                  <button disabled={isSubmitting || !commentDraft.trim()} type="button" onClick={() => void handleComment()}>
-                    <IonIcon icon={sendOutline} />
-                  </button>
-                </div>
+                {!selectedPost.deleted && (
+                  <div className="discussion-comment-box">
+                    <input
+                      placeholder={currentUser ? t("discussion.commentPlaceholder") : t("discussion.commentPlaceholderLogin")}
+                      value={commentDraft}
+                      onChange={(event) => setCommentDraft(event.target.value)}
+                    />
+                    <button disabled={isSubmitting || !commentDraft.trim()} type="button" onClick={() => void handleComment()}>
+                      <IonIcon icon={sendOutline} />
+                    </button>
+                  </div>
+                )}
                 <div className="discussion-comment-list">
                   {selectedPost.comments.length === 0 ? (
                     <p className="discussion-empty">{t("discussion.firstComment")}</p>
                   ) : (
-                    selectedPost.comments.map((comment) => renderComment(comment))
+                    visibleComments.map((comment) => renderComment(comment))
                   )}
                 </div>
+                {selectedPost.comments.length > commentsPerPage && (
+                  <div className="discussion-comment-pager" aria-label={t("discussion.aria.commentPagination")}>
+                    <button
+                      disabled={safeCommentPage === 0}
+                      type="button"
+                      onClick={() => setCommentPage(Math.max(0, safeCommentPage - 1))}
+                    >
+                      {t("discussion.prev")}
+                    </button>
+                    <span>
+                      {safeCommentPage + 1} / {commentTotalPages}
+                    </span>
+                    <button
+                      disabled={safeCommentPage + 1 >= commentTotalPages}
+                      type="button"
+                      onClick={() => setCommentPage(Math.min(commentTotalPages - 1, safeCommentPage + 1))}
+                    >
+                      {t("discussion.next")}
+                    </button>
+                  </div>
+                )}
               </section>
             </>
           ) : (
@@ -668,28 +869,6 @@ export default function DiscussionBoard({ currentUser, onUnreadCountChange }: Di
           )}
         </section>
 
-        {currentUser && notifications.length > 0 && (
-          <aside className="discussion-notifications" aria-label={t("discussion.aria.notifications")}>
-            <div className="discussion-section-title">
-              <strong>{t("discussion.notifications")}</strong>
-              <button type="button" onClick={() => void handleReadNotifications()}>
-                {t("discussion.markAllRead")}
-              </button>
-            </div>
-            {notifications.slice(0, 5).map((item) => (
-              <button
-                className={item.read ? "discussion-notification" : "discussion-notification is-unread"}
-                key={item.id}
-                type="button"
-                onClick={() => void refreshSelected(item.postId)}
-              >
-                <span>{item.actor.nickname}</span>
-                <strong>{item.message}</strong>
-                <small>{formatDateTime(item.createdAt, locale, t("discussion.justNow"))}</small>
-              </button>
-            ))}
-          </aside>
-        )}
       </section>
     </section>
   );

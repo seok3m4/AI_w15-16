@@ -15,9 +15,10 @@ public interface BoardPostRepository extends JpaRepository<BoardPost, Long> {
 			from BoardPost post
 			left join post.tags tagFilter
 			where post.hiddenAt is null
-			and (:query is null
-				or lower(post.title) like concat('%', :query, '%')
-				or lower(post.content) like concat('%', :query, '%'))
+			and (:query is null or :query = ''
+				or (post.deletedAt is null and (
+					lower(post.title) like concat('%', :query, '%')
+					or lower(post.content) like concat('%', :query, '%'))))
 			and (:tag is null or tagFilter.name = :tag)
 			and (:category is null or post.category = :category)
 			order by post.createdAt desc, post.id desc
@@ -27,7 +28,7 @@ public interface BoardPostRepository extends JpaRepository<BoardPost, Long> {
 			@Param("tag") String tag,
 			@Param("category") String category);
 
-	@EntityGraph(attributePaths = {"tags", "comments"})
+	@EntityGraph(attributePaths = {"tags"})
 	@Query("select post from BoardPost post where post.id = :id and post.hiddenAt is null")
 	Optional<BoardPost> findDetailedById(@Param("id") Long id);
 }

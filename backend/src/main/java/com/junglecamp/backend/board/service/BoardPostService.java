@@ -50,6 +50,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BoardPostService {
 
+	private static final String DELETED_POST_MESSAGE = "삭제된 게시글입니다.";
+
 	private static final Set<String> CATEGORIES = Set.of(
 			"inflation",
 			"jobs",
@@ -146,6 +148,7 @@ public class BoardPostService {
 	@Transactional
 	public PostDetail updatePost(Long id, PostRequest request, Authentication authentication) {
 		BoardPost post = findPost(id);
+		requireNotDeleted(post);
 		AppUser user = requireUser(authentication);
 		requireOwner(post.getAuthor(), post.getAuthorUserId(), user, authentication);
 		post.update(
@@ -162,13 +165,18 @@ public class BoardPostService {
 		BoardPost post = findPost(id);
 		AppUser user = requireUser(authentication);
 		requireOwner(post.getAuthor(), post.getAuthorUserId(), user, authentication);
-		post.hide();
+		if (visibleCommentCount(post) > 0) {
+			post.markDeleted();
+		} else {
+			post.hide();
+		}
 		ragIndexService.deleteBoardPost(id);
 	}
 
 	@Transactional
 	public CommentResponse createComment(Long postId, CommentRequest request, Authentication authentication) {
 		BoardPost post = findPost(postId);
+		requireNotDeleted(post);
 		AppUser user = requireUser(authentication);
 		Long parentCommentId = request.parentCommentId();
 		if (parentCommentId != null) {
@@ -212,6 +220,7 @@ public class BoardPostService {
 	@Transactional
 	public LikeResponse likePost(Long postId, Authentication authentication) {
 		BoardPost post = findPost(postId);
+		requireNotDeleted(post);
 		AppUser user = requireUser(authentication);
 		Integer existing = jdbcTemplate.queryForObject(
 				"SELECT COUNT(*) FROM board_post_likes WHERE post_id = ? AND user_id = ?",
@@ -230,6 +239,7 @@ public class BoardPostService {
 	@Transactional
 	public LikeResponse unlikePost(Long postId, Authentication authentication) {
 		BoardPost post = findPost(postId);
+		requireNotDeleted(post);
 		AppUser user = requireUser(authentication);
 		jdbcTemplate.update(
 				"DELETE FROM board_post_likes WHERE post_id = ? AND user_id = ?",
@@ -241,6 +251,7 @@ public class BoardPostService {
 	@Transactional
 	public void reportPost(Long postId, ReportRequest request, Authentication authentication) {
 		BoardPost post = findPost(postId);
+		requireNotDeleted(post);
 		AppUser user = requireUser(authentication);
 		insertReport("POST", post.getId(), null, user.id(), request);
 	}
@@ -257,18 +268,44 @@ public class BoardPostService {
 	public BoardNotificationResponse notifications(Authentication authentication) {
 		AppUser user = requireUser(authentication);
 		List<BoardNotificationItem> items = jdbcTemplate.query("""
-				SELECT id, post_id, comment_id, actor_user_id, type, message, read_at, created_at
-				FROM board_notifications
-				WHERE recipient_user_id = ?
-				ORDER BY created_at DESC, id DESC
+				SELECT
+					n.id,
+					n.post_id,
+					n.comment_id,
+					n.actor_user_id,
+					n.type,
+					n.message,
+					p.title AS post_title,
+					p.category AS post_category,
+					p.content AS post_content,
+					p.deleted_at AS post_deleted_at,
+					c.content AS comment_content,
+					n.read_at,
+					n.created_at
+				FROM board_notifications n
+				JOIN board_posts p ON p.id = n.post_id
+				LEFT JOIN board_comments c ON c.id = n.comment_id AND c.hidden_at IS NULL
+				WHERE n.recipient_user_id = ? AND p.hidden_at IS NULL
+				ORDER BY n.created_at DESC, n.id DESC
 				LIMIT 30
 				""", this::mapNotification, user.id());
 		Long unreadCount = jdbcTemplate.queryForObject("""
 				SELECT COUNT(*)
-				FROM board_notifications
-				WHERE recipient_user_id = ? AND read_at IS NULL
+				FROM board_notifications n
+				JOIN board_posts p ON p.id = n.post_id
+				WHERE n.recipient_user_id = ? AND n.read_at IS NULL AND p.hidden_at IS NULL
 				""", Long.class, user.id());
 		return new BoardNotificationResponse(items, unreadCount == null ? 0 : unreadCount);
+	}
+
+	@Transactional
+	public void markNotificationRead(Long notificationId, Authentication authentication) {
+		AppUser user = requireUser(authentication);
+		jdbcTemplate.update("""
+				UPDATE board_notifications
+				SET read_at = CURRENT_TIMESTAMP
+				WHERE id = ? AND recipient_user_id = ? AND read_at IS NULL
+				""", notificationId, user.id());
 	}
 
 	@Transactional
@@ -301,6 +338,12 @@ public class BoardPostService {
 				.filter(comment -> comment.getId().equals(commentId))
 				.findFirst()
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+	}
+
+	private void requireNotDeleted(BoardPost post) {
+		if (post.isDeleted()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found");
+		}
 	}
 
 	private List<BoardComment> visibleReplies(BoardPost post, Long parentCommentId) {
@@ -411,35 +454,39 @@ public class BoardPostService {
 	}
 
 	private PostSummary toSummary(BoardPost post, Long viewerUserId, int likeCount) {
+		boolean deleted = post.isDeleted();
 		return new PostSummary(
 				post.getId(),
 				post.getCategory(),
-				post.getTitle(),
-				excerpt(post.getContent()),
+				deleted ? DELETED_POST_MESSAGE : post.getTitle(),
+				deleted ? DELETED_POST_MESSAGE : excerpt(post.getContent()),
 				authorName(post.getAuthorUserId(), post.getAuthor()),
 				authorProfile(post.getAuthorUserId(), post.getAuthor()),
-				tagNames(post),
+				deleted ? List.of() : tagNames(post),
 				visibleCommentCount(post),
-				likeCount,
-				viewerUserId != null && likedBy(post.getId(), viewerUserId),
+				deleted ? 0 : likeCount,
+				!deleted && viewerUserId != null && likedBy(post.getId(), viewerUserId),
+				deleted,
 				post.getCreatedAt(),
 				post.getUpdatedAt());
 	}
 
 	private PostDetail toDetail(BoardPost post, Long viewerUserId) {
+		boolean deleted = post.isDeleted();
 		int likeCount = likeCount(post.getId());
 		return new PostDetail(
 				post.getId(),
 				post.getCategory(),
-				post.getTitle(),
-				post.getContent(),
+				deleted ? DELETED_POST_MESSAGE : post.getTitle(),
+				deleted ? DELETED_POST_MESSAGE : post.getContent(),
 				authorName(post.getAuthorUserId(), post.getAuthor()),
 				authorProfile(post.getAuthorUserId(), post.getAuthor()),
-				tagNames(post),
+				deleted ? List.of() : tagNames(post),
 				comments(post),
 				visibleCommentCount(post),
-				likeCount,
-				viewerUserId != null && likedBy(post.getId(), viewerUserId),
+				deleted ? 0 : likeCount,
+				!deleted && viewerUserId != null && likedBy(post.getId(), viewerUserId),
+				deleted,
 				post.getCreatedAt(),
 				post.getUpdatedAt());
 	}
@@ -580,13 +627,23 @@ public class BoardPostService {
 		if (resultSet.wasNull()) {
 			actorUserId = null;
 		}
+		Long commentId = resultSet.getLong("comment_id");
+		if (resultSet.wasNull()) {
+			commentId = null;
+		}
 		Timestamp readAt = resultSet.getTimestamp("read_at");
 		return new BoardNotificationItem(
 				resultSet.getLong("id"),
 				resultSet.getLong("post_id"),
-				resultSet.getLong("comment_id"),
+				commentId,
 				resultSet.getString("type"),
 				resultSet.getString("message"),
+				resultSet.getString("post_title"),
+				resultSet.getString("post_category"),
+				resultSet.getTimestamp("post_deleted_at") == null
+						? excerpt(resultSet.getString("post_content"))
+						: DELETED_POST_MESSAGE,
+				resultSet.getString("comment_content"),
 				authorProfile(actorUserId, "user"),
 				readAt != null,
 				toInstant(resultSet.getTimestamp("created_at")));

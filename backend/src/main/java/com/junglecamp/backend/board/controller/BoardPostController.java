@@ -138,6 +138,14 @@ public class BoardPostController {
 		return boardPostService.notifications(authentication);
 	}
 
+	@PostMapping("/board/notifications/{notificationId}/read")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void markNotificationRead(
+			@PathVariable Long notificationId,
+			Authentication authentication) {
+		boardPostService.markNotificationRead(notificationId, authentication);
+	}
+
 	@PostMapping("/board/notifications/read-all")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void markNotificationsRead(Authentication authentication) {

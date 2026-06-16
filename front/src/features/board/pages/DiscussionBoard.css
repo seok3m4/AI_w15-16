@@ -1,44 +1,24 @@
 .discussion-workbench {
   min-width: 0;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
-.discussion-hero,
 .discussion-layout,
 .discussion-feed,
 .discussion-detail,
-.discussion-notifications,
 .discussion-composer,
 .discussion-detail__post,
 .discussion-comments {
   min-width: 0;
 }
 
-.discussion-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 18px;
-  border: 1px solid var(--app-border);
-  border-radius: 8px;
-  background: var(--app-surface);
-  box-shadow: var(--app-shadow);
-}
-
-.discussion-hero h1,
 .discussion-detail h2 {
   margin: 0;
   color: var(--app-heading);
   letter-spacing: 0;
 }
 
-.discussion-hero h1 {
-  font-size: 1.55rem;
-}
-
-.discussion-hero p,
 .discussion-detail__post p,
 .discussion-comment p,
 .discussion-post p,
@@ -50,21 +30,19 @@
   overflow-wrap: anywhere;
 }
 
-.discussion-hero span,
 .discussion-detail__post header span,
 .discussion-post span,
 .discussion-ai-badge,
 .discussion-post small,
 .discussion-comment time,
-.discussion-notification small,
 .discussion-empty {
   color: var(--app-muted);
   font-size: 0.8rem;
 }
 
-.discussion-login,
 .discussion-composer button,
 .discussion-pager button,
+.discussion-comment-pager button,
 .discussion-detail footer button,
 .discussion-comment-box button,
 .discussion-reply-box button,
@@ -83,11 +61,6 @@
   cursor: pointer;
 }
 
-.discussion-login {
-  flex: 0 0 auto;
-  padding: 0 12px;
-}
-
 .discussion-message {
   padding: 12px 14px;
   border: 1px solid var(--app-border);
@@ -100,16 +73,15 @@
 .discussion-layout {
   display: grid;
   grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.3fr);
-  gap: 16px;
+  gap: 14px;
   align-items: start;
 }
 
 .discussion-feed,
-.discussion-detail,
-.discussion-notifications {
+.discussion-detail {
   display: grid;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
   border: 1px solid var(--app-border);
   border-radius: 8px;
   background: var(--app-surface);
@@ -121,16 +93,15 @@
 .discussion-list,
 .discussion-detail,
 .discussion-comments,
-.discussion-comment-list,
-.discussion-notifications {
+.discussion-comment-list {
   max-height: none;
 }
 
 .discussion-categories {
   display: flex;
+  flex-wrap: wrap;
   gap: 7px;
-  overflow-x: auto;
-  padding-bottom: 3px;
+  overflow-x: visible;
 }
 
 .discussion-categories button,
@@ -190,7 +161,7 @@
 .discussion-composer {
   grid-template-columns: minmax(110px, 0.28fr) minmax(0, 1fr);
   gap: 8px;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid var(--app-border-soft);
   border-radius: 8px;
   background: var(--app-surface-muted);
@@ -203,13 +174,14 @@
 }
 
 .discussion-composer textarea {
-  min-height: 94px;
+  min-height: 72px;
   padding: 10px;
-  resize: vertical;
+  resize: none;
 }
 
 .discussion-composer button:disabled,
 .discussion-pager button:disabled,
+.discussion-comment-pager button:disabled,
 .discussion-comment-box button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -218,8 +190,7 @@
 .discussion-list {
   display: grid;
   gap: 8px;
-  max-height: min(52vh, 620px);
-  overflow-y: auto;
+  align-content: start;
 }
 
 .discussion-post {
@@ -241,10 +212,26 @@
   background: var(--app-accent-soft);
 }
 
+.discussion-post.is-deleted,
+.discussion-detail__post.is-deleted {
+  border-style: dashed;
+}
+
 .discussion-post strong {
   color: var(--app-heading);
   font-size: 0.96rem;
   line-height: 1.35;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.discussion-post p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .discussion-ai-badge {
@@ -268,6 +255,7 @@
 .discussion-comment__actions,
 .discussion-author,
 .discussion-section-title,
+.discussion-comment-pager,
 .discussion-pager {
   display: flex;
   align-items: center;
@@ -289,8 +277,7 @@
 
 .discussion-detail {
   align-content: start;
-  max-height: calc(100vh - 150px);
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .discussion-detail__post {
@@ -418,13 +405,61 @@
   gap: 10px;
 }
 
+.discussion-comment-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+  text-align: right;
+}
+
+.discussion-comment__body {
+  white-space: pre-wrap;
+}
+
+.discussion-comment__body.is-collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .discussion-comment__actions {
   gap: 6px;
 }
 
-.discussion-comment__actions button {
+.discussion-comment__actions button,
+.discussion-comment__more {
   min-height: 28px;
   font-size: 0.74rem;
+}
+
+.discussion-comment__more {
+  justify-self: start;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  color: var(--app-text);
+  background: var(--app-chip-bg);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.discussion-comment-pager {
+  justify-content: center;
+  gap: 10px;
+}
+
+.discussion-comment-pager button {
+  padding: 0 12px;
+}
+
+.discussion-comment-pager span {
+  color: var(--app-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
 }
 
 .discussion-replies {
@@ -438,39 +473,9 @@
   background: var(--app-surface);
 }
 
-.discussion-notifications {
-  grid-column: 2;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.discussion-notification {
-  display: grid;
-  gap: 5px;
-  padding: 10px;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 8px;
-  color: var(--app-text);
-  background: var(--app-surface-muted);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.discussion-notification.is-unread {
+.discussion-comment.is-highlighted {
   border-color: var(--app-accent);
-}
-
-.discussion-notification span {
-  color: var(--app-accent);
-  font-size: 0.76rem;
-  font-weight: 900;
-}
-
-.discussion-notification strong {
-  color: var(--app-heading);
-  font-size: 0.86rem;
-  line-height: 1.35;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 22%, transparent);
 }
 
 @media (max-width: 1180px) {
@@ -481,14 +486,9 @@
   .discussion-detail {
     max-height: none;
   }
-
-  .discussion-notifications {
-    grid-column: auto;
-  }
 }
 
 @media (max-width: 720px) {
-  .discussion-hero,
   .discussion-detail__post header {
     align-items: stretch;
     flex-direction: column;
@@ -497,10 +497,6 @@
   .discussion-filters,
   .discussion-composer {
     grid-template-columns: 1fr;
-  }
-
-  .discussion-list {
-    max-height: 420px;
   }
 
   .discussion-detail__post footer time {

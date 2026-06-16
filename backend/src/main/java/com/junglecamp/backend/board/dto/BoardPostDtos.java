@@ -43,6 +43,7 @@ public final class BoardPostDtos {
 			int commentCount,
 			int likeCount,
 			boolean likedByMe,
+			boolean deleted,
 			Instant createdAt,
 			Instant updatedAt) {
 	}
@@ -59,6 +60,7 @@ public final class BoardPostDtos {
 			int commentCount,
 			int likeCount,
 			boolean likedByMe,
+			boolean deleted,
 			Instant createdAt,
 			Instant updatedAt) {
 	}
@@ -89,6 +91,10 @@ public final class BoardPostDtos {
 			Long commentId,
 			String type,
 			String message,
+			String postTitle,
+			String postCategory,
+			String postExcerpt,
+			String commentContent,
 			AuthorProfile actor,
 			boolean read,
 			Instant createdAt) {
