@@ -18,6 +18,11 @@ class Settings:
     ai_capsule_max_source_chars: int = 1200
     ai_capsule_max_key_facts: int = 5
     ai_capsule_max_tags: int = 8
+    ai_agent_model: str = "gpt-5.4-mini"
+    ai_agent_max_steps: int = 8
+    ai_agent_timeout_seconds: float = 60
+    ai_agent_tool_retry_limit: int = 1
+    spring_internal_base_url: str = "http://backend:8080"
 
 
 def get_settings() -> Settings:
@@ -39,5 +44,13 @@ def get_settings() -> Settings:
         ),
         ai_capsule_max_key_facts=int(os.getenv("AI_CAPSULE_MAX_KEY_FACTS", "5")),
         ai_capsule_max_tags=int(os.getenv("AI_CAPSULE_MAX_TAGS", "8")),
+        ai_agent_model=os.getenv("AI_AGENT_MODEL", "gpt-5.4-mini"),
+        ai_agent_max_steps=int(os.getenv("AI_AGENT_MAX_STEPS", "8")),
+        ai_agent_timeout_seconds=float(os.getenv("AI_AGENT_TIMEOUT_SECONDS", "60")),
+        ai_agent_tool_retry_limit=int(os.getenv("AI_AGENT_TOOL_RETRY_LIMIT", "1")),
+        spring_internal_base_url=os.getenv(
+            "SPRING_INTERNAL_BASE_URL",
+            "http://backend:8080",
+        ),
         ai_timeout_seconds=float(os.getenv("AI_TIMEOUT_SECONDS", "10")),
     )

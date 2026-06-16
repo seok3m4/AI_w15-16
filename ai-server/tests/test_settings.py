@@ -21,6 +21,11 @@ def test_settings_load_local_defaults(monkeypatch) -> None:
     assert settings.ai_capsule_max_source_chars == 1200
     assert settings.ai_capsule_max_key_facts == 5
     assert settings.ai_capsule_max_tags == 8
+    assert settings.ai_agent_model == "gpt-5.4-mini"
+    assert settings.ai_agent_max_steps == 8
+    assert settings.ai_agent_timeout_seconds == 60
+    assert settings.ai_agent_tool_retry_limit == 1
+    assert settings.spring_internal_base_url == "http://backend:8080"
     assert settings.ai_timeout_seconds == 10
 
 
@@ -38,6 +43,11 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     monkeypatch.setenv("AI_CAPSULE_MAX_SOURCE_CHARS", "600")
     monkeypatch.setenv("AI_CAPSULE_MAX_KEY_FACTS", "4")
     monkeypatch.setenv("AI_CAPSULE_MAX_TAGS", "6")
+    monkeypatch.setenv("AI_AGENT_MODEL", "gpt-5.5-mini")
+    monkeypatch.setenv("AI_AGENT_MAX_STEPS", "4")
+    monkeypatch.setenv("AI_AGENT_TIMEOUT_SECONDS", "30")
+    monkeypatch.setenv("AI_AGENT_TOOL_RETRY_LIMIT", "2")
+    monkeypatch.setenv("SPRING_INTERNAL_BASE_URL", "http://spring:8080")
     monkeypatch.setenv("AI_TIMEOUT_SECONDS", "5")
 
     settings = get_settings()
@@ -55,4 +65,9 @@ def test_settings_load_environment_values(monkeypatch) -> None:
     assert settings.ai_capsule_max_source_chars == 600
     assert settings.ai_capsule_max_key_facts == 4
     assert settings.ai_capsule_max_tags == 6
+    assert settings.ai_agent_model == "gpt-5.5-mini"
+    assert settings.ai_agent_max_steps == 4
+    assert settings.ai_agent_timeout_seconds == 30
+    assert settings.ai_agent_tool_retry_limit == 2
+    assert settings.spring_internal_base_url == "http://spring:8080"
     assert settings.ai_timeout_seconds == 5
