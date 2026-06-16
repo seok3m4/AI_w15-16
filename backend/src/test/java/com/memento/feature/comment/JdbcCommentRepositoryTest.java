@@ -60,6 +60,76 @@ class JdbcCommentRepositoryTest {
     }
 
     @Test
+    void existsActivePostOwnedByChecksActivePostAndCurrentOwner() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+        when(jdbcTemplate.queryForObject(anyString(), any(Class.class), any(Object[].class)))
+                .thenReturn(true);
+
+        boolean exists = repository.existsActivePostOwnedBy(POST_ID, USER_ID);
+
+        assertThat(exists).isTrue();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), any(Class.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("from posts")
+                .contains("author_id = ?")
+                .contains("deleted_at is null");
+    }
+
+    @Test
+    void findPageByOwnedPostReturnsActiveCommentsOrderedByCreatedAt() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    RowMapper<CommentRecord> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(commentResultSet(), 0));
+                });
+
+        List<CommentRecord> comments = repository.findPageByOwnedPost(POST_ID, USER_ID, 20, 0);
+
+        assertThat(comments).containsExactly(new CommentRecord(
+                COMMENT_ID,
+                POST_ID,
+                USER_ID,
+                "cutan",
+                "좋은 기록이네요.",
+                NOW,
+                NOW));
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), any(RowMapper.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("join posts p")
+                .contains("p.author_id = ?")
+                .contains("c.deleted_at is null")
+                .contains("order by c.created_at asc")
+                .contains("limit ?")
+                .contains("offset ?");
+    }
+
+    @Test
+    void countByOwnedPostCountsActiveCommentsOnlyForCurrentOwnersActivePost() {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);
+        when(jdbcTemplate.queryForObject(anyString(), any(Class.class), any(Object[].class)))
+                .thenReturn(2L);
+
+        long count = repository.countByOwnedPost(POST_ID, USER_ID);
+
+        assertThat(count).isEqualTo(2L);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sqlCaptor.capture(), any(Class.class), any(Object[].class));
+        assertThat(sqlCaptor.getValue().toLowerCase())
+                .contains("count(*)")
+                .contains("join posts p")
+                .contains("p.author_id = ?")
+                .contains("c.deleted_at is null")
+                .contains("p.deleted_at is null");
+    }
+
+    @Test
     void updateByAuthorUpdatesActiveCommentOnlyForCurrentAuthorAndActivePost() throws Exception {
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JdbcCommentRepository repository = new JdbcCommentRepository(jdbcTemplate);

@@ -59,6 +59,21 @@ class CommentExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(CommentInvalidQueryException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ProblemDetailsResponse handleInvalidQuery(
+            CommentInvalidQueryException exception,
+            HttpServletRequest request) {
+        return problem(
+                "invalid-comment-query",
+                "Invalid comment query",
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request,
+                "INVALID_COMMENT_QUERY",
+                List.of());
+    }
+
     private ProblemDetailsResponse problem(
             String typeSlug,
             String title,

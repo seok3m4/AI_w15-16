@@ -99,6 +99,10 @@ export type PostRecentCommentResponse = {
   updatedAt: string;
 };
 
+export type CommentResponse = PostRecentCommentResponse & {
+  postId: string;
+};
+
 export type PostDetailResponse = {
   id: string;
   author: UserPublicSummary;
@@ -126,6 +130,15 @@ export type CreatePostRequest = {
   title: string;
   content: string;
   tagNames: string[];
+};
+
+export type CommentListResponse = {
+  items: CommentResponse[];
+  page: PageResponse;
+};
+
+export type CreateCommentRequest = {
+  content: string;
 };
 
 export type TagResponse = {

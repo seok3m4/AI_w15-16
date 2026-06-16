@@ -3,6 +3,7 @@ package com.memento.feature.comment;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -12,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.memento.feature.auth.AuthenticatedUserPrincipal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,41 @@ class CommentControllerTest {
 
     @MockitoBean
     private CommentCommandService commentCommandService;
+
+    @MockitoBean
+    private CommentQueryService commentQueryService;
+
+    @Test
+    void listCommentsReturnsCurrentUsersPostCommentsWithPageMetadata() throws Exception {
+        CommentResponse response = new CommentResponse(
+                COMMENT_ID,
+                POST_ID,
+                new CommentAuthorResponse(USER_ID, "cutan"),
+                "좋은 기록이네요.",
+                NOW,
+                NOW);
+        given(commentQueryService.list(USER_ID, POST_ID, 0, 20, "createdAt,asc"))
+                .willReturn(new CommentListResponse(
+                        List.of(response),
+                        new CommentPageResponse(0, 20, 1, 1)));
+
+        mockMvc.perform(get("/api/v1/posts/{postId}/comments", POST_ID)
+                        .param("page", "0")
+                        .param("size", "20")
+                        .param("sort", "createdAt,asc")
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value("33333333-3333-3333-3333-333333333333"))
+                .andExpect(jsonPath("$.items[0].postId").value("22222222-2222-2222-2222-222222222222"))
+                .andExpect(jsonPath("$.items[0].author.nickname").value("cutan"))
+                .andExpect(jsonPath("$.items[0].content").value("좋은 기록이네요."))
+                .andExpect(jsonPath("$.page.page").value(0))
+                .andExpect(jsonPath("$.page.size").value(20))
+                .andExpect(jsonPath("$.page.totalCount").value(1))
+                .andExpect(jsonPath("$.page.totalPages").value(1));
+    }
 
     @Test
     void createCommentReturnsCreatedCommentForCurrentUser() throws Exception {

@@ -121,6 +121,71 @@ class JdbcCommentRepository implements CommentRepository {
         return deletedRows > 0;
     }
 
+    @Override
+    public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM posts
+                    WHERE id = ?
+                      AND author_id = ?
+                      AND deleted_at IS NULL
+                )
+                """,
+                Boolean.class,
+                postId,
+                ownerId));
+    }
+
+    @Override
+    public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+        return jdbcTemplate.query(
+                """
+                SELECT
+                    c.id,
+                    c.post_id,
+                    c.author_id,
+                    u.nickname AS author_nickname,
+                    c.content,
+                    c.created_at,
+                    c.updated_at
+                FROM comments c
+                JOIN posts p ON p.id = c.post_id
+                JOIN users u ON u.id = c.author_id
+                WHERE c.post_id = ?
+                  AND p.author_id = ?
+                  AND c.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                ORDER BY c.created_at ASC
+                LIMIT ?
+                OFFSET ?
+                """,
+                this::mapComment,
+                postId,
+                ownerId,
+                limit,
+                offset);
+    }
+
+    @Override
+    public long countByOwnedPost(UUID postId, UUID ownerId) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*)
+                FROM comments c
+                JOIN posts p ON p.id = c.post_id
+                WHERE c.post_id = ?
+                  AND p.author_id = ?
+                  AND c.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                """,
+                Long.class,
+                postId,
+                ownerId);
+        return count == null ? 0 : count;
+    }
+
     private CommentRecord mapComment(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
         return new CommentRecord(
                 rs.getObject("id", UUID.class),

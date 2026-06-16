@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -118,6 +119,21 @@ class CommentCommandServiceTest {
             this.deletedAuthorId = authorId;
             this.deletedAt = deletedAt;
             return deleteResult;
+        }
+
+        @Override
+        public boolean existsActivePostOwnedBy(UUID postId, UUID ownerId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<CommentRecord> findPageByOwnedPost(UUID postId, UUID ownerId, int limit, int offset) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long countByOwnedPost(UUID postId, UUID ownerId) {
+            throw new UnsupportedOperationException();
         }
     }
 

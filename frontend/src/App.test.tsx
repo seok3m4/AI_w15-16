@@ -5,6 +5,7 @@ import App from './App';
 const ACCESS_TOKEN_STORAGE_KEY = 'memento.accessToken';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const FIRST_POST_ID = '22222222-2222-2222-2222-222222222222';
+const FIRST_COMMENT_ID = '33333333-3333-3333-3333-333333333333';
 
 function mockFetch(
   handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -59,6 +60,21 @@ function postDetail(overrides: Partial<Record<string, unknown>> = {}) {
     ...postSummary(),
     content: '오늘은 비가 와서 프로젝트 회고를 길게 남겼다.\n다음에는 더 작게 쪼개서 진행한다.',
     recentComments: [],
+    ...overrides,
+  };
+}
+
+function commentResponse(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: FIRST_COMMENT_ID,
+    postId: FIRST_POST_ID,
+    author: {
+      id: USER_ID,
+      nickname: 'cutan',
+    },
+    content: '첫 댓글을 남겼다.',
+    createdAt: '2026-06-15T03:15:00Z',
+    updatedAt: '2026-06-15T03:15:00Z',
     ...overrides,
   };
 }
@@ -335,6 +351,237 @@ describe('App auth flow', () => {
       await screen.findByRole('heading', { name: '비 오는 날 회고' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/다음에는 더 작게 쪼개서 진행한다/)).toBeInTheDocument();
+  });
+
+  it('renders comments on the post detail page', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ commentCount: 1 }));
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        return jsonResponse({
+          items: [commentResponse()],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: '비 오는 날 회고' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('첫 댓글을 남겼다.')).toBeInTheDocument();
+    expect(screen.getByLabelText('댓글 입력')).toBeInTheDocument();
+  });
+
+  it('loads additional comment pages from the post detail page', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const comments = Array.from({ length: 21 }, (_, index) =>
+      commentResponse({
+        id: `33333333-3333-3333-3333-${String(index + 1).padStart(12, '0')}`,
+        content: `페이지 댓글 ${index + 1}`,
+      }),
+    );
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ commentCount: comments.length }));
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        const searchParams = new URL(url).searchParams;
+        const page = Number(searchParams.get('page') ?? '0');
+        const size = Number(searchParams.get('size') ?? '20');
+        const start = page * size;
+        return jsonResponse({
+          items: comments.slice(start, start + size),
+          page: {
+            page,
+            size,
+            totalCount: comments.length,
+            totalPages: 2,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('페이지 댓글 1')).toBeInTheDocument();
+    expect(screen.queryByText('페이지 댓글 21')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '댓글 더 불러오기' }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`page=1`),
+        expect.objectContaining({ method: 'GET' }),
+      ),
+    );
+    expect(await screen.findByText('페이지 댓글 21')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '댓글 더 불러오기' })).not.toBeInTheDocument();
+  });
+
+  it('creates a comment from the post detail page', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const comments: Array<ReturnType<typeof commentResponse>> = [];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ commentCount: comments.length }));
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`) && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({ content: '새 댓글' });
+        const created = commentResponse({
+          content: '새 댓글',
+          createdAt: '2026-06-15T03:20:00Z',
+          updatedAt: '2026-06-15T03:20:00Z',
+        });
+        comments.push(created);
+        return jsonResponse(created, { status: 201 });
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        return jsonResponse({
+          items: comments,
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: comments.length,
+            totalPages: comments.length > 0 ? 1 : 0,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('첫 댓글을 남겨보세요')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('댓글 입력'), {
+      target: { value: '새 댓글' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '작성' }));
+
+    expect(await screen.findByText('새 댓글')).toBeInTheDocument();
+    expect(screen.getByText('댓글 1')).toBeInTheDocument();
+  });
+
+  it('updates an existing comment inline from the post detail page', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let comment = commentResponse();
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ commentCount: 1 }));
+      }
+      if (url.endsWith(`/comments/${FIRST_COMMENT_ID}`) && init?.method === 'PUT') {
+        expect(JSON.parse(String(init.body))).toEqual({ content: '수정한 댓글' });
+        comment = commentResponse({
+          content: '수정한 댓글',
+          updatedAt: '2026-06-15T03:25:00Z',
+        });
+        return jsonResponse(comment);
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        return jsonResponse({
+          items: [comment],
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: 1,
+            totalPages: 1,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('첫 댓글을 남겼다.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '댓글 수정' }));
+    fireEvent.change(screen.getByLabelText('댓글 수정 입력'), {
+      target: { value: '수정한 댓글' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '수정 저장' }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/comments/${FIRST_COMMENT_ID}`),
+        expect.objectContaining({ method: 'PUT' }),
+      ),
+    );
+    expect(await screen.findByText('수정한 댓글')).toBeInTheDocument();
+  });
+
+  it('deletes an existing comment from the post detail page', async () => {
+    window.history.pushState({}, '', `/app/posts/${FIRST_POST_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let comments = [commentResponse()];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/posts/${FIRST_POST_ID}`)) {
+        return jsonResponse(postDetail({ commentCount: comments.length }));
+      }
+      if (url.endsWith(`/comments/${FIRST_COMMENT_ID}`) && init?.method === 'DELETE') {
+        comments = [];
+        return noContentResponse();
+      }
+      if (url.includes(`/posts/${FIRST_POST_ID}/comments`)) {
+        return jsonResponse({
+          items: comments,
+          page: {
+            page: 0,
+            size: 20,
+            totalCount: comments.length,
+            totalPages: comments.length > 0 ? 1 : 0,
+          },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('첫 댓글을 남겼다.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '댓글 삭제' }));
+
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/comments/${FIRST_COMMENT_ID}`),
+        expect.objectContaining({ method: 'DELETE' }),
+      ),
+    );
+    expect(await screen.findByText('첫 댓글을 남겨보세요')).toBeInTheDocument();
+    expect(screen.queryByText('첫 댓글을 남겼다.')).not.toBeInTheDocument();
+    expect(screen.getByText('댓글 0')).toBeInTheDocument();
   });
 
   it('creates a post and navigates to the created detail page', async () => {
