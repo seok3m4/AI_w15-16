@@ -61,14 +61,14 @@
 | P0-INFRA(공동) | INFRA-0 + 스키마 베이스라인(차원 1536) | 대기 | | | T6와 공동 |
 | P0-BE-1 | users 모델 + 회원가입 API | 완료 | sjin | | 2026-06-16: `POST /api/v1/auth/signup` 구현. 단위 테스트와 로컬 HTTP smoke 통과. 보완: auth crypto fallback은 local profile로 격리하고 base profile은 env 필수값으로 변경. |
 | P0-BE-2~3 | 로그인·인증필터 | 완료 | | | 2026-06-16: P0-BE-2 완료. `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, access JWT, HttpOnly refresh cookie, refresh token HMAC 저장·rotation·reuse family revoke 구현. 2026-06-16: P0-BE-3 완료. Bearer access JWT 검증 필터, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` refresh session 폐기와 cookie clear 구현. `backend\\gradlew.bat test` 통과. |
-| P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 완료 | | | 2026-06-16: `/login`, `/signup`, `/app` 보호 라우트, access token `sessionStorage`, HttpOnly refresh cookie 기반 401 재발급 1회 재시도, logout, 공통 API client 구현. `npm run test`, `npm run build` 통과. |
+| P0-FE-1 | 인증 화면·토큰 흐름·FE 공통 클라이언트 | 완료 | | | 2026-06-16: `/login`, `/signup`, `/app` 보호 라우트, access token `sessionStorage`, HttpOnly refresh cookie 기반 401 재발급 1회 재시도, logout, 공통 API client 구현. `npm run test`, `npm run build` 통과. 2026-06-16: `memento-style-preview.html` 기준 보정 반영(SNB collapse, 모바일 drawer, primary button icon treatment, motion primitives). |
 | P2-BE-7 | 친구 AI 동의 toggle | 대기 | | | |
 
 ### T2 · Content
 | Task | 설명 | 상태 | 브랜치 | 머지일 | 비고 |
 |------|------|------|--------|--------|------|
 | FE 공통 골격 | 디자인·라우트 집계·API 클라이언트(1단계) | 대기 | | | |
-| P0-BE-4~7 | 게시물 CRUD·소유권 | 대기 | | | auth 머지 후 |
+| P0-BE-4~7 | 게시물 CRUD·소유권 | 진행 | | | 2026-06-16: P0-BE-4 완료. `POST /api/v1/posts` 구현, 제목·본문으로 게시물 생성 및 `memory_status=pending` 반환. `tagNames`는 optional 요청 호환성과 중복 정리까지만 처리하고 실제 태그 저장은 P0-BE-10에서 진행. memory chunk/embedding job 연결은 P1-BE-4에서 진행. |
 | P0-BE-8~11 | 댓글·태그 | 대기 | | | |
 | P0-BE-12~13, P0-FE-2~5 | 페이징·검색·화면 | 대기 | | | |
 | P2-BE-6 | 친구 범위 검색 확장 | 대기 | | | |
