@@ -92,6 +92,67 @@ describe('App auth flow', () => {
     expect(screen.getByText('cutan')).toBeInTheDocument();
   });
 
+  it('supports the preview sidebar collapse pattern in the app shell', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({
+          id: '11111111-1111-1111-1111-111111111111',
+          email: 'user@example.com',
+          nickname: 'cutan',
+          friendAiSharingEnabled: false,
+          createdAt: '2026-06-15T03:10:00Z',
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    const { container } = render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '내 기억' })).toBeInTheDocument();
+    const shell = container.querySelector('.app-shell');
+    const desktopSidebar = container.querySelector('.desktop-sidebar');
+    expect(shell).not.toHaveClass('collapsed');
+    expect(desktopSidebar?.querySelector('.wordmark-full')).toHaveTextContent('Memento');
+    expect(desktopSidebar?.querySelector('.wordmark-mini')).toHaveTextContent('M');
+
+    fireEvent.click(screen.getByRole('button', { name: '사이드바 접기' }));
+
+    expect(shell).toHaveClass('collapsed');
+    expect(screen.getByRole('button', { name: '사이드바 펼치기' })).toBeInTheDocument();
+  });
+
+  it('provides a mobile drawer menu instead of hiding navigation completely', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({
+          id: '11111111-1111-1111-1111-111111111111',
+          email: 'user@example.com',
+          nickname: 'cutan',
+          friendAiSharingEnabled: false,
+          createdAt: '2026-06-15T03:10:00Z',
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    const { container } = render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '내 기억' })).toBeInTheDocument();
+    const drawer = container.querySelector('.mobile-drawer');
+    expect(drawer).not.toHaveClass('open');
+
+    fireEvent.click(screen.getByRole('button', { name: '메뉴 열기' }));
+
+    expect(drawer).toHaveClass('open');
+    expect(screen.getByRole('button', { name: '메뉴 닫기' })).toBeInTheDocument();
+  });
+
   it('refreshes once after a protected request returns 401', async () => {
     window.history.pushState({}, '', '/app');
     sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'expired-token');
@@ -168,5 +229,15 @@ describe('App auth flow', () => {
     expect(
       await screen.findByText('가입이 완료되었습니다. 로그인해 주세요.'),
     ).toBeInTheDocument();
+  });
+
+  it('uses the preview primary button icon treatment on auth actions', () => {
+    window.history.pushState({}, '', '/login');
+
+    const { container } = render(<App />);
+    const loginButton = screen.getByRole('button', { name: '로그인' });
+
+    expect(loginButton).toHaveClass('button-primary');
+    expect(container.querySelector('.button-icon')).toBeInTheDocument();
   });
 });

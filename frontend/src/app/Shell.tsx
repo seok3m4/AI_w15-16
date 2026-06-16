@@ -1,5 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@iconify/react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { logout } from '../lib/api/auth';
 import { UserPrivateResponse } from '../lib/api/types';
@@ -20,6 +21,8 @@ const upcomingItems = [
 export function AppShell({ user }: AppShellProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSettled: () => {
@@ -30,22 +33,54 @@ export function AppShell({ user }: AppShellProps) {
   });
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar" aria-label="앱 내비게이션">
-        <div className="brand">Memento</div>
-        <NavLink to="/app" className="nav-item active">
-          <Icon icon="solar:home-2-linear" aria-hidden="true" />
-          홈
-        </NavLink>
-        {upcomingItems.map(([icon, label]) => (
-          <span className="nav-item disabled" key={label} aria-disabled="true">
-            <Icon icon={icon} aria-hidden="true" />
-            {label}
-            <span className="badge">준비중</span>
-          </span>
-        ))}
+    <div className={`app-shell${isCollapsed ? ' collapsed' : ''}`}>
+      <aside className="sidebar desktop-sidebar" aria-label="앱 내비게이션">
+        <SidebarHeader
+          isCollapsed={isCollapsed}
+          onToggle={() => setIsCollapsed((current) => !current)}
+        />
+        <NavigationItems />
       </aside>
+
+      <div
+        aria-hidden={!isMobileMenuOpen}
+        className={`mobile-drawer-backdrop${isMobileMenuOpen ? ' open' : ''}`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+      <aside
+        aria-label="모바일 앱 내비게이션"
+        className={`mobile-drawer${isMobileMenuOpen ? ' open' : ''}`}
+      >
+        <div className="mobile-drawer-header">
+          <div className="brand">Memento</div>
+          <button
+            aria-label="메뉴 닫기"
+            className="icon-button"
+            onClick={() => setIsMobileMenuOpen(false)}
+            type="button"
+          >
+            <Icon icon="solar:close-circle-linear" aria-hidden="true" />
+          </button>
+        </div>
+        <NavigationItems />
+      </aside>
+
       <main className="app-main">
+        <header className="mobile-header">
+          <button
+            aria-label="메뉴 열기"
+            className="icon-button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            type="button"
+          >
+            <Icon icon="solar:hamburger-menu-linear" aria-hidden="true" />
+          </button>
+          <div className="mobile-wordmark">Memento</div>
+          <button className="icon-button" disabled type="button" aria-label="기록 작성 준비중">
+            <Icon icon="solar:pen-new-square-linear" aria-hidden="true" />
+          </button>
+        </header>
+
         <header className="app-header">
           <div>
             <p className="eyebrow">Text Memory MVP</p>
@@ -75,5 +110,46 @@ export function AppShell({ user }: AppShellProps) {
         </section>
       </main>
     </div>
+  );
+}
+
+type SidebarHeaderProps = {
+  isCollapsed: boolean;
+  onToggle: () => void;
+};
+
+function SidebarHeader({ isCollapsed, onToggle }: SidebarHeaderProps) {
+  return (
+    <div className="sidebar-header">
+      <div className="brand wordmark-full">Memento</div>
+      <div className="brand wordmark-mini">M</div>
+      <button
+        aria-expanded={!isCollapsed}
+        aria-label={isCollapsed ? '사이드바 펼치기' : '사이드바 접기'}
+        className="icon-button sidebar-toggle"
+        onClick={onToggle}
+        type="button"
+      >
+        <Icon icon="solar:sidebar-minimalistic-linear" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+function NavigationItems() {
+  return (
+    <nav className="nav-list">
+      <NavLink to="/app" className="nav-item active">
+        <Icon icon="solar:home-2-linear" aria-hidden="true" />
+        <span className="nav-label">홈</span>
+      </NavLink>
+      {upcomingItems.map(([icon, label]) => (
+        <span className="nav-item disabled" key={label} aria-disabled="true">
+          <Icon icon={icon} aria-hidden="true" />
+          <span className="nav-label">{label}</span>
+          <span className="badge">준비중</span>
+        </span>
+      ))}
+    </nav>
   );
 }

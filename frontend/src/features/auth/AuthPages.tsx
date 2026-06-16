@@ -87,9 +87,15 @@ export function LoginPage() {
           type="password"
           {...register('password')}
         />
-        <button className="button" disabled={loginMutation.isPending} type="submit">
-          <Icon icon="solar:login-2-linear" aria-hidden="true" />
+        <button
+          className="button button-primary"
+          disabled={loginMutation.isPending}
+          type="submit"
+        >
           로그인
+          <span className="button-icon">
+            <Icon icon="solar:login-2-linear" aria-hidden="true" />
+          </span>
         </button>
       </form>
       <p className="auth-switch">
@@ -159,9 +165,15 @@ export function SignupPage() {
           type="password"
           {...register('password')}
         />
-        <button className="button" disabled={signupMutation.isPending} type="submit">
-          <Icon icon="solar:user-plus-rounded-linear" aria-hidden="true" />
+        <button
+          className="button button-primary"
+          disabled={signupMutation.isPending}
+          type="submit"
+        >
           회원가입
+          <span className="button-icon">
+            <Icon icon="solar:user-plus-rounded-linear" aria-hidden="true" />
+          </span>
         </button>
       </form>
       <p className="auth-switch">
