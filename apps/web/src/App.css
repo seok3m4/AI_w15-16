@@ -1127,6 +1127,7 @@
 
 .place-course li,
 .course-list li {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2349,4 +2350,122 @@
   .ask-ad-card {
     animation: none;
   }
+}
+
+/* ===== PlaceEditor: 일차 선택 + 일차별 그룹 ===== */
+.day-picker {
+  margin-bottom: 12px;
+}
+.day-picker-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.day-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.day-tab {
+  border: 1px solid var(--border);
+  background: var(--field);
+  color: var(--text);
+  border-radius: 980px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.day-tab:hover {
+  border-color: var(--accent);
+}
+.day-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.day-tab-add {
+  color: var(--accent);
+  border-style: dashed;
+}
+.place-course-days {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 4px;
+}
+.place-day-group {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  background: var(--surface);
+}
+.place-day-heading {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ===== PlaceEditor: 드래그 앤 드롭 ===== */
+.day-picker-label em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.place-drag-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.place-day-empty {
+  margin: 0;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+.place-course li[draggable="true"] {
+  cursor: grab;
+}
+.place-course li.is-dragging {
+  opacity: 0.45;
+}
+.place-course li.drop-before::before,
+.place-course li.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.place-course li.drop-before::before {
+  top: -7px;
+}
+.place-course li.drop-after::after {
+  bottom: -7px;
+}
+.place-drag-handle {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: grab;
+  user-select: none;
+}
+.place-day-group.drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.place-day-group.drop-target .place-day-empty {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
 }

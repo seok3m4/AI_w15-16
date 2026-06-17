@@ -308,10 +308,17 @@ export function PostFormPage() {
                 <span className="form-section-num">2</span>
                 <div>
                   <h2>코스 경유지</h2>
-                  <p>장소를 검색해 순서대로 추가하면 지도에 코스로 표시돼요.</p>
+                  <p>
+                    여행 기간만큼 일차가 만들어져요. 장소를 검색해 추가하고,
+                    드래그로 순서·일차를 바꿀 수 있어요.
+                  </p>
                 </div>
               </div>
-              <PlaceEditor places={places} onChange={setPlaces} />
+              <PlaceEditor
+                places={places}
+                onChange={setPlaces}
+                totalDays={Math.max(1, Number(form.duration) || 1)}
+              />
             </section>
 
             <section className="form-section">
