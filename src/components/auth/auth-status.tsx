@@ -95,6 +95,12 @@ export function AuthStatus() {
       <span className="community-header-pill max-w-40 font-bold text-white">
         <span className="truncate">{user.nickname}</span>
       </span>
+      <Link
+        className="community-header-link border border-white/20 bg-white/10"
+        href="/me"
+      >
+        마이페이지
+      </Link>
       <button
         className="community-header-link border border-white/20 bg-white/10"
         onClick={handleLogout}
