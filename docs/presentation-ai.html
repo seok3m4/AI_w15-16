@@ -192,6 +192,37 @@
     margin-bottom: 10px;
   }
 
+  .slide.active .title-mark {
+    animation: float 3.6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* 표지 제목 뒤 은은한 글로우 */
+  .title-slide .inner {
+    position: relative;
+  }
+
+  .title-slide .inner::before {
+    content: "";
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    width: min(680px, 80%);
+    height: 360px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(closest-side, rgba(26, 164, 145, 0.16), rgba(26, 164, 145, 0));
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active .title-mark { animation: none; }
+  }
+
   .chips {
     display: flex;
     flex-wrap: wrap;
@@ -237,9 +268,20 @@
 
   .panel {
     border: 1px solid #ececf2;
-    border-radius: 8px;
+    border-radius: 16px;
     background: var(--panel);
     box-shadow: var(--shadow);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  }
+
+  /* 마우스가 있는 환경에서만 카드가 살짝 떠오름 (발표/터치엔 영향 없음) */
+  @media (hover: hover) {
+    .summary-panel:hover,
+    .feature-card:hover,
+    .overview-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 54px rgba(22, 24, 35, 0.12);
+    }
   }
 
   .summary-panel {
@@ -356,6 +398,107 @@
     gap: 16px;
   }
 
+  /* 한계점 1개(좌) + 개선 방향 카드들(우) 레이아웃 */
+  .limit-layout {
+    display: grid;
+    grid-template-columns: 0.82fr 1.18fr;
+    gap: 22px;
+    align-items: stretch;
+  }
+
+  .col-head {
+    margin-bottom: 16px;
+    font-size: clamp(19px, 1.7vw, 24px);
+    font-weight: 760;
+    color: var(--ink);
+  }
+
+  .limit-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .limit-card h3 {
+    margin-bottom: 16px;
+  }
+
+  .limit-box {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 22px;
+    border-radius: 14px;
+    background: #fdf2f0;
+    border: 1px solid #f3dad5;
+  }
+
+  .limit-box .ico {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: #fbe4df;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .limit-box b {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--ink);
+    font-size: clamp(16px, 1.4vw, 19px);
+    font-weight: 780;
+  }
+
+  .limit-box p {
+    color: var(--text);
+    font-size: clamp(14px, 1.2vw, 16px);
+    line-height: 1.55;
+  }
+
+  .improve-col {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+  }
+
+  .improve-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 20px;
+  }
+
+  .improve-card .ico {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #e8f6f2;
+    border: 1px solid #d3ece3;
+    font-size: 21px;
+    line-height: 1;
+  }
+
+  .improve-card b {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--ink);
+    font-size: clamp(15px, 1.3vw, 18px);
+    font-weight: 760;
+  }
+
+  .improve-card p {
+    color: var(--muted);
+    font-size: clamp(13px, 1.1vw, 15px);
+    line-height: 1.5;
+  }
+
   .feature-card {
     min-height: 150px;
     padding: 22px;
@@ -391,19 +534,18 @@
 
   .overview-card {
     position: relative;
-    min-height: 210px;
-    padding: 26px 22px 24px;
-    overflow: hidden;
+    min-height: 172px;
+    padding: 24px 22px 22px;
   }
 
   .overview-card::after {
     content: "→";
     position: absolute;
     top: 50%;
-    right: -20px;
+    right: -14px;
     transform: translateY(-50%);
     color: #b6b6c0;
-    font-size: 30px;
+    font-size: 22px;
     line-height: 1;
     z-index: 3;
   }
@@ -415,19 +557,19 @@
   .overview-no {
     display: inline-grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    margin-bottom: 18px;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 16px;
     border-radius: 999px;
-    background: var(--ink);
-    color: #fff;
+    background: #eaf2ff;
+    color: var(--blue);
     font-size: 14px;
     font-weight: 820;
   }
 
   .overview-card h3 {
-    margin-bottom: 14px;
-    font-size: clamp(21px, 2vw, 28px);
+    margin-bottom: 12px;
+    font-size: clamp(19px, 1.7vw, 24px);
   }
 
   .overview-card p {
@@ -444,7 +586,8 @@
   }
 
   .overview-card.key .overview-no {
-    background: var(--green);
+    background: #ddefe7;
+    color: var(--green);
   }
 
   .stack {
@@ -752,7 +895,7 @@
     max-height: 64vh;
     object-fit: contain;
     border: 1px solid #ececf2;
-    border-radius: 8px;
+    border-radius: 16px;
     box-shadow: 0 20px 54px rgba(22, 24, 35, 0.13);
     background: #fff;
   }
@@ -775,7 +918,7 @@
     max-height: 62vh;
     object-fit: contain;
     border: 1px solid #ececf2;
-    border-radius: 8px;
+    border-radius: 16px;
     box-shadow: 0 22px 58px rgba(22, 24, 35, 0.16);
     background: #fff;
   }
@@ -916,7 +1059,8 @@
     .two-columns,
     .three-columns,
     .overview-flow,
-    .tech-layout {
+    .tech-layout,
+    .limit-layout {
       grid-template-columns: 1fr;
     }
 
@@ -1171,60 +1315,51 @@
 
   <section class="slide">
     <div class="inner">
-      <div class="label reveal">09 회고</div>
-      <h2 class="reveal">AI 기술별 역할 정리</h2>
-      <div class="three-columns reveal">
-        <div class="panel feature-card">
-          <span class="num">RAG</span>
-          <h3>내부 데이터 활용</h3>
-          <p>게시판 코스를 임베딩으로 저장 · 질문과 가까운 글 검색 · 출처 기반 답변</p>
-        </div>
-        <div class="panel feature-card">
-          <span class="num">MCP</span>
-          <h3>외부 기능 분리</h3>
-          <p>장소 검색과 API 키를 백엔드 도구로 분리 · AI가 호출 가능하게 만듦</p>
-        </div>
-        <div class="panel feature-card">
-          <span class="num">Agent</span>
-          <h3>도구 조합</h3>
-          <p>질문에 따라 RAG와 MCP를 선택 · 답변과 장소 칩까지 함께 구성</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="slide">
-    <div class="inner">
-      <div class="label reveal">10 한계점과 개선 방향</div>
+      <div class="label reveal">09 한계점과 개선 방향</div>
       <h2 class="reveal">한계점과 개선 방향</h2>
-      <div class="two-columns reveal">
-        <div class="panel summary-panel">
+      <div class="limit-layout reveal">
+        <div class="limit-card">
           <h3>한계점</h3>
-          <ul class="bullet-list">
-            <li><strong>외부 API 의존</strong>: 비용, 응답 속도, 레이트리밋 영향</li>
-            <li><strong>임베딩 캐싱 부족</strong>: 같은 질문도 매번 임베딩 생성</li>
-            <li><strong>답변 스트리밍 미적용</strong>: 사용자가 느끼는 대기 시간 증가</li>
-            <li><strong>긴 게시글 처리 한계</strong>: 본문 일부 정보 누락 가능</li>
-          </ul>
+          <div class="limit-box">
+            <span class="ico">⚠️</span>
+            <div>
+              <b>외부 API 의존</b>
+              <p>OpenAI · Kakao 등 외부 API에 의존<br>비용 · 응답 속도 · 레이트리밋 영향</p>
+            </div>
+          </div>
         </div>
-        <div class="panel summary-panel">
-          <h3>개선 방향</h3>
-          <ul class="bullet-list">
-            <li>자주 들어오는 질문에 대한 임베딩 캐싱</li>
-            <li>AI 답변 스트리밍 적용</li>
-            <li>긴 게시글을 청킹해서 더 정교하게 검색</li>
-            <li>Agent 도구 확장과 이미지 저장 구조 개선</li>
-            <li>반복 질문/인기 질문 프리컴퓨트</li>
-          </ul>
+        <div class="improve-col">
+          <div class="col-head">개선 방향</div>
+          <div class="panel improve-card">
+            <span class="ico">🧩</span>
+            <div>
+              <b>로컬 파운데이션 모델 도입 검토</b>
+              <p>외부 API 대신 로컬에서 직접 운영하는 모델 가능성을 장기적으로 검토</p>
+            </div>
+          </div>
+          <div class="panel improve-card">
+            <span class="ico">💸</span>
+            <div>
+              <b>무료 · 오픈소스 모델 활용</b>
+              <p>비용 효율이 높은 무료 모델 또는 오픈소스 모델 활용 방안 탐색</p>
+            </div>
+          </div>
+          <div class="panel improve-card">
+            <span class="ico">🔄</span>
+            <div>
+              <b>구독 기반 과금 모델 적용</b>
+              <p>이용량이 일정 기준을 초과하면 구독 과금으로 운영 비용을 안정적으로 관리</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="note reveal">프로젝트 의미: AI 기능 추가를 넘어, 서비스 데이터와 외부 도구의 연결 방식 실험</div>
+      <div class="note reveal">RAG, MCP, Agent의 역할을 직접 구현하며 이해하고, 세 기술이 하나의 서비스 흐름 안에서 연결되는 방식을 확인</div>
     </div>
   </section>
 </main>
 
 <div class="dots" id="dots"></div>
-<div class="counter" id="counter">1 / 10</div>
+<div class="counter" id="counter">1 / 9</div>
 <div class="nav">
   <button id="prev" type="button" aria-label="이전 슬라이드">&lsaquo;</button>
   <button id="next" type="button" aria-label="다음 슬라이드">&rsaquo;</button>
