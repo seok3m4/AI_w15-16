@@ -12,11 +12,11 @@ type AppShellProps = {
   user: UserPrivateResponse | undefined;
 };
 
-const activeItems = [
+export const appShellNavItems = [
   ['solar:users-group-rounded-linear', '친구', '/app/friends'],
-  ['solar:magic-stars-linear', 'Memory Search', '/app/memory-search'],
+  ['solar:stars-linear', 'Memory Search', '/app/memory-search'],
   ['solar:box-minimalistic-linear', 'Capsule', '/app/capsules'],
-  ['solar:robot-linear', 'Agent', '/app/agent'],
+  ['solar:programming-linear', 'Agent', '/app/agent'],
   ['solar:plug-circle-linear', 'MCP', '/app/mcp'],
   ['solar:settings-linear', '설정', '/app/settings'],
 ] as const;
@@ -145,7 +145,7 @@ function NavigationItems() {
         <Icon icon="solar:home-2-linear" aria-hidden="true" />
         <span className="nav-label">홈</span>
       </NavLink>
-      {activeItems.map(([icon, label, to]) => (
+      {appShellNavItems.map(([icon, label, to]) => (
         <NavLink
           to={to}
           key={to}

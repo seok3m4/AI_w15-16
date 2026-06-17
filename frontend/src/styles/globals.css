@@ -541,12 +541,15 @@ a {
   color: var(--color-muted);
 }
 
-.post-page,
 .post-editor,
-.post-detail,
+.post-detail {
+  max-width: 1040px;
+}
+
+.post-page,
 .settings-page,
 .social-page {
-  max-width: 1040px;
+  width: 100%;
 }
 
 .page-toolbar,
@@ -1581,7 +1584,8 @@ a {
 .post-form {
   display: grid;
   gap: 18px;
-  max-width: 760px;
+  width: 100%;
+  max-width: none;
   border: 1px solid var(--color-hairline);
   border-radius: 14px;
   background: var(--color-surface);

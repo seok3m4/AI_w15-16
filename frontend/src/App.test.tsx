@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { appShellNavItems } from './app/Shell';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'memento.accessToken';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -289,6 +290,15 @@ describe('App auth flow', () => {
 
     expect(shell).toHaveClass('collapsed');
     expect(screen.getByRole('button', { name: '사이드바 펼치기' })).toBeInTheDocument();
+  });
+
+  it('uses valid Solar icon ids for every desktop sidebar item', async () => {
+    const iconIds = appShellNavItems.map(([icon]) => icon);
+
+    expect(iconIds).toContain('solar:stars-linear');
+    expect(iconIds).toContain('solar:programming-linear');
+    expect(iconIds).not.toContain('solar:magic-stars-linear');
+    expect(iconIds).not.toContain('solar:robot-linear');
   });
 
   it('provides a mobile drawer menu instead of hiding navigation completely', async () => {
