@@ -356,27 +356,6 @@
     gap: 16px;
   }
 
-  /* 아키텍처: 카드 사이를 화살표로 연결해 흐름 표시 */
-  .arch-flow {
-    gap: 36px;
-  }
-
-  .arch-flow .feature-card {
-    position: relative;
-  }
-
-  .arch-flow .feature-card:not(:last-child)::after {
-    content: "→";
-    position: absolute;
-    top: 50%;
-    right: -28px;
-    transform: translateY(-50%);
-    color: #b6b6c0;
-    font-size: 22px;
-    line-height: 1;
-    z-index: 2;
-  }
-
   .feature-card {
     min-height: 150px;
     padding: 22px;
@@ -401,44 +380,6 @@
     color: var(--muted);
     font-size: 15px;
     line-height: 1.56;
-  }
-
-  .flow-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 28px;
-  }
-
-  .flow-step {
-    position: relative;
-    min-height: 108px;
-    padding: 19px 18px;
-  }
-
-  .flow-step h3 {
-    font-size: 18px;
-    margin-bottom: 8px;
-  }
-
-  .flow-step p {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .flow-step::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: -11px;
-    width: 20px;
-    height: 2px;
-    background: var(--line);
-  }
-
-  .flow-step:last-child::after {
-    display: none;
   }
 
   .overview-flow {
@@ -607,68 +548,6 @@
     color: var(--orange);
   }
 
-  .code-flow {
-    min-height: 392px;
-    padding: 28px;
-    border-radius: 8px;
-    background: #191b1f;
-    color: #f4f7fb;
-    font-family: "SF Mono", Menlo, Consolas, monospace;
-    font-size: clamp(13px, 1.17vw, 16px);
-    line-height: 1.82;
-    white-space: pre-wrap;
-    box-shadow: var(--shadow);
-  }
-
-  .code-flow .muted { color: #8b949e; }
-  .code-flow .blue { color: #79c0ff; }
-  .code-flow .green { color: #7ee787; }
-  .code-flow .orange { color: #ffa657; }
-
-  /* 노드 사이로 데이터가 흐르는 애니메이션 */
-  .code-flow.flow-anim {
-    white-space: normal;
-    line-height: 1.5;
-  }
-
-  .code-flow .cf-head {
-    color: #8b949e;
-    margin-bottom: 6px;
-  }
-
-  .code-flow .cf-gap {
-    height: 18px;
-  }
-
-  .code-flow .cf-node {
-    border-radius: 7px;
-    padding: 6px 9px;
-    margin: 0 -9px;
-  }
-
-  .code-flow .cf-step {
-    padding-left: 28px;
-  }
-
-  .slide.active .flow-anim .cf-node {
-    animation: nodeWave 7s linear infinite;
-  }
-
-  @keyframes nodeWave {
-    0% { background: transparent; box-shadow: none; }
-    3% { background: rgba(121, 192, 255, 0.06); box-shadow: none; }
-    8% {
-      background: rgba(121, 192, 255, 0.20);
-      box-shadow: inset 0 0 0 1px rgba(121, 192, 255, 0.45), 0 0 16px rgba(121, 192, 255, 0.22);
-    }
-    14% { background: transparent; box-shadow: none; }
-    100% { background: transparent; box-shadow: none; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .slide.active .flow-anim .cf-node { animation: none; }
-  }
-
   /* RAG 다이어그램 (그림으로 한눈에) */
   .diagram {
     display: grid;
@@ -745,6 +624,40 @@
     font-size: 19px;
   }
 
+  /* 다이어그램에 좌→우로 흐르는 느낌: 화살표가 순차적으로 점등 */
+  .slide.active .flow .arrow {
+    animation: arrowFlow 4.2s ease-in-out infinite;
+  }
+
+  .slide.active .flow .arrow:nth-of-type(2) { animation-delay: 0s; }
+  .slide.active .flow .arrow:nth-of-type(4) { animation-delay: 0.45s; }
+  .slide.active .flow .arrow:nth-of-type(6) { animation-delay: 0.9s; }
+
+  @keyframes arrowFlow {
+    0%, 100% { color: #b6b6c0; transform: translateX(0); }
+    12% { color: var(--green); transform: translateX(2px); }
+    24% { color: #b6b6c0; transform: translateX(0); }
+  }
+
+  /* 흐름의 종착점(key 노드)이 은은하게 빛남 */
+  .slide.active .diagram .node.key {
+    animation: nodeGlow 4.2s ease-in-out infinite;
+  }
+
+  @keyframes nodeGlow {
+    0%, 100% { box-shadow: 0 6px 16px rgba(22, 24, 35, 0.05); }
+    30% { box-shadow: 0 6px 16px rgba(22, 24, 35, 0.05); }
+    40% { box-shadow: 0 0 0 1px rgba(15, 143, 127, 0.35), 0 0 18px rgba(15, 143, 127, 0.20); }
+    55% { box-shadow: 0 6px 16px rgba(22, 24, 35, 0.05); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active .flow .arrow,
+    .slide.active .diagram .node.key {
+      animation: none;
+    }
+  }
+
   .bridge {
     display: flex;
     align-items: center;
@@ -809,36 +722,6 @@
 
   .diag-note .e {
     font-size: 18px;
-  }
-
-  .demo-list {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 30px;
-  }
-
-  .demo-step {
-    display: grid;
-    align-content: start;
-    min-height: 128px;
-    padding: 17px 13px;
-    text-align: center;
-  }
-
-  .demo-step b {
-    display: block;
-    color: var(--blue);
-    font-size: 13px;
-    margin-bottom: 10px;
-  }
-
-  .demo-step span {
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 720;
-    line-height: 1.42;
-    word-break: keep-all;
   }
 
   .demo-slide {
@@ -927,6 +810,7 @@
     color: rgba(29, 29, 31, 0.74);
     font-size: 14px;
     font-weight: 760;
+    transition: opacity 0.45s ease;
   }
 
   .hint {
@@ -936,6 +820,14 @@
     z-index: 40;
     color: var(--muted);
     font-size: 12px;
+    transition: opacity 0.45s ease;
+  }
+
+  /* 표지에서는 상단 브랜드/힌트를 숨겨 깔끔하게 */
+  body.cover .brand,
+  body.cover .hint {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .nav {
@@ -1023,15 +915,11 @@
     .lead-grid,
     .two-columns,
     .three-columns,
-    .flow-row,
     .overview-flow,
-    .tech-layout,
-    .demo-list {
+    .tech-layout {
       grid-template-columns: 1fr;
     }
 
-    .flow-step::after,
-    .arch-flow .feature-card::after,
     .overview-card::after {
       display: none;
     }
@@ -1043,11 +931,6 @@
 
     .hint {
       display: none;
-    }
-
-    .code-flow {
-      min-height: auto;
-      overflow-x: auto;
     }
 
     .visual-slide {
@@ -1065,7 +948,7 @@
 <body>
 <div class="progress" id="progress"></div>
 <div class="brand">정글 여행 발표 자료</div>
-<div class="hint">화살표 또는 스페이스로 이동</div>
+<div class="hint">화살표·스페이스로 이동 · F 전체화면</div>
 
 <main class="deck" id="deck">
   <section class="slide title-slide">
@@ -1374,6 +1257,7 @@
     });
     counter.textContent = `${current + 1} / ${slides.length}`;
     progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+    document.body.classList.toggle("cover", current === 0);
   }
 
   function next() {
@@ -1401,6 +1285,14 @@
     }
     if (event.key === "End") {
       go(slides.length - 1);
+    }
+    if (event.key === "f" || event.key === "F") {
+      event.preventDefault();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
     }
   });
 
