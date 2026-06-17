@@ -8,7 +8,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -71,11 +73,13 @@ class JdbcContextCapsuleRepository implements ContextCapsuleRepository {
                     source.ownerUserId(),
                     source.sourceType());
         }
-        return findById(capsule.id());
+        return findActiveByOwner(capsule.ownerId(), capsule.id())
+                .orElseThrow(() -> new IllegalStateException("Context capsule was not found after creation."));
     }
 
-    private ContextCapsuleRecord findById(UUID capsuleId) {
-        ContextCapsuleRecord capsule = jdbcTemplate.queryForObject(
+    @Override
+    public List<ContextCapsuleRecord> findPageByOwner(UUID ownerId, int limit, int offset) {
+        return jdbcTemplate.query(
                 """
                 SELECT
                     id,
@@ -90,24 +94,138 @@ class JdbcContextCapsuleRepository implements ContextCapsuleRepository {
                     created_at,
                     updated_at
                 FROM context_capsules
-                WHERE id = ?
+                WHERE owner_id = ?
+                  AND deleted_at IS NULL
+                ORDER BY created_at DESC, id DESC
+                LIMIT ?
+                OFFSET ?
                 """,
-                (rs, rowNum) -> new ContextCapsuleRecord(
-                        rs.getObject("id", UUID.class),
-                        rs.getObject("owner_id", UUID.class),
-                        rs.getString("title"),
-                        rs.getString("purpose"),
-                        rs.getString("query"),
-                        rs.getString("summary"),
-                        stringList(rs.getString("key_facts")),
-                        stringList(rs.getString("tags")),
-                        rs.getBoolean("contains_friend_context"),
-                        List.of(),
-                        instant(rs, "created_at"),
-                        instant(rs, "updated_at")),
-                capsuleId);
+                this::mapCapsuleWithNoSources,
+                ownerId,
+                limit,
+                offset);
+    }
 
-        List<ContextCapsuleSourceRecord> sources = jdbcTemplate.query(
+    @Override
+    public long countByOwner(UUID ownerId) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*)
+                FROM context_capsules
+                WHERE owner_id = ?
+                  AND deleted_at IS NULL
+                """,
+                Long.class,
+                ownerId);
+        return count == null ? 0 : count;
+    }
+
+    @Override
+    public Optional<ContextCapsuleRecord> findActiveByOwner(UUID ownerId, UUID capsuleId) {
+        return findById(ownerId, capsuleId);
+    }
+
+    @Override
+    public boolean updateByOwner(UUID capsuleId, UUID ownerId, String title, String purpose, Instant updatedAt) {
+        int updatedRows = jdbcTemplate.update(
+                """
+                UPDATE context_capsules
+                SET title = ?,
+                    purpose = ?,
+                    updated_at = ?
+                WHERE id = ?
+                  AND owner_id = ?
+                  AND deleted_at IS NULL
+                """,
+                title,
+                purpose,
+                Timestamp.from(updatedAt),
+                capsuleId,
+                ownerId);
+        return updatedRows > 0;
+    }
+
+    @Override
+    public boolean softDeleteByOwner(UUID ownerId, UUID capsuleId, Instant deletedAt) {
+        int updatedRows = jdbcTemplate.update(
+                """
+                UPDATE context_capsules
+                SET deleted_at = ?,
+                    updated_at = ?
+                WHERE id = ?
+                  AND owner_id = ?
+                  AND deleted_at IS NULL
+                """,
+                Timestamp.from(deletedAt),
+                Timestamp.from(deletedAt),
+                capsuleId,
+                ownerId);
+        return updatedRows > 0;
+    }
+
+    private Optional<ContextCapsuleRecord> findById(UUID ownerId, UUID capsuleId) {
+        ContextCapsuleRecord capsule;
+        try {
+            capsule = jdbcTemplate.queryForObject(
+                    """
+                    SELECT
+                        id,
+                        owner_id,
+                        title,
+                        purpose,
+                        query,
+                        summary,
+                        key_facts::text as key_facts,
+                        tags::text as tags,
+                        contains_friend_context,
+                        created_at,
+                        updated_at
+                    FROM context_capsules
+                    WHERE owner_id = ?
+                      AND id = ?
+                      AND deleted_at IS NULL
+                    """,
+                    this::mapCapsuleWithNoSources,
+                    ownerId,
+                    capsuleId);
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
+
+        List<ContextCapsuleSourceRecord> sources = findSourcesByCapsuleId(capsuleId);
+        return Optional.of(new ContextCapsuleRecord(
+                capsule.id(),
+                capsule.ownerId(),
+                capsule.title(),
+                capsule.purpose(),
+                capsule.query(),
+                capsule.summary(),
+                capsule.keyFacts(),
+                capsule.tags(),
+                capsule.containsFriendContext(),
+                sources,
+                capsule.createdAt(),
+                capsule.updatedAt()));
+    }
+
+    private ContextCapsuleRecord mapCapsuleWithNoSources(java.sql.ResultSet rs, int rowNum) throws SQLException {
+        return new ContextCapsuleRecord(
+                rs.getObject("id", UUID.class),
+                rs.getObject("owner_id", UUID.class),
+                rs.getString("title"),
+                rs.getString("purpose"),
+                rs.getString("query"),
+                rs.getString("summary"),
+                stringList(rs.getString("key_facts")),
+                stringList(rs.getString("tags")),
+                rs.getBoolean("contains_friend_context"),
+                List.of(),
+                instant(rs, "created_at"),
+                instant(rs, "updated_at"));
+    }
+
+    private List<ContextCapsuleSourceRecord> findSourcesByCapsuleId(UUID capsuleId) {
+        return jdbcTemplate.query(
                 """
                 SELECT
                     s.post_id,
@@ -127,19 +245,6 @@ class JdbcContextCapsuleRepository implements ContextCapsuleRepository {
                 """,
                 this::sourceRow,
                 capsuleId);
-        return new ContextCapsuleRecord(
-                capsule.id(),
-                capsule.ownerId(),
-                capsule.title(),
-                capsule.purpose(),
-                capsule.query(),
-                capsule.summary(),
-                capsule.keyFacts(),
-                capsule.tags(),
-                capsule.containsFriendContext(),
-                sources,
-                capsule.createdAt(),
-                capsule.updatedAt());
     }
 
     private ContextCapsuleSourceRecord sourceRow(ResultSet rs, int rowNum) throws SQLException {
@@ -175,3 +280,4 @@ class JdbcContextCapsuleRepository implements ContextCapsuleRepository {
         return timestamp == null ? null : timestamp.toInstant();
     }
 }
+

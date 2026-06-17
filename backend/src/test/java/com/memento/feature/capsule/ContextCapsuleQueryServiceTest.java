@@ -1,0 +1,152 @@
+package com.memento.feature.capsule;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class ContextCapsuleQueryServiceTest {
+
+    private static final UUID OWNER_ID =
+            UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID CAPSULE_ID =
+            UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final Instant NOW = Instant.parse("2026-06-17T00:00:00Z");
+
+    @Test
+    void listReturnsCurrentUserCapsulesWithPageMetadata() {
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.pageRecords = List.of(capsuleRecord("title-1", "purpose-1"));
+        repository.totalCount = 1;
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+
+        ContextCapsuleListResponse response = service.list(OWNER_ID, 0, 20);
+
+        assertThat(repository.capturedOwnerId).isEqualTo(OWNER_ID);
+        assertThat(repository.capturedLimit).isEqualTo(20);
+        assertThat(repository.capturedOffset).isZero();
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst()).isEqualTo(new ContextCapsuleSummaryResponse(
+                CAPSULE_ID,
+                "title-1",
+                "purpose-1",
+                false,
+                NOW,
+                NOW));
+        assertThat(response.page()).isEqualTo(new ContextCapsulePageResponse(0, 20, 1, 1));
+    }
+
+    @Test
+    void getReturnsOwnCapsuleByIdOr404WhenNotOwnedOrDeleted() {
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.findRecord = Optional.of(capsuleRecord("title-1", "purpose-1"));
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+
+        ContextCapsuleResponse response = service.get(OWNER_ID, CAPSULE_ID);
+
+        assertThat(repository.capturedOwnerIdForLookup).isEqualTo(OWNER_ID);
+        assertThat(repository.capturedLookupCapsuleId).isEqualTo(CAPSULE_ID);
+        assertThat(response.id()).isEqualTo(CAPSULE_ID);
+    }
+
+    @Test
+    void getThrowsNotFoundWhenNoActiveCapsuleExists() {
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+
+        assertThatThrownBy(() -> service.get(OWNER_ID, CAPSULE_ID))
+                .isInstanceOf(ContextCapsuleNotFoundException.class);
+    }
+
+    @Test
+    void listRejectsInvalidPageParameters() {
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+
+        assertThatThrownBy(() -> service.list(OWNER_ID, -1, 20))
+                .isInstanceOf(ContextCapsuleInvalidQueryException.class);
+        assertThatThrownBy(() -> service.list(OWNER_ID, 0, 0))
+                .isInstanceOf(ContextCapsuleInvalidQueryException.class);
+        assertThatThrownBy(() -> service.list(OWNER_ID, 0, 101))
+                .isInstanceOf(ContextCapsuleInvalidQueryException.class);
+        assertThatThrownBy(() -> service.list(OWNER_ID, Integer.MAX_VALUE, 100))
+                .isInstanceOf(ContextCapsuleInvalidQueryException.class);
+    }
+
+    @Test
+    void listRoundsUpTotalPagesForPartialLastPage() {
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.totalCount = 5;
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+
+        ContextCapsuleListResponse response = service.list(OWNER_ID, 1, 2);
+
+        assertThat(response.page()).isEqualTo(new ContextCapsulePageResponse(1, 2, 5, 3));
+    }
+
+    private static ContextCapsuleRecord capsuleRecord(String title, String purpose) {
+        return new ContextCapsuleRecord(
+                CAPSULE_ID,
+                OWNER_ID,
+                title,
+                purpose,
+                "query",
+                "summary",
+                List.of(),
+                List.of("tag1"),
+                false,
+                List.of(),
+                NOW,
+                NOW);
+    }
+
+    private static class CapturingContextCapsuleRepository implements ContextCapsuleRepository {
+
+        private List<ContextCapsuleRecord> pageRecords = List.of();
+        private long totalCount;
+        private UUID capturedOwnerId;
+        private int capturedLimit;
+        private int capturedOffset;
+        private UUID capturedOwnerIdForLookup;
+        private UUID capturedLookupCapsuleId;
+        private Optional<ContextCapsuleRecord> findRecord = Optional.empty();
+
+        @Override
+        public ContextCapsuleRecord save(NewContextCapsule capsule) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ContextCapsuleRecord> findPageByOwner(UUID ownerId, int limit, int offset) {
+            capturedOwnerId = ownerId;
+            capturedLimit = limit;
+            capturedOffset = offset;
+            return pageRecords;
+        }
+
+        @Override
+        public long countByOwner(UUID ownerId) {
+            capturedOwnerId = ownerId;
+            return totalCount;
+        }
+
+        @Override
+        public Optional<ContextCapsuleRecord> findActiveByOwner(UUID ownerId, UUID capsuleId) {
+            capturedOwnerIdForLookup = ownerId;
+            capturedLookupCapsuleId = capsuleId;
+            return findRecord;
+        }
+
+        @Override
+        public boolean updateByOwner(UUID capsuleId, UUID ownerId, String title, String purpose, Instant updatedAt) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean softDeleteByOwner(UUID ownerId, UUID capsuleId, Instant deletedAt) {
+            throw new UnsupportedOperationException();
+        }
+    }
+}

@@ -48,6 +48,17 @@ class ContextCapsuleExceptionHandler {
                 request.getRequestURI());
     }
 
+    @ExceptionHandler(ContextCapsuleNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    ProblemDetailsResponse handleNotFound(HttpServletRequest request) {
+        return problem(
+                "Context capsule not found",
+                HttpStatus.NOT_FOUND,
+                "CAPSULE_NOT_FOUND",
+                "Context capsule was not found.",
+                request.getRequestURI());
+    }
+
     @ExceptionHandler(ContextCapsuleDraftFailedException.class)
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     ProblemDetailsResponse handleDraftFailed(HttpServletRequest request) {
@@ -56,6 +67,17 @@ class ContextCapsuleExceptionHandler {
                 HttpStatus.BAD_GATEWAY,
                 "CAPSULE_DRAFT_UNAVAILABLE",
                 "Context capsule draft provider is temporarily unavailable.",
+                request.getRequestURI());
+    }
+
+    @ExceptionHandler(ContextCapsuleInvalidQueryException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    ProblemDetailsResponse handleInvalidQuery(ContextCapsuleInvalidQueryException exception, HttpServletRequest request) {
+        return problem(
+                "Invalid context capsule query",
+                HttpStatus.BAD_REQUEST,
+                "INVALID_CONTEXT_CAPSULE_QUERY",
+                exception.getMessage(),
                 request.getRequestURI());
     }
 
