@@ -17,6 +17,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "import:travel-courses": "ts-node prisma/import-travel-courses.ts",
     "prisma:studio": "prisma studio",
     "rag:backfill": "ts-node src/rag/backfill-embeddings.ts",
     "test": "jest",
