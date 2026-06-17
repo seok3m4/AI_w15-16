@@ -48,7 +48,8 @@ P4 화면은 구현에서 누락하지 않되, P0~P3 기능이 동작한 뒤 pol
 | `/app/friends` | S-09 친구 목록 / 요청 | 인증 | friendships, friend requests |
 | `/app/friends/feed` | S-10 친구 기록 피드 | 인증 | `GET /api/v1/posts?scope=friends` |
 | `/app/capsules` | S-11 Capsule 목록 | 인증 | `GET /api/v1/context-capsules` |
-| `/app/capsules/:capsuleId` | S-12 Capsule 상세 | 인증 | capsule detail/update/delete |
+| `/app/capsules/new` | S-12 Capsule 생성 | 인증 | `POST /api/v1/context-capsules` |
+| `/app/capsules/:capsuleId` | S-12 Capsule 상세 | 인증 | capsule detail/update/delete, compact context |
 | `/app/settings` | S-13 설정 | 인증 | `GET /api/v1/auth/me`, privacy toggle |
 | `/app/friends/:friendId/gift` | S-14 선물 추천 | 인증 | gift recommendations, jobs polling |
 | `/app/agent` | S-15 Agent 실행 | 인증 | `POST /api/v1/agent-runs`, run status |
@@ -58,7 +59,7 @@ P4 화면은 구현에서 누락하지 않되, P0~P3 기능이 동작한 뒤 pol
 
 인증 보호 라우트에서 access token이 없으면 `/login`으로 이동한다. API `401`은 `POST /api/v1/auth/refresh`를 한 번 시도하고, 실패하면 access token을 삭제한 뒤 `/login`으로 이동한다.
 
-P0 구현에서는 `/app`, `/app/posts/*`, `/app/search`, `/app/settings`만 실제 API에 연결한다. SNB에는 Memory Search, Capsule, 친구, Agent, MCP 항목을 표시하되 `준비중` 배지와 disabled 스타일을 적용하고, 클릭 시 API 호출 없이 "P1 이후 제공 예정입니다" 토스트를 표시한다.
+P2 구현 시점에는 `/app/memory-search`, `/app/friends`, `/app/friends/feed`, `/app/capsules`, `/app/capsules/new`, `/app/capsules/:capsuleId`, `/app/settings`가 실제 API에 연결된다. Agent, MCP 항목은 후속 P3 범위 전까지 `준비중` 배지와 disabled 스타일을 유지한다.
 
 ---
 
@@ -158,7 +159,7 @@ Endpoint 함수는 `/api/v1`을 중복으로 붙이지 않는다. 예: `api.get(
 | likes | `likePost`, `unlikePost` |
 | friendships | `listFriendships`, `requestFriend`, `acceptFriendship`, `rejectFriendship`, `deleteFriendship` |
 | memory | `searchMemories`, `summarizeMemorySearch`, `reindexMemories`, `getJob` |
-| capsules | `listCapsules`, `getCapsule`, `createCapsule`, `updateCapsule`, `deleteCapsule` |
+| capsules | `listCapsules`, `getCapsule`, `createCapsule`, `updateCapsule`, `deleteCapsule`, `getCompactContext` |
 | agent | `startAgentRun`, `listAgentRuns`, `getAgentRun`, `listAgentSteps`, `approveAgentRun`, `rejectAgentRun` |
 | mcp | REST API 확정 전까지 S-18은 API 명세의 MCP tool/connection 계약을 표시하는 read-only 화면으로 시작 |
 

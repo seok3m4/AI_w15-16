@@ -3,12 +3,15 @@ import {
   AsyncJobResponse,
   MemorySearchRequest,
   MemorySearchResponse,
+  MemorySummaryRequest,
+  MemorySummaryResponse,
   PostMemoryStatus,
   ReindexMemoriesRequest,
 } from './types';
 
 export const memoryQueryKeys = {
   search: (query: string) => ['memory', 'search', { query }] as const,
+  summary: (query: string) => ['memory', 'summary', { query }] as const,
   status: (postId: string) => ['memory', 'status', postId] as const,
   job: (jobId: string) => ['memory', 'jobs', jobId] as const,
 };
@@ -18,6 +21,19 @@ export function searchMemories(request: MemorySearchRequest): Promise<MemorySear
     body: {
       ...request,
       scope: request.scope ?? 'me',
+    },
+    method: 'POST',
+  });
+}
+
+export function summarizeMemorySearch(
+  request: MemorySummaryRequest,
+): Promise<MemorySummaryResponse | AsyncJobResponse> {
+  return apiRequest<MemorySummaryResponse | AsyncJobResponse>('/memory-search/summarize', {
+    body: {
+      ...request,
+      scope: request.scope ?? 'me',
+      maxSources: request.maxSources ?? 5,
     },
     method: 'POST',
   });

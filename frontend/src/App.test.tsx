@@ -8,6 +8,8 @@ const FIRST_POST_ID = '22222222-2222-2222-2222-222222222222';
 const FIRST_COMMENT_ID = '33333333-3333-3333-3333-333333333333';
 const FRIEND_ID = '44444444-4444-4444-4444-444444444444';
 const FRIENDSHIP_ID = '55555555-5555-5555-5555-555555555555';
+const CAPSULE_ID = '66666666-6666-6666-6666-666666666666';
+const CHUNK_ID = '77777777-7777-7777-7777-777777777777';
 
 function mockFetch(
   handler: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
@@ -31,6 +33,25 @@ function memorySearchResponse(overrides: Partial<Record<string, unknown>> = {}) 
     query: 'meeting summary',
     scope: 'me',
     results: [],
+    ...overrides,
+  };
+}
+
+function memorySummaryResponse(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    query: 'meeting',
+    answer: '회의 기록에서는 제품 리스크와 일정 조율이 핵심이었습니다.',
+    usedFriendContext: false,
+    sources: [
+      {
+        ownerUserId: USER_ID,
+        ownerNickname: 'cutan',
+        postId: FIRST_POST_ID,
+        title: 'Meeting notes',
+        sourceType: 'post',
+        summary: 'Discussed product risks and timeline.',
+      },
+    ],
     ...overrides,
   };
 }
@@ -113,6 +134,52 @@ function friendshipItem(overrides: Partial<Record<string, unknown>> = {}) {
     direction: 'incoming',
     createdAt: '2026-06-15T03:10:00Z',
     updatedAt: '2026-06-15T03:10:00Z',
+    ...overrides,
+  };
+}
+
+function capsuleSummary(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: CAPSULE_ID,
+    title: '프로젝트 인수인계',
+    purpose: '외부 LLM에게 최근 프로젝트 맥락 전달',
+    containsFriendContext: false,
+    createdAt: '2026-06-17T00:00:00Z',
+    updatedAt: '2026-06-17T00:00:00Z',
+    ...overrides,
+  };
+}
+
+function capsuleDetail(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    ...capsuleSummary(),
+    query: '최근 프로젝트 결정사항',
+    summary: '인증, 친구 권한, Capsule 흐름을 정리했다.',
+    keyFacts: ['JWT Bearer 인증을 사용한다.', 'Capsule은 본인 memory 근거만 사용한다.'],
+    tags: ['project', 'handoff'],
+    sources: [
+      {
+        postId: FIRST_POST_ID,
+        chunkId: CHUNK_ID,
+        ownerUserId: USER_ID,
+        ownerNickname: 'cutan',
+        title: 'API 결정',
+        snippet: 'JWT와 Capsule compact context 구조를 결정했다.',
+        sourceType: 'post',
+        createdAt: '2026-06-15T03:10:00Z',
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function compactContextResponse(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    purpose: '외부 LLM에게 최근 프로젝트 맥락 전달',
+    summary: '인증, 친구 권한, Capsule 흐름을 정리했다.',
+    keyFacts: ['JWT Bearer 인증을 사용한다.'],
+    sourcePostIds: [FIRST_POST_ID],
+    tags: ['project'],
     ...overrides,
   };
 }
@@ -1132,6 +1199,250 @@ describe('App auth flow', () => {
     expect(await screen.findByText('AI 공유 동의를 켰습니다.')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: '친구 AI 공유 동의' })).toBeChecked();
   });
+
+  it('opens the capsule list from navigation and loads capsules', async () => {
+    window.history.pushState({}, '', '/app');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const capsuleRequests: string[] = [];
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/context-capsules?')) {
+        capsuleRequests.push(url);
+        return jsonResponse({
+          items: [capsuleSummary()],
+          page: { page: 0, size: 20, totalCount: 1, totalPages: 1 },
+        });
+      }
+      if (url.includes('/posts?')) {
+        return jsonResponse({
+          items: [],
+          page: { page: 0, size: 20, totalCount: 0, totalPages: 0 },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.click((await screen.findAllByRole('link', { name: 'Capsule' }))[0]);
+
+    expect(await screen.findByRole('heading', { name: '컨텍스트 캡슐' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: '프로젝트 인수인계' })).toBeInTheDocument();
+    expect(
+      capsuleRequests.some((url) => new URL(url).searchParams.get('page') === '0'),
+    ).toBe(true);
+  });
+
+  it('creates a query-based capsule and navigates to detail', async () => {
+    window.history.pushState({}, '', '/app/capsules/new');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/context-capsules') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: '프로젝트 인수인계',
+          purpose: '외부 LLM에게 최근 프로젝트 맥락 전달',
+          query: '최근 프로젝트 결정사항',
+          scope: 'me',
+          sourcePostIds: null,
+        });
+        return jsonResponse(capsuleDetail(), { status: 201 });
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`)) {
+        return jsonResponse(capsuleDetail());
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}/compact-context`)) {
+        return jsonResponse(compactContextResponse());
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: '새 컨텍스트 캡슐' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('제목'), {
+      target: { value: '프로젝트 인수인계' },
+    });
+    fireEvent.change(screen.getByLabelText('목적'), {
+      target: { value: '외부 LLM에게 최근 프로젝트 맥락 전달' },
+    });
+    fireEvent.change(screen.getByLabelText('Memory Search 쿼리'), {
+      target: { value: '최근 프로젝트 결정사항' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '생성' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe(`/app/capsules/${CAPSULE_ID}`));
+    expect(
+      await screen.findByRole('heading', { name: '프로젝트 인수인계' }),
+    ).toBeInTheDocument();
+  });
+
+  it('creates a capsule with normalized source post ids', async () => {
+    window.history.pushState({}, '', '/app/capsules/new');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const sentBodies: unknown[] = [];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/context-capsules') && init?.method === 'POST') {
+        sentBodies.push(JSON.parse(String(init.body)));
+        return jsonResponse(capsuleDetail(), { status: 201 });
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`)) {
+        return jsonResponse(capsuleDetail());
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}/compact-context`)) {
+        return jsonResponse(compactContextResponse());
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText('제목'), {
+      target: { value: '근거 지정 캡슐' },
+    });
+    fireEvent.change(screen.getByLabelText('목적'), {
+      target: { value: '특정 게시글만 전달' },
+    });
+    fireEvent.change(screen.getByLabelText('근거 게시물 UUID'), {
+      target: { value: `${FIRST_POST_ID},\n${FIRST_POST_ID}` },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '생성' }));
+
+    await waitFor(() =>
+      expect(sentBodies).toEqual([
+        {
+          title: '근거 지정 캡슐',
+          purpose: '특정 게시글만 전달',
+          query: null,
+          scope: 'me',
+          sourcePostIds: [FIRST_POST_ID],
+        },
+      ]),
+    );
+  });
+
+  it('shows capsule detail, copies compact JSON, updates, and deletes it', async () => {
+    window.history.pushState({}, '', `/app/capsules/${CAPSULE_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    let detail = capsuleDetail();
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}/compact-context`)) {
+        return jsonResponse(compactContextResponse());
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`) && init?.method === 'PUT') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          title: '수정된 캡슐',
+          purpose: '업데이트된 목적',
+        });
+        detail = capsuleDetail({
+          title: '수정된 캡슐',
+          purpose: '업데이트된 목적',
+        });
+        return jsonResponse(detail);
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`) && init?.method === 'DELETE') {
+        return noContentResponse();
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`)) {
+        return jsonResponse(detail);
+      }
+      if (url.includes('/context-capsules?')) {
+        return jsonResponse({
+          items: [],
+          page: { page: 0, size: 20, totalCount: 0, totalPages: 0 },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole('heading', { name: '프로젝트 인수인계' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('JWT Bearer 인증을 사용한다.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /API 결정/ })).toHaveAttribute(
+      'href',
+      `/app/posts/${FIRST_POST_ID}`,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '복사' }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        JSON.stringify(compactContextResponse(), null, 2),
+      ),
+    );
+    expect(await screen.findByText('compact JSON을 복사했습니다.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '수정' }));
+    fireEvent.change(screen.getByLabelText('제목'), {
+      target: { value: '수정된 캡슐' },
+    });
+    fireEvent.change(screen.getByLabelText('목적'), {
+      target: { value: '업데이트된 목적' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '수정 저장' }));
+
+    expect(await screen.findByText('캡슐을 수정했습니다.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '수정된 캡슐' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+
+    await waitFor(() => expect(window.location.pathname).toBe('/app/capsules'));
+  });
+
+  it('shows a not-found state for an inaccessible capsule', async () => {
+    window.history.pushState({}, '', `/app/capsules/${CAPSULE_ID}`);
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}`)) {
+        return jsonResponse(
+          {
+            code: 'CAPSULE_NOT_FOUND',
+            detail: 'Context capsule was not found.',
+          },
+          { status: 404 },
+        );
+      }
+      if (url.endsWith(`/context-capsules/${CAPSULE_ID}/compact-context`)) {
+        return jsonResponse({ detail: 'Not found' }, { status: 404 });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('찾을 수 없는 캡슐입니다.')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: '목록으로' })[0]).toHaveAttribute(
+      'href',
+      '/app/capsules',
+    );
+  });
+
   it('shows the memory search empty state without query parameters', async () => {
     window.history.pushState({}, '', '/app/memory-search');
     sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
@@ -1188,6 +1499,195 @@ describe('App auth flow', () => {
     expect(screen.getByText('Discussed product risks and timeline.')).toBeInTheDocument();
     expect(screen.getByText('score 0.842')).toBeInTheDocument();
     expect(resultLink).toHaveAttribute('href', `/app/posts/${FIRST_POST_ID}`);
+  });
+
+  it('requests an AI summary for memory search results and renders citations', async () => {
+    window.history.pushState({}, '', '/app/memory-search?q=meeting');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    const summaryRequests: unknown[] = [];
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/memory-search') && init?.method === 'POST') {
+        return jsonResponse(
+          memorySearchResponse({
+            query: 'meeting',
+            results: [
+              {
+                postId: FIRST_POST_ID,
+                chunkId: 'chunk-1',
+                ownerUserId: USER_ID,
+                ownerNickname: 'cutan',
+                title: 'Meeting notes',
+                snippet: 'Discussed product risks and timeline.',
+                score: 0.8421,
+                sourceType: 'post',
+                createdAt: '2026-06-15T03:10:00Z',
+              },
+            ],
+          }),
+        );
+      }
+      if (url.endsWith('/memory-search/summarize') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body));
+        summaryRequests.push(body);
+        return jsonResponse(memorySummaryResponse());
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: 'Meeting notes' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI 요약 보기' }));
+
+    expect(
+      await screen.findByText('회의 기록에서는 제품 리스크와 일정 조율이 핵심이었습니다.'),
+    ).toBeInTheDocument();
+    expect(summaryRequests).toEqual([
+      {
+        query: 'meeting',
+        scope: 'me',
+        sourcePostIds: [FIRST_POST_ID],
+        maxSources: 5,
+      },
+    ]);
+    expect(
+      screen
+        .getAllByRole('link', { name: /Meeting notes/ })
+        .some((link) => link.getAttribute('href') === `/app/posts/${FIRST_POST_ID}`),
+    ).toBe(true);
+    expect(screen.getAllByText('Discussed product risks and timeline.')).toHaveLength(2);
+  });
+
+  it('polls a memory summary job and renders the completed result', async () => {
+    window.history.pushState({}, '', '/app/memory-search?q=meeting');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let jobCalls = 0;
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/memory-search') && init?.method === 'POST') {
+        return jsonResponse(
+          memorySearchResponse({
+            query: 'meeting',
+            results: [
+              {
+                postId: FIRST_POST_ID,
+                chunkId: 'chunk-1',
+                ownerUserId: USER_ID,
+                ownerNickname: 'cutan',
+                title: 'Meeting notes',
+                snippet: 'Discussed product risks and timeline.',
+                score: 0.8421,
+                sourceType: 'post',
+                createdAt: '2026-06-15T03:10:00Z',
+              },
+            ],
+          }),
+        );
+      }
+      if (url.endsWith('/memory-search/summarize') && init?.method === 'POST') {
+        return jsonResponse(
+          {
+            id: '66666666-6666-6666-6666-666666666666',
+            type: 'memory_summarize',
+            status: 'running',
+            progress: 15,
+            retryable: true,
+            result: null,
+            error: null,
+            createdAt: '2026-06-15T03:10:00Z',
+            updatedAt: '2026-06-15T03:10:00Z',
+            completedAt: null,
+          },
+          { status: 202 },
+        );
+      }
+      if (url.endsWith('/jobs/66666666-6666-6666-6666-666666666666')) {
+        jobCalls += 1;
+        return jsonResponse({
+          id: '66666666-6666-6666-6666-666666666666',
+          type: 'memory_summarize',
+          status: jobCalls > 1 ? 'succeeded' : 'running',
+          progress: jobCalls > 1 ? 100 : 45,
+          retryable: true,
+          result: jobCalls > 1 ? memorySummaryResponse() : null,
+          error: null,
+          createdAt: '2026-06-15T03:10:00Z',
+          updatedAt: '2026-06-15T03:10:10Z',
+          completedAt: jobCalls > 1 ? '2026-06-15T03:10:10Z' : null,
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: 'Meeting notes' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI 요약 보기' }));
+
+    expect(await screen.findByText(/Memory summary job:/)).toBeInTheDocument();
+    expect(
+      await screen.findByText('회의 기록에서는 제품 리스크와 일정 조율이 핵심이었습니다.'),
+    ).toBeInTheDocument();
+    expect(jobCalls).toBeGreaterThanOrEqual(2);
+  });
+
+  it('keeps memory search results visible when AI summary fails', async () => {
+    window.history.pushState({}, '', '/app/memory-search?q=meeting');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/memory-search') && init?.method === 'POST') {
+        return jsonResponse(
+          memorySearchResponse({
+            query: 'meeting',
+            results: [
+              {
+                postId: FIRST_POST_ID,
+                chunkId: 'chunk-1',
+                ownerUserId: USER_ID,
+                ownerNickname: 'cutan',
+                title: 'Meeting notes',
+                snippet: 'Discussed product risks and timeline.',
+                score: 0.8421,
+                sourceType: 'post',
+                createdAt: '2026-06-15T03:10:00Z',
+              },
+            ],
+          }),
+        );
+      }
+      if (url.endsWith('/memory-search/summarize') && init?.method === 'POST') {
+        return jsonResponse(
+          {
+            code: 'SUMMARY_PROVIDER_UNAVAILABLE',
+            detail: 'Summary provider unavailable.',
+          },
+          { status: 502 },
+        );
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('link', { name: 'Meeting notes' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI 요약 보기' }));
+
+    expect(
+      await screen.findByText('검색 결과는 있지만 요약을 생성하지 못했어요'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Meeting notes' })).toBeInTheDocument();
+    expect(screen.getByText('Discussed product risks and timeline.')).toBeInTheDocument();
   });
 
   it('falls back to keyword search when memory search returns no results', async () => {

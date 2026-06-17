@@ -121,6 +121,29 @@ export type MemorySearchResponse = {
   results: MemorySearchResultItem[];
 };
 
+export type MemorySummaryRequest = {
+  query: string;
+  scope?: string;
+  sourcePostIds: string[];
+  maxSources?: number;
+};
+
+export type MemorySummarySourceResponse = {
+  ownerUserId: string;
+  ownerNickname: string;
+  postId: string;
+  title: string;
+  sourceType: string;
+  summary: string;
+};
+
+export type MemorySummaryResponse = {
+  query: string;
+  answer: string;
+  usedFriendContext: boolean;
+  sources: MemorySummarySourceResponse[];
+};
+
 export type ReindexMemoriesRequest = {
   postIds: string[];
   reason?: string | null;
@@ -251,4 +274,64 @@ export type PostLikeResponse = {
 export type AiSharingSettingResponse = {
   friendAiSharingEnabled: boolean;
   updatedAt: string;
+};
+
+export type ContextCapsuleSummaryResponse = {
+  id: string;
+  title: string;
+  purpose: string;
+  containsFriendContext: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContextCapsuleSourceResponse = {
+  postId: string;
+  chunkId: string;
+  ownerUserId: string;
+  ownerNickname: string;
+  title: string;
+  snippet: string;
+  sourceType: string;
+  createdAt: string;
+};
+
+export type ContextCapsuleResponse = {
+  id: string;
+  title: string;
+  purpose: string;
+  query: string;
+  summary: string;
+  keyFacts: string[];
+  tags: string[];
+  containsFriendContext: boolean;
+  sources: ContextCapsuleSourceResponse[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContextCapsuleCompactContextResponse = {
+  purpose: string;
+  summary: string;
+  keyFacts: string[];
+  sourcePostIds: string[];
+  tags: string[];
+};
+
+export type ContextCapsuleListResponse = {
+  items: ContextCapsuleSummaryResponse[];
+  page: PageResponse;
+};
+
+export type CreateContextCapsuleRequest = {
+  title: string;
+  purpose: string;
+  query?: string | null;
+  scope?: 'me';
+  sourcePostIds?: string[] | null;
+};
+
+export type UpdateContextCapsuleRequest = {
+  title: string;
+  purpose: string;
 };

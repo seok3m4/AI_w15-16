@@ -39,7 +39,7 @@
 | S-09 | 친구 목록 / 친구 요청 | P2 | `GET /api/v1/friendships`, `POST /api/v1/friendships/requests` | 인증 |
 | S-10 | 친구 기록 피드 | P2 | `GET /api/v1/posts?scope=friends` | 인증 (accepted 친구) |
 | S-11 | Context Capsule 목록 | P2 | `GET /api/v1/context-capsules` | 인증 |
-| S-12 | Context Capsule 상세 / 생성 | P2 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules` | 인증 |
+| S-12 | Context Capsule 상세 / 생성 | P2 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules`, `GET /api/v1/context-capsules/{capsuleId}/compact-context` | 인증 |
 | S-13 | 설정 (AI 공유 동의) | P2 | `GET /api/v1/auth/me`, `PUT /api/v1/privacy/ai-sharing` | 인증 |
 | S-14 | 친구 AI 기반 선물 추천 | P3 | `POST /api/v1/friends/{friendId}/gift-recommendations` | 인증 + 친구 + AI 공유 동의 |
 | S-15 | Agent 실행 / 결과 | P3 | `POST /api/v1/agent-runs`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` | 인증 |
@@ -573,6 +573,7 @@ sequenceDiagram
 | 상세 로드 | `GET /api/v1/context-capsules/{capsuleId}` | summary·keyFacts·sources 표시 |
 | Capsule 생성 | `POST /api/v1/context-capsules` | 201 → 상세로 이동 |
 | 수정 | `PUT /api/v1/context-capsules/{capsuleId}` | 제목·목적 갱신 |
+| compact JSON 조회 | `GET /api/v1/context-capsules/{capsuleId}/compact-context` | compact JSON 표시 |
 | compact JSON 복사 | — | 클립보드 복사 + 토스트 |
 
 **상태**:
@@ -777,7 +778,7 @@ sequenceDiagram
 | S-09 | FRIEND-001~012 | `GET /api/v1/friendships`, `POST /api/v1/friendships/requests`, `POST /api/v1/friendships/{friendshipId}/accept`, `POST /api/v1/friendships/{friendshipId}/reject`, `DELETE /api/v1/friendships/{friendshipId}` |
 | S-10 | POST-008~009, FRIEND-006~010 | `GET /api/v1/posts?scope=friends`, `POST /api/v1/posts/{postId}/likes` |
 | S-11 | CAPSULE-005, CAPSULE-008 | `GET /api/v1/context-capsules` |
-| S-12 | CAPSULE-001~010 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules`, `PUT /api/v1/context-capsules/{capsuleId}`, `DELETE /api/v1/context-capsules/{capsuleId}` |
+| S-12 | CAPSULE-001~010 | `GET /api/v1/context-capsules/{capsuleId}`, `POST /api/v1/context-capsules`, `PUT /api/v1/context-capsules/{capsuleId}`, `DELETE /api/v1/context-capsules/{capsuleId}`, `GET /api/v1/context-capsules/{capsuleId}/compact-context` |
 | S-13 | FRIEND-011, FRIEND-012, AUTH-007 | `GET /api/v1/auth/me`, `PUT /api/v1/privacy/ai-sharing`, `POST /api/v1/auth/logout` |
 | S-14 | AGENT-011, RAG-009~012 | `POST /api/v1/friends/{friendId}/gift-recommendations`, `GET /api/v1/jobs/{jobId}` |
 | S-15 | AGENT-001~011 | `POST /api/v1/agent-runs`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps` |
