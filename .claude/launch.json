@@ -8,6 +8,12 @@
       "port": 5173,
       "autoPort": false,
       "cwd": "apps/web"
+    },
+    {
+      "name": "slides",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "docs", "-l", "4321"],
+      "port": 4321
     }
   ]
 }
