@@ -24,9 +24,12 @@
 
 - Google OAuth2 login is exposed at `/oauth2/authorization/google`.
 - The Google OAuth callback URI is explicitly configurable with `GOOGLE_REDIRECT_URI`.
-  If it is not set, Spring uses the local backend default `http://localhost:8080/login/oauth2/code/{registrationId}`.
-  This keeps CloudFront deployments from accidentally generating an `http://` callback
-  when production explicitly sets the HTTPS CloudFront callback.
+  If it is not set, Spring uses `{baseUrl}/login/oauth2/code/{registrationId}`
+  so the callback is derived from the incoming backend request instead of being
+  hard-coded to localhost. CloudFront deployments should still set
+  `GOOGLE_REDIRECT_URI=https://<cloudfront-domain>/login/oauth2/code/google`
+  explicitly unless the distribution forwards enough viewer protocol/host
+  information for Spring to derive the CloudFront URL.
 - After a successful web login, Spring Security redirects to `${FRONTEND_BOARD_URL:http://localhost:5173/home}`.
 - Google user profile data is upserted into `app_users` by provider and provider user id.
 - Google OAuth success now issues the same `ACCESS_TOKEN`, `REFRESH_TOKEN`, and
@@ -117,6 +120,8 @@
   - Set `GOOGLE_CLIENT_ID`.
   - Set `GOOGLE_CLIENT_SECRET`.
   - Configure the Google redirect URI as `http://localhost:8080/login/oauth2/code/google`.
+  - Leave `GOOGLE_REDIRECT_URI` unset for the common local flow, or set it to
+    `http://localhost:8080/login/oauth2/code/google` if you need an explicit value.
   - Keep `VITE_BACKEND_ORIGIN=http://localhost:8080` so the frontend starts OAuth at the backend.
   - Do not set `GOOGLE_REDIRECT_URI` to `http://localhost:5173/login/oauth2/code/google`; the React dev server cannot handle Spring's OAuth callback.
   - Start backend and frontend, then open `http://localhost:5173/home`.
@@ -124,6 +129,9 @@
   - Set `APP_PUBLIC_BASE_URL=https://<cloudfront-domain>`.
   - Set `GOOGLE_REDIRECT_URI=https://<cloudfront-domain>/login/oauth2/code/google`.
   - Configure the same HTTPS callback in Google Cloud Console.
+  - Route `/oauth2/*` and `/login/oauth2/*` from CloudFront to the ALB with
+    caching disabled and cookies/query strings forwarded, otherwise the OAuth
+    state/session cannot survive the Google callback.
 
 ## Verification
 
@@ -139,12 +147,18 @@
 - `mvn.cmd test`: passed with 50 tests, 0 failures, 0 errors, 0 skipped.
 - `mvn.cmd "-Dtest=EnvironmentFileConfigTests,OAuth2JwtAuthenticationSuccessHandlerTests" test`: passed with 5 tests, 0 failures, 0 errors, 0 skipped.
 - `mvn.cmd "-Dtest=LoginSecurityTests,BackendApplicationTests" test`: passed with 6 tests, 0 failures, 0 errors, 0 skipped.
+- `mvn -Dtest=EnvironmentFileConfigTests test`: passed after verifying the
+  regression test failed against the previous localhost-pinned callback default.
 
 ## Pitfalls And Follow-Ups
 
 - The test-only local `user/password` login remains so existing security tests and local fallback keep working.
 - Real Google login needs valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; placeholder defaults only keep the app bootable.
 - In CloudFront + ALB deployments, do not register an `http://` CloudFront callback in Google Cloud Console. Use the HTTPS CloudFront callback and keep `/login*` routed from CloudFront to the ALB.
+- Do not let the deployed backend fall back to a localhost OAuth callback. The
+  default is request-derived, but production should prefer an explicit
+  `GOOGLE_REDIRECT_URI` because CloudFront origin request policies may not pass
+  the viewer `Host` header.
 - In local development, a callback URL on port `5173` means the callback is going
   to Vite/React instead of Spring Security. The local callback must use backend
   port `8080`.

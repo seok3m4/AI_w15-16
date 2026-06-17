@@ -31,7 +31,7 @@ class EnvironmentFileConfigTests {
 	}
 
 	@Test
-	void localGoogleOauthCallbackDefaultsToBackendPort() throws IOException {
+	void googleOauthCallbackDefaultUsesRequestBaseUrlForDeploymentsBehindProxies() throws IOException {
 		Properties properties = new Properties();
 		try (var reader = Files.newBufferedReader(Path.of("src/main/resources/application.properties"))) {
 			properties.load(reader);
@@ -40,8 +40,8 @@ class EnvironmentFileConfigTests {
 		String redirectUri = properties.getProperty("spring.security.oauth2.client.registration.google.redirect-uri", "");
 
 		assertThat(redirectUri)
-				.contains("localhost:8080/login/oauth2/code/{registrationId}")
-				.doesNotContain("APP_PUBLIC_BASE_URL")
+				.isEqualTo("${GOOGLE_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}")
+				.doesNotContain("localhost:8080")
 				.doesNotContain("localhost:5173");
 	}
 }
