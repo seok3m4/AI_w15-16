@@ -151,6 +151,18 @@ public class AuthService {
 	}
 
 	@Transactional
+	public IssuedAuth issueOAuthLogin(AppUser user) {
+		if (user == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "OAuth user is required");
+		}
+		AppUser authenticatedUser = userService.applyBootstrapAdminRole(user);
+		if (authenticatedUser.suspended()) {
+			throw new AuthException(HttpStatus.FORBIDDEN, "account_suspended", "Account is suspended");
+		}
+		return issue(authenticatedUser);
+	}
+
+	@Transactional
 	public IssuedAuth refresh(String refreshToken) {
 		if (refreshToken == null || refreshToken.isBlank()) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is required");

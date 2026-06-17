@@ -3,6 +3,7 @@
 ## Where It Appears
 
 - `backend/pom.xml`
+- `backend/src/main/java/com/junglecamp/backend/auth/handler/OAuth2JwtAuthenticationSuccessHandler.java`
 - `backend/src/main/java/com/junglecamp/backend/config/SecurityConfig.java`
 - `backend/src/main/java/com/junglecamp/backend/controller/ApiController.java`
 - `backend/src/main/java/com/junglecamp/backend/controller/DashboardPreferenceController.java`
@@ -10,6 +11,7 @@
 - `backend/src/main/resources/db/migration/V3__create_users_and_dashboard_preferences.sql`
 - `backend/src/main/resources/application.properties`
 - `backend/src/test/java/com/junglecamp/backend/ApiIntegrationTests.java`
+- `backend/src/test/java/com/junglecamp/backend/auth/handler/OAuth2JwtAuthenticationSuccessHandlerTests.java`
 - `backend/src/test/java/com/junglecamp/backend/user/AppUserServiceTests.java`
 - `front/src/api/backend.ts`
 - `front/src/app/App.tsx`
@@ -22,11 +24,15 @@
 
 - Google OAuth2 login is exposed at `/oauth2/authorization/google`.
 - The Google OAuth callback URI is explicitly configurable with `GOOGLE_REDIRECT_URI`.
-  If it is not set, Spring uses `${APP_PUBLIC_BASE_URL}/login/oauth2/code/{registrationId}`.
+  If it is not set, Spring uses the local backend default `http://localhost:8080/login/oauth2/code/{registrationId}`.
   This keeps CloudFront deployments from accidentally generating an `http://` callback
-  when the backend is behind CloudFront and an ALB.
+  when production explicitly sets the HTTPS CloudFront callback.
 - After a successful web login, Spring Security redirects to `${FRONTEND_BOARD_URL:http://localhost:5173/home}`.
 - Google user profile data is upserted into `app_users` by provider and provider user id.
+- Google OAuth success now issues the same `ACCESS_TOKEN`, `REFRESH_TOKEN`, and
+  `XSRF-TOKEN` cookies as email/password login before redirecting to the frontend.
+  This keeps frontend API authentication consistent instead of depending only on
+  the Spring OAuth session cookie surviving through CloudFront and ALB.
 - Login-time profile persistence and request-time user lookup are intentionally separated:
   `PersistingOAuth2UserService` refreshes the Google profile during OAuth login, while
   `AppUserService.currentUser()` first reads an existing user and only creates one when
@@ -111,12 +117,12 @@
   - Set `GOOGLE_CLIENT_ID`.
   - Set `GOOGLE_CLIENT_SECRET`.
   - Configure the Google redirect URI as `http://localhost:8080/login/oauth2/code/google`.
-  - If local `APP_PUBLIC_BASE_URL` stays on the frontend dev server, set
-    `GOOGLE_REDIRECT_URI=http://localhost:8080/login/oauth2/code/google`.
+  - Keep `VITE_BACKEND_ORIGIN=http://localhost:8080` so the frontend starts OAuth at the backend.
+  - Do not set `GOOGLE_REDIRECT_URI` to `http://localhost:5173/login/oauth2/code/google`; the React dev server cannot handle Spring's OAuth callback.
   - Start backend and frontend, then open `http://localhost:5173/home`.
 - Google OAuth CloudFront setup:
   - Set `APP_PUBLIC_BASE_URL=https://<cloudfront-domain>`.
-  - Set `GOOGLE_REDIRECT_URI=https://<cloudfront-domain>/login/oauth2/code/google`, or omit it and let the value derive from `APP_PUBLIC_BASE_URL`.
+  - Set `GOOGLE_REDIRECT_URI=https://<cloudfront-domain>/login/oauth2/code/google`.
   - Configure the same HTTPS callback in Google Cloud Console.
 
 ## Verification
@@ -131,12 +137,20 @@
 - `Invoke-WebRequest http://localhost:8080/api/users/me/dashboard-preferences`: returned `401 Unauthorized` for anonymous access.
 - `mvn.cmd "-Dtest=com.junglecamp.backend.user.AppUserServiceTests#currentUserReadsExistingGoogleUserWithoutRefreshingProfile" test`: passed.
 - `mvn.cmd test`: passed with 50 tests, 0 failures, 0 errors, 0 skipped.
+- `mvn.cmd "-Dtest=EnvironmentFileConfigTests,OAuth2JwtAuthenticationSuccessHandlerTests" test`: passed with 5 tests, 0 failures, 0 errors, 0 skipped.
+- `mvn.cmd "-Dtest=LoginSecurityTests,BackendApplicationTests" test`: passed with 6 tests, 0 failures, 0 errors, 0 skipped.
 
 ## Pitfalls And Follow-Ups
 
 - The test-only local `user/password` login remains so existing security tests and local fallback keep working.
 - Real Google login needs valid `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; placeholder defaults only keep the app bootable.
 - In CloudFront + ALB deployments, do not register an `http://` CloudFront callback in Google Cloud Console. Use the HTTPS CloudFront callback and keep `/login*` routed from CloudFront to the ALB.
+- In local development, a callback URL on port `5173` means the callback is going
+  to Vite/React instead of Spring Security. The local callback must use backend
+  port `8080`.
+- OAuth success writes JWT cookies, but local account and Google account email
+  conflicts are still intentionally blocked until a dedicated account-linking UX
+  is implemented.
 - Do not call profile upsert from read-only service methods such as board feed,
   notifications, preference reads, or Agent catalog reads. PostgreSQL enforces
   read-only transactions and will reject UPDATE statements from those paths.

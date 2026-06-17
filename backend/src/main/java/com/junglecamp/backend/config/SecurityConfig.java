@@ -3,6 +3,7 @@ package com.junglecamp.backend.config;
 import com.junglecamp.backend.auth.filter.AdminMfaFilter;
 import com.junglecamp.backend.auth.filter.JwtCookieAuthenticationFilter;
 import com.junglecamp.backend.auth.filter.JwtCsrfFilter;
+import com.junglecamp.backend.auth.handler.OAuth2JwtAuthenticationSuccessHandler;
 import com.junglecamp.backend.auth.service.AdminMfaCookieService;
 import com.junglecamp.backend.auth.service.AdminMfaService;
 import com.junglecamp.backend.auth.service.AuthCookieService;
@@ -99,6 +100,7 @@ public class SecurityConfig {
 			@Value("${app.frontend.board-url:http://localhost:5173/home}") String frontendBoardUrl,
 			@Value("${app.public-base-url:http://localhost:5173}") String publicBaseUrl,
 			OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService,
+			OAuth2JwtAuthenticationSuccessHandler oauth2JwtAuthenticationSuccessHandler,
 			AppUserService appUserService,
 			AdminMfaService adminMfaService) throws Exception {
 		return http
@@ -120,8 +122,7 @@ public class SecurityConfig {
 						.permitAll())
 				.oauth2Login(oauth2 -> oauth2
 						.loginPage("/login")
-						.successHandler((request, response, authentication) -> response.sendRedirect(
-								frontendSuccessUrl(frontendBoardUrl, publicBaseUrl, authentication, request, appUserService, adminMfaService)))
+						.successHandler(oauth2JwtAuthenticationSuccessHandler)
 						.failureHandler((request, response, exception) -> response.sendRedirect(oauthFailureUrl(publicBaseUrl, exception)))
 						.userInfoEndpoint(userInfo -> userInfo.userService(oauth2UserService)))
 				.logout(logout -> logout
