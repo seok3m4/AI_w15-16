@@ -68,7 +68,7 @@ flowchart LR
   end
 
   subgraph Database["PostgreSQL + pgvector :5433"]
-    Tables["User · Post · Place · Comment · Tag"]
+    Tables["User · Post · Place · Comment · Tag · PostTag · SavedPost · CommentLike"]
     Vector["PostEmbedding<br/>vector(1536)"]
   end
 
@@ -118,6 +118,12 @@ flowchart LR
 - 도구 `place_search`: Kakao Local API 키워드 검색 → 이름·주소·**좌표(lat/lng)** 반환
 - NestJS `McpModule`이 이 서버를 **자식 프로세스로 띄우고 MCP 클라이언트로 연결**
 
+**API Key / 권한 관리**
+- `KAKAO_REST_API_KEY`는 루트 `.env`에만 저장하고, MCP 서버에서만 사용합니다.
+- 브라우저에는 Kakao REST API 키를 노출하지 않습니다.
+- `VITE_KAKAO_MAP_KEY`는 브라우저용 JavaScript 키이므로, Kakao Developers에서 허용 도메인을 `http://localhost:5173`으로 제한합니다.
+- 실제 `.env` 파일은 Git에 커밋하지 않고, README에는 필요한 변수 이름과 예시 형식만 작성합니다.
+
 **아키텍처**
 ```
 NestJS (McpService, MCP 클라이언트)
@@ -164,7 +170,10 @@ Kakao Local API  →  장소 이름 · 주소 · 좌표
 **기술**
 - OpenAI function calling 루프 (`apps/api/src/agent`)
 - 도구 2종: `search_similar_posts`(RAG, 기존 코스 검색) + `place_search`(MCP, 실제 장소 검색)
+- Agent의 상태는 OpenAI `messages` 배열에 누적됩니다. 사용자 질문, 모델 응답, tool 호출 결과를 순서대로 저장해 다음 판단에 사용합니다.
+- `MAX_ROUNDS = 5`로 tool calling 반복 횟수를 제한해 무한 루프를 방지합니다.
 - 도구 결과 슬림화(썸네일 등 제외)로 컨텍스트 토큰 폭증 방지, 최대 호출 횟수 제한 + fallback
+- 모델이 장소 검색을 생략하는 경우를 대비해 코드 레벨 fallback으로 장소 검색을 보완합니다.
 
 **아키텍처 — 모델이 판단하며 루프를 돈다**
 ```
@@ -251,22 +260,30 @@ OPENAI_API_KEY="sk-..."      # OpenAI API 키 (RAG/Agent). sk- 로 시작
 
 ### 2) 실행
 ```bash
-# DB 컨테이너 (포트 5433)
+# 아래 명령은 프로젝트 루트에서 시작합니다.
+
+# [터미널 1] DB 컨테이너 (포트 5433)
 docker compose up -d
 
-# MCP 서버 빌드 (NestJS가 dist/index.js를 자식 프로세스로 띄움 → 먼저 빌드 필요)
-cd apps/mcp-server && npm install && npm run build
+# [터미널 1] MCP 서버 빌드
+# NestJS가 dist/index.js를 자식 프로세스로 띄우므로 먼저 빌드합니다.
+cd apps/mcp-server
+npm install
+npm run build
 
-# 백엔드 (포트 3000)
-cd ../api && npm install
+# [터미널 2] 백엔드 (포트 3000)
+cd apps/api
+npm install
 npx prisma migrate deploy   # 마이그레이션 적용 (pgvector extension 포함)
 npm run prisma:generate     # Prisma Client 생성
 npm run prisma:seed         # 샘플 코스(부산·강릉·제주) 시드
 npm run rag:backfill        # 기존 코스에 임베딩 생성 (RAG 추천/Q&A용)
-npm run start:dev
+npm run start:dev           # 이 터미널은 계속 켜둡니다.
 
-# 프론트엔드 (포트 5173)
-cd ../web && npm install && npm run dev
+# [터미널 3] 프론트엔드 (포트 5173)
+cd apps/web
+npm install
+npm run dev                 # 이 터미널도 계속 켜둡니다.
 ```
 - DB 연결 오류(ECONNREFUSED) 시: `docker ps | grep cine-review-db`로 컨테이너 상태 먼저 확인.
 - AI 기능(추천/Q&A/Agent)은 `OPENAI_API_KEY`가 있어야 동작합니다. 키가 없으면 나머지 기능은 정상 동작하고 AI 영역만 비활성화됩니다.
