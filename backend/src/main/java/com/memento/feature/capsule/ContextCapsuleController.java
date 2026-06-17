@@ -48,6 +48,13 @@ class ContextCapsuleController {
         return queryService.get(currentUser.userId(), contextCapsuleId);
     }
 
+    @GetMapping("/{contextCapsuleId}/compact-context")
+    ContextCapsuleCompactContextResponse compactContext(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @PathVariable UUID contextCapsuleId) {
+        return queryService.compactContext(currentUser.userId(), contextCapsuleId);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     ContextCapsuleResponse create(
@@ -72,4 +79,3 @@ class ContextCapsuleController {
         commandService.delete(currentUser.userId(), contextCapsuleId);
     }
 }
-

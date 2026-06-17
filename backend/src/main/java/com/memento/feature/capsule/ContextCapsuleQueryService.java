@@ -38,6 +38,13 @@ class ContextCapsuleQueryService {
                 .orElseThrow(() -> new ContextCapsuleNotFoundException(contextCapsuleId));
     }
 
+    @Transactional(readOnly = true)
+    ContextCapsuleCompactContextResponse compactContext(UUID currentUserId, UUID contextCapsuleId) {
+        return repository.findActiveByOwner(currentUserId, contextCapsuleId)
+                .map(ContextCapsuleCompactContextResponse::from)
+                .orElseThrow(() -> new ContextCapsuleNotFoundException(contextCapsuleId));
+    }
+
     private void validateQuery(int page, int size) {
         if (page < 0) {
             throw new ContextCapsuleInvalidQueryException("page must be greater than or equal to 0.");
@@ -55,4 +62,3 @@ class ContextCapsuleQueryService {
         return (int) offset;
     }
 }
-
