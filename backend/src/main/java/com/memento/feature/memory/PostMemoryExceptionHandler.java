@@ -71,6 +71,30 @@ class PostMemoryExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(FriendAiContextNotAllowedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    ProblemDetailsResponse handleFriendAiContextNotAllowed(HttpServletRequest request) {
+        return problem(
+                "Friend AI context is not allowed",
+                HttpStatus.FORBIDDEN,
+                "FRIEND_AI_CONTEXT_NOT_ALLOWED",
+                "Friend relationship and AI sharing consent are required.",
+                request.getRequestURI(),
+                List.of());
+    }
+
+    @ExceptionHandler(GiftRecommendationProviderException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    ProblemDetailsResponse handleGiftRecommendationProviderFailed(HttpServletRequest request) {
+        return problem(
+                "Gift recommendation provider unavailable",
+                HttpStatus.BAD_GATEWAY,
+                "GIFT_PROVIDER_UNAVAILABLE",
+                "Gift recommendation provider is temporarily unavailable.",
+                request.getRequestURI(),
+                List.of());
+    }
+
     @ExceptionHandler(ReindexRequestInvalidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleReindexRequestInvalid(

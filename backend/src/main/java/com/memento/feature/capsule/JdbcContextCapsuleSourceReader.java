@@ -66,6 +66,27 @@ class JdbcContextCapsuleSourceReader implements ContextCapsuleSourceReader {
 
     @Override
     public List<ContextCapsuleSourceCandidate> searchSourcesForOwner(UUID ownerId, String query, int limit) {
+        return searchSources(ownerId, query, limit);
+    }
+
+    @Override
+    public List<ContextCapsuleSourceCandidate> findSourcesForFriendPostIds(
+            UUID requesterId,
+            UUID friendId,
+            List<UUID> postIds) {
+        return findSourcesForOwnerPostIds(friendId, postIds);
+    }
+
+    @Override
+    public List<ContextCapsuleSourceCandidate> searchSourcesForFriend(
+            UUID requesterId,
+            UUID friendId,
+            String query,
+            int limit) {
+        return searchSources(friendId, query, limit);
+    }
+
+    private List<ContextCapsuleSourceCandidate> searchSources(UUID ownerId, String query, int limit) {
         QueryEmbedding queryEmbedding;
         try {
             queryEmbedding = queryEmbeddingService.create(query);

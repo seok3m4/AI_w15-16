@@ -10,5 +10,6 @@ record CreateContextCapsuleRequest(
         @NotBlank @Size(max = 2000) String purpose,
         @Size(max = 2000) String query,
         String scope,
+        UUID friendId,
         List<UUID> sourcePostIds) {
 }

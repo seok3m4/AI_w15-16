@@ -44,6 +44,9 @@ class PostMemoryControllerTest {
     @MockitoBean
     private MemorySummaryService summaryService;
 
+    @MockitoBean
+    private FriendGiftRecommendationService giftRecommendationService;
+
     @Test
     void searchMemoriesReturnsScopeMeResultsForCurrentUser() throws Exception {
         MemorySearchRequest request = new MemorySearchRequest("jwt decision", "me", 5);
@@ -300,5 +303,99 @@ class PostMemoryControllerTest {
                                 "limit", 5))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_MEMORY_SEARCH_REQUEST"));
+    }
+
+    @Test
+    void recommendFriendGiftsReturnsRecommendationsWithSources() throws Exception {
+        FriendGiftRecommendationRequest request = new FriendGiftRecommendationRequest(
+                "birthday",
+                new GiftBudgetRequest(30000, 70000, "KRW"),
+                "coffee",
+                5);
+        FriendGiftRecommendationResponse response = new FriendGiftRecommendationResponse(
+                FRIEND_ID,
+                "birthday",
+                "Coffee sampler is a good fit.",
+                List.of(new GiftRecommendationItemResponse(
+                        "Coffee sampler",
+                        "Coffee evidence.",
+                        "medium")),
+                List.of(new GiftRecommendationSourceResponse(
+                        FRIEND_ID,
+                        "friend",
+                        POST_ID,
+                        "Coffee notes",
+                        "post",
+                        "Coffee was mentioned.")));
+        given(giftRecommendationService.recommend(USER_ID, FRIEND_ID, request)).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/friends/{friendId}/gift-recommendations", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.friendId").value("44444444-4444-4444-4444-444444444444"))
+                .andExpect(jsonPath("$.occasion").value("birthday"))
+                .andExpect(jsonPath("$.answer").value("Coffee sampler is a good fit."))
+                .andExpect(jsonPath("$.recommendations[0].title").value("Coffee sampler"))
+                .andExpect(jsonPath("$.sources[0].ownerUserId").value("44444444-4444-4444-4444-444444444444"));
+
+        verify(giftRecommendationService).recommend(USER_ID, FRIEND_ID, request);
+    }
+
+    @Test
+    void recommendFriendGiftsReturnsAcceptedJobWhenProviderTimesOut() throws Exception {
+        FriendGiftRecommendationRequest request = new FriendGiftRecommendationRequest(
+                "birthday",
+                null,
+                "coffee",
+                5);
+        UUID jobId = UUID.fromString("55555555-5555-5555-5555-555555555555");
+        AsyncJobResponse jobResponse = new AsyncJobResponse(
+                jobId,
+                "gift_recommendation",
+                "pending",
+                0,
+                true,
+                null,
+                null,
+                CREATED_AT,
+                CREATED_AT,
+                null);
+        given(giftRecommendationService.recommend(USER_ID, FRIEND_ID, request))
+                .willThrow(new GiftRecommendationTimeoutException(new RuntimeException("timeout")));
+        given(giftRecommendationService.enqueue(USER_ID, FRIEND_ID, request)).willReturn(jobResponse);
+
+        mockMvc.perform(post("/api/v1/friends/{friendId}/gift-recommendations", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.id").value("55555555-5555-5555-5555-555555555555"))
+                .andExpect(jsonPath("$.type").value("gift_recommendation"));
+    }
+
+    @Test
+    void recommendFriendGiftsMapsConsentFailureToForbidden() throws Exception {
+        FriendGiftRecommendationRequest request = new FriendGiftRecommendationRequest(
+                "birthday",
+                null,
+                "coffee",
+                5);
+        given(giftRecommendationService.recommend(USER_ID, FRIEND_ID, request))
+                .willThrow(new FriendAiContextNotAllowedException());
+
+        mockMvc.perform(post("/api/v1/friends/{friendId}/gift-recommendations", FRIEND_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FRIEND_AI_CONTEXT_NOT_ALLOWED"));
     }
 }

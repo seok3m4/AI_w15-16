@@ -18,10 +18,15 @@ class PostMemoryController {
 
     private final PostMemoryFeatureService service;
     private final MemorySummaryService summaryService;
+    private final FriendGiftRecommendationService giftRecommendationService;
 
-    PostMemoryController(PostMemoryFeatureService service, MemorySummaryService summaryService) {
+    PostMemoryController(
+            PostMemoryFeatureService service,
+            MemorySummaryService summaryService,
+            FriendGiftRecommendationService giftRecommendationService) {
         this.service = service;
         this.summaryService = summaryService;
+        this.giftRecommendationService = giftRecommendationService;
     }
 
     @GetMapping("/api/v1/posts/{postId}/memory-status")
@@ -71,5 +76,18 @@ class PostMemoryController {
             @PathVariable UUID friendId,
             @Valid @RequestBody FriendMemorySearchRequest request) {
         return service.searchFriendMemories(currentUser.userId(), friendId, request);
+    }
+
+    @PostMapping("/api/v1/friends/{friendId}/gift-recommendations")
+    ResponseEntity<Object> recommendFriendGifts(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @PathVariable UUID friendId,
+            @Valid @RequestBody FriendGiftRecommendationRequest request) {
+        try {
+            return ResponseEntity.ok(giftRecommendationService.recommend(currentUser.userId(), friendId, request));
+        } catch (GiftRecommendationTimeoutException exception) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(giftRecommendationService.enqueue(currentUser.userId(), friendId, request));
+        }
     }
 }

@@ -2,7 +2,11 @@ package com.memento.feature.capsule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
+import com.memento.feature.friend.FriendshipAccessService;
+import com.memento.feature.privacy.AiSharingConsentReader;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +17,8 @@ class ContextCapsuleQueryServiceTest {
 
     private static final UUID OWNER_ID =
             UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID FRIEND_ID =
+            UUID.fromString("12121212-1212-1212-1212-121212121212");
     private static final UUID CAPSULE_ID =
             UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID POST_ID =
@@ -22,17 +28,16 @@ class ContextCapsuleQueryServiceTest {
     @Test
     void listReturnsCurrentUserCapsulesWithPageMetadata() {
         CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
-        repository.pageRecords = List.of(capsuleRecord("title-1", "purpose-1"));
+        repository.pageRecords = List.of(capsuleRecord("title-1", "purpose-1", false, List.of()));
         repository.totalCount = 1;
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+        ContextCapsuleQueryService service = service(repository);
 
         ContextCapsuleListResponse response = service.list(OWNER_ID, 0, 20);
 
         assertThat(repository.capturedOwnerId).isEqualTo(OWNER_ID);
         assertThat(repository.capturedLimit).isEqualTo(20);
         assertThat(repository.capturedOffset).isZero();
-        assertThat(response.items()).hasSize(1);
-        assertThat(response.items().getFirst()).isEqualTo(new ContextCapsuleSummaryResponse(
+        assertThat(response.items()).containsExactly(new ContextCapsuleSummaryResponse(
                 CAPSULE_ID,
                 "title-1",
                 "purpose-1",
@@ -45,8 +50,8 @@ class ContextCapsuleQueryServiceTest {
     @Test
     void getReturnsOwnCapsuleByIdOr404WhenNotOwnedOrDeleted() {
         CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
-        repository.findRecord = Optional.of(capsuleRecord("title-1", "purpose-1"));
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+        repository.findRecord = Optional.of(capsuleRecord("title-1", "purpose-1", false, List.of()));
+        ContextCapsuleQueryService service = service(repository);
 
         ContextCapsuleResponse response = service.get(OWNER_ID, CAPSULE_ID);
 
@@ -57,10 +62,33 @@ class ContextCapsuleQueryServiceTest {
 
     @Test
     void getThrowsNotFoundWhenNoActiveCapsuleExists() {
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+        ContextCapsuleQueryService service = service(new CapturingContextCapsuleRepository());
 
         assertThatThrownBy(() -> service.get(OWNER_ID, CAPSULE_ID))
                 .isInstanceOf(ContextCapsuleNotFoundException.class);
+    }
+
+    @Test
+    void getFiltersFriendSourcesWhenConsentWasRevoked() {
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.findRecord = Optional.of(capsuleRecord(
+                "title-1",
+                "purpose-1",
+                true,
+                List.of(sourceRecord(POST_ID, FRIEND_ID))));
+        FriendshipAccessService friendshipAccessService = mock(FriendshipAccessService.class);
+        AiSharingConsentReader consentReader = mock(AiSharingConsentReader.class);
+        given(friendshipAccessService.hasAcceptedFriendship(OWNER_ID, FRIEND_ID)).willReturn(true);
+        given(consentReader.isFriendAiSharingEnabled(FRIEND_ID)).willReturn(false);
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(
+                repository,
+                friendshipAccessService,
+                consentReader);
+
+        ContextCapsuleResponse response = service.get(OWNER_ID, CAPSULE_ID);
+
+        assertThat(response.containsFriendContext()).isTrue();
+        assertThat(response.sources()).isEmpty();
     }
 
     @Test
@@ -78,11 +106,11 @@ class ContextCapsuleQueryServiceTest {
                 List.of("tag1", "tag2"),
                 false,
                 List.of(
-                        sourceRecord(POST_ID),
-                        sourceRecord(secondPostId)),
+                        sourceRecord(POST_ID, OWNER_ID),
+                        sourceRecord(secondPostId, OWNER_ID)),
                 NOW,
                 NOW));
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+        ContextCapsuleQueryService service = service(repository);
 
         ContextCapsuleCompactContextResponse response = service.compactContext(OWNER_ID, CAPSULE_ID);
 
@@ -97,8 +125,29 @@ class ContextCapsuleQueryServiceTest {
     }
 
     @Test
+    void compactContextBlocksFriendCapsuleWhenConsentWasRevoked() {
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.findRecord = Optional.of(capsuleRecord(
+                "title-1",
+                "purpose-1",
+                true,
+                List.of(sourceRecord(POST_ID, FRIEND_ID))));
+        FriendshipAccessService friendshipAccessService = mock(FriendshipAccessService.class);
+        AiSharingConsentReader consentReader = mock(AiSharingConsentReader.class);
+        given(friendshipAccessService.hasAcceptedFriendship(OWNER_ID, FRIEND_ID)).willReturn(true);
+        given(consentReader.isFriendAiSharingEnabled(FRIEND_ID)).willReturn(false);
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(
+                repository,
+                friendshipAccessService,
+                consentReader);
+
+        assertThatThrownBy(() -> service.compactContext(OWNER_ID, CAPSULE_ID))
+                .isInstanceOf(ContextCapsuleFriendContextStaleException.class);
+    }
+
+    @Test
     void compactContextThrowsNotFoundWhenNoActiveCapsuleExists() {
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+        ContextCapsuleQueryService service = service(new CapturingContextCapsuleRepository());
 
         assertThatThrownBy(() -> service.compactContext(OWNER_ID, CAPSULE_ID))
                 .isInstanceOf(ContextCapsuleNotFoundException.class);
@@ -106,7 +155,7 @@ class ContextCapsuleQueryServiceTest {
 
     @Test
     void listRejectsInvalidPageParameters() {
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+        ContextCapsuleQueryService service = service(new CapturingContextCapsuleRepository());
 
         assertThatThrownBy(() -> service.list(OWNER_ID, -1, 20))
                 .isInstanceOf(ContextCapsuleInvalidQueryException.class);
@@ -122,14 +171,18 @@ class ContextCapsuleQueryServiceTest {
     void listRoundsUpTotalPagesForPartialLastPage() {
         CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
         repository.totalCount = 5;
-        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+        ContextCapsuleQueryService service = service(repository);
 
         ContextCapsuleListResponse response = service.list(OWNER_ID, 1, 2);
 
         assertThat(response.page()).isEqualTo(new ContextCapsulePageResponse(1, 2, 5, 3));
     }
 
-    private static ContextCapsuleRecord capsuleRecord(String title, String purpose) {
+    private static ContextCapsuleRecord capsuleRecord(
+            String title,
+            String purpose,
+            boolean containsFriendContext,
+            List<ContextCapsuleSourceRecord> sources) {
         return new ContextCapsuleRecord(
                 CAPSULE_ID,
                 OWNER_ID,
@@ -139,22 +192,29 @@ class ContextCapsuleQueryServiceTest {
                 "summary",
                 List.of(),
                 List.of("tag1"),
-                false,
-                List.of(),
+                containsFriendContext,
+                sources,
                 NOW,
                 NOW);
     }
 
-    private static ContextCapsuleSourceRecord sourceRecord(UUID postId) {
+    private static ContextCapsuleSourceRecord sourceRecord(UUID postId, UUID ownerUserId) {
         return new ContextCapsuleSourceRecord(
                 postId,
                 UUID.fromString("55555555-5555-5555-5555-555555555555"),
-                OWNER_ID,
+                ownerUserId,
                 "cutan",
                 "source-title",
                 "source-snippet",
                 "post",
                 NOW);
+    }
+
+    private ContextCapsuleQueryService service(ContextCapsuleRepository repository) {
+        return new ContextCapsuleQueryService(
+                repository,
+                mock(FriendshipAccessService.class),
+                mock(AiSharingConsentReader.class));
     }
 
     private static class CapturingContextCapsuleRepository implements ContextCapsuleRepository {

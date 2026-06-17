@@ -48,10 +48,10 @@ P4 화면은 구현에서 누락하지 않되, P0~P3 기능이 동작한 뒤 pol
 | `/app/friends` | S-09 친구 목록 / 요청 | 인증 | friendships, friend requests |
 | `/app/friends/feed` | S-10 친구 기록 피드 | 인증 | `GET /api/v1/posts?scope=friends` |
 | `/app/capsules` | S-11 Capsule 목록 | 인증 | `GET /api/v1/context-capsules` |
-| `/app/capsules/new` | S-12 Capsule 생성 | 인증 | `POST /api/v1/context-capsules` |
-| `/app/capsules/:capsuleId` | S-12 Capsule 상세 | 인증 | capsule detail/update/delete, compact context |
+| `/app/capsules/new` | S-12 Capsule 생성 | 인증 | `POST /api/v1/context-capsules`; P3 friend Capsule은 `scope=friend`, `friendId` 포함 |
+| `/app/capsules/:capsuleId` | S-12 Capsule 상세 | 인증 | capsule detail/update/delete, compact context; friend context stale 시 `409 FRIEND_CONTEXT_CAPSULE_STALE` 표시 |
 | `/app/settings` | S-13 설정 | 인증 | `GET /api/v1/auth/me`, privacy toggle |
-| `/app/friends/:friendId/gift` | S-14 선물 추천 | 인증 | gift recommendations, jobs polling |
+| `/app/friends/:friendId/gift` | S-14 선물 추천 | 인증 + 친구 AI 공유 동의 | `POST /api/v1/friends/{friendId}/gift-recommendations`, jobs polling |
 | `/app/agent` | S-15 Agent 실행 | 인증 | `POST /api/v1/agent-runs`, run status |
 | `/app/agent/approvals/:runId` | S-16 승인 대기 | 인증 | approve/reject pending approval |
 | `/app/agent/history` | S-17 Agent 실행 이력 | 인증 | `GET /api/v1/agent-runs?page=0&size=20` |
@@ -226,6 +226,7 @@ frontend/src/mock/
 | P2 | AI 요약 200 응답과 202 polling 응답 모두 처리, citation 링크로 원본 상세 이동 |
 | P2 | 친구 요청/수락 후 친구 피드 조회, AI 공유 미동의 친구의 선물 추천 버튼 disabled |
 | P2 | Capsule 생성/상세/수정/삭제와 compact JSON 복사 toast |
+| P3 | 친구 카드에서 AI 공유 동의 친구만 선물 추천 진입, 추천 결과와 출처 표시 |
 | P3 | Agent 실행 후 `pending/running/approval_required/succeeded/failed` 상태 표시 |
 | P4 | 승인/거절 버튼은 `approval_required`에서만 활성화, 실행 이력 목록에서 상세와 step 타임라인 진입 |
 | 반응형 | desktop SNB collapse, mobile header/hamburger, 긴 한글 텍스트 overflow 없음 |

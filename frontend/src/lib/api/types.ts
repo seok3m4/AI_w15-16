@@ -276,6 +276,42 @@ export type AiSharingSettingResponse = {
   updatedAt: string;
 };
 
+export type GiftBudgetRequest = {
+  min?: number | null;
+  max?: number | null;
+  currency?: string | null;
+};
+
+export type FriendGiftRecommendationRequest = {
+  occasion?: string;
+  budget?: GiftBudgetRequest | null;
+  preferences?: string;
+  maxSources?: number;
+};
+
+export type GiftRecommendationItemResponse = {
+  title: string;
+  reason: string;
+  confidence: string;
+};
+
+export type GiftRecommendationSourceResponse = {
+  ownerUserId: string;
+  ownerNickname: string;
+  postId: string;
+  title: string;
+  sourceType: string;
+  summary: string;
+};
+
+export type FriendGiftRecommendationResponse = {
+  friendId: string;
+  occasion: string;
+  answer: string;
+  recommendations: GiftRecommendationItemResponse[];
+  sources: GiftRecommendationSourceResponse[];
+};
+
 export type ContextCapsuleSummaryResponse = {
   id: string;
   title: string;
@@ -327,7 +363,8 @@ export type CreateContextCapsuleRequest = {
   title: string;
   purpose: string;
   query?: string | null;
-  scope?: 'me';
+  scope?: 'me' | 'friend';
+  friendId?: string | null;
   sourcePostIds?: string[] | null;
 };
 

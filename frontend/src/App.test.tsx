@@ -1790,4 +1790,83 @@ describe('App auth flow', () => {
     expect(await screen.findByText(/Memory job:/)).toBeInTheDocument();
     await waitFor(() => expect(jobCalls).toBeGreaterThanOrEqual(1));
   });
+
+  it('opens a friend gift recommendation page and shows recommendations with sources', async () => {
+    window.history.pushState({}, '', '/app/friends');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.includes('/friendships?')) {
+        const status = new URL(url).searchParams.get('status');
+        const items =
+          status === 'accepted'
+            ? [
+                friendshipItem({
+                  user: {
+                    id: FRIEND_ID,
+                    nickname: 'gift friend',
+                    friendAiSharingEnabled: true,
+                  },
+                }),
+              ]
+            : [];
+        return jsonResponse({
+          items,
+          page: { page: 0, size: 20, totalCount: items.length, totalPages: 1 },
+        });
+      }
+      if (url.endsWith(`/friends/${FRIEND_ID}/gift-recommendations`) && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          occasion: 'birthday',
+          budget: { min: 30000, max: 70000, currency: 'KRW' },
+          preferences: 'coffee',
+          maxSources: 5,
+        });
+        return jsonResponse({
+          friendId: FRIEND_ID,
+          occasion: 'birthday',
+          answer: 'Coffee sampler is a good fit.',
+          recommendations: [
+            {
+              title: 'Coffee sampler',
+              reason: 'Coffee appeared in shared records.',
+              confidence: 'medium',
+            },
+          ],
+          sources: [
+            {
+              ownerUserId: FRIEND_ID,
+              ownerNickname: 'gift friend',
+              postId: FIRST_POST_ID,
+              title: 'Coffee notes',
+              sourceType: 'post',
+              summary: 'Recently interested in coffee.',
+            },
+          ],
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('gift friend')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: '선물 추천' }));
+
+    expect(await screen.findByRole('heading', { name: '선물 추천' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('예산 최소'), { target: { value: '30000' } });
+    fireEvent.change(screen.getByLabelText('예산 최대'), { target: { value: '70000' } });
+    fireEvent.change(screen.getByLabelText('추가 선호'), { target: { value: 'coffee' } });
+    fireEvent.click(screen.getByRole('button', { name: '추천 받기' }));
+
+    expect(await screen.findByText('Coffee sampler is a good fit.')).toBeInTheDocument();
+    expect(screen.getByText('Coffee sampler')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Coffee notes' })).toHaveAttribute(
+      'href',
+      `/app/posts/${FIRST_POST_ID}`,
+    );
+  });
 });

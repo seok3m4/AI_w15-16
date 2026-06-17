@@ -1,6 +1,9 @@
 import { apiRequest } from './client';
 import {
   CreateFriendshipRequest,
+  FriendGiftRecommendationRequest,
+  FriendGiftRecommendationResponse,
+  AsyncJobResponse,
   FriendshipListResponse,
   FriendshipResponse,
   FriendshipStatus,
@@ -25,6 +28,7 @@ export const friendshipQueryKeys = {
         status: params.status ?? 'accepted',
       },
     ] as const,
+  gift: (friendId: string) => ['friendships', 'gift', friendId] as const,
 };
 
 export function listFriendships(
@@ -60,5 +64,15 @@ export function rejectFriendship(friendshipId: string): Promise<FriendshipStatus
 export function deleteFriendship(friendshipId: string): Promise<void> {
   return apiRequest<void>(`/friendships/${friendshipId}`, {
     method: 'DELETE',
+  });
+}
+
+export function recommendFriendGifts(
+  friendId: string,
+  request: FriendGiftRecommendationRequest,
+): Promise<FriendGiftRecommendationResponse | AsyncJobResponse> {
+  return apiRequest<FriendGiftRecommendationResponse | AsyncJobResponse>(`/friends/${friendId}/gift-recommendations`, {
+    body: request,
+    method: 'POST',
   });
 }

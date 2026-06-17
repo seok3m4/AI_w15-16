@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,6 +30,8 @@ class ContextCapsuleControllerTest {
             UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID CAPSULE_ID =
             UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID FRIEND_ID =
+            UUID.fromString("12121212-1212-1212-1212-121212121212");
     private static final UUID POST_ID =
             UUID.fromString("33333333-3333-3333-3333-333333333333");
     private static final Instant NOW = Instant.parse("2026-06-17T00:00:00Z");
@@ -123,6 +126,35 @@ class ContextCapsuleControllerTest {
                 .andExpect(jsonPath("$.tags[0]").value("tag"));
 
         verify(queryService).compactContext(USER_ID, CAPSULE_ID);
+    }
+
+    @Test
+    void createFriendContextCapsuleMapsMissingConsentToForbidden() throws Exception {
+        CreateContextCapsuleRequest request =
+                new CreateContextCapsuleRequest("Friend capsule", "gift planning", "birthday", "friend", FRIEND_ID, null);
+        given(createService.create(USER_ID, request)).willThrow(new ContextCapsuleFriendContextNotAllowedException());
+
+        mockMvc.perform(post("/api/v1/context-capsules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FRIEND_AI_CONTEXT_NOT_ALLOWED"));
+    }
+
+    @Test
+    void compactContextMapsStaleFriendContextToConflict() throws Exception {
+        given(queryService.compactContext(USER_ID, CAPSULE_ID))
+                .willThrow(new ContextCapsuleFriendContextStaleException());
+
+        mockMvc.perform(get("/api/v1/context-capsules/{contextCapsuleId}/compact-context", CAPSULE_ID)
+                        .requestAttr(
+                                AuthenticatedUserPrincipal.REQUEST_ATTRIBUTE,
+                                new AuthenticatedUserPrincipal(USER_ID)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FRIEND_CONTEXT_CAPSULE_STALE"));
     }
 
     @Test

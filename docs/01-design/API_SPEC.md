@@ -335,6 +335,80 @@ Response `200 OK`:
 - provider refusal은 `502` 안전 오류로 변환한다.
 - API key, provider 원문 응답, raw prompt, 사용자 memory 원문 전체는 오류 응답이나 로그에 저장하지 않는다.
 
+### 2.12 Spring Boot → FastAPI 내부 친구 선물 추천 API
+
+이 API는 React가 직접 호출하지 않고, Spring Boot가 친구 관계와 친구 AI 공유 동의를 검증한 뒤 친구 memory source만 전달한다. FastAPI는 전달받은 근거 외의 친구 정보를 조회하거나 권한을 판단하지 않는다.
+
+```http
+POST /internal/v1/friend-gift-recommendations
+```
+
+Request:
+
+```json
+{
+  "requestId": "req-uuid",
+  "jobId": "job-uuid",
+  "idempotencyKey": "gift-recommendation-job-key",
+  "friendId": "friend-user-uuid",
+  "occasion": "birthday",
+  "preferences": "부담스럽지 않은 선물",
+  "budget": {
+    "min": 30000,
+    "max": 70000,
+    "currency": "KRW"
+  },
+  "maxSources": 5,
+  "sources": [
+    {
+      "postId": "post-uuid",
+      "chunkId": "chunk-uuid",
+      "ownerUserId": "friend-user-uuid",
+      "ownerNickname": "friend",
+      "title": "요즘 좋아하는 카페",
+      "snippet": "핸드드립 커피에 관심이 생겼다.",
+      "sourceType": "post",
+      "createdAt": "2026-06-15T03:10:00Z"
+    }
+  ]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "provider": "mock",
+  "model": "gpt-5.4-mini",
+  "friendId": "friend-user-uuid",
+  "occasion": "birthday",
+  "answer": "공유된 기록만 보면 커피 관련 선물이 적합합니다.",
+  "recommendations": [
+    {
+      "title": "원두 샘플러",
+      "reason": "커피 관심사가 공유 기록에 있습니다.",
+      "confidence": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "ownerUserId": "friend-user-uuid",
+      "ownerNickname": "friend",
+      "postId": "post-uuid",
+      "title": "요즘 좋아하는 카페",
+      "sourceType": "post",
+      "summary": "핸드드립 커피에 관심을 보인 기록"
+    }
+  ]
+}
+```
+
+처리 규칙:
+
+- `AI_PROVIDER=mock`이면 외부 API 호출 없이 deterministic 추천을 반환한다.
+- `AI_PROVIDER=openai`이면 `AI_SUMMARY_MODEL`을 사용하고, `store: false`와 strict JSON schema로 구조화 출력만 허용한다.
+- 답변은 전달된 source에만 근거해야 하며, 사적·민감 추론을 하지 않는다.
+
 ## 3. 공통 스키마
 
 ### 3.1 UserPublicSummary
@@ -1372,6 +1446,25 @@ Response `200 OK`:
 ```
 
 `sourcePostIds`는 Capsule 생성 시 검증되어 저장된 근거 게시글 ID만 포함한다. 현재 사용자 소유의 active Capsule만 조회할 수 있으며, 미존재/삭제/타인 소유 Capsule은 `CAPSULE_NOT_FOUND`로 은닉한다.
+
+### 8.7 Friend context Capsule consent policy
+
+Friend context Capsule creation uses the same endpoint as 8.1 with the following request shape:
+
+```json
+{
+  "title": "Birthday gift context",
+  "purpose": "Share only consented friend memory evidence with an external LLM",
+  "query": "birthday gift preferences",
+  "scope": "friend",
+  "friendId": "friend-user-uuid",
+  "sourcePostIds": null
+}
+```
+
+`scope=friend` requires `friendId`. The requester and friend must have an accepted friendship, and the friend must have `friendAiSharingEnabled=true`; otherwise the API returns `403 FRIEND_AI_CONTEXT_NOT_ALLOWED`. The stored Capsule sets `containsFriendContext=true` and persists the selected friend sources.
+
+Detail reads re-check current access to friend sources. If a friend source owner is no longer an accepted friend or no longer has friend AI sharing enabled, that source is omitted from `sources`. Compact context export is stricter because the stored summary/key facts may already contain friend-derived context: `GET /api/v1/context-capsules/{capsuleId}/compact-context` returns `409 FRIEND_CONTEXT_CAPSULE_STALE` until the Capsule is regenerated from currently allowed sources.
 
 ## 9. Agent와 승인 API
 

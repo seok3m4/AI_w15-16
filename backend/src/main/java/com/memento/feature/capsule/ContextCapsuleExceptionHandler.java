@@ -48,6 +48,28 @@ class ContextCapsuleExceptionHandler {
                 request.getRequestURI());
     }
 
+    @ExceptionHandler(ContextCapsuleFriendContextNotAllowedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    ProblemDetailsResponse handleFriendContextNotAllowed(HttpServletRequest request) {
+        return problem(
+                "Friend AI context not allowed",
+                HttpStatus.FORBIDDEN,
+                "FRIEND_AI_CONTEXT_NOT_ALLOWED",
+                "Accepted friendship and friend AI sharing consent are required.",
+                request.getRequestURI());
+    }
+
+    @ExceptionHandler(ContextCapsuleFriendContextStaleException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    ProblemDetailsResponse handleFriendContextStale(HttpServletRequest request) {
+        return problem(
+                "Friend context capsule must be regenerated",
+                HttpStatus.CONFLICT,
+                "FRIEND_CONTEXT_CAPSULE_STALE",
+                "Friend context is no longer available. Regenerate this capsule before exporting compact context.",
+                request.getRequestURI());
+    }
+
     @ExceptionHandler(ContextCapsuleNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     ProblemDetailsResponse handleNotFound(HttpServletRequest request) {

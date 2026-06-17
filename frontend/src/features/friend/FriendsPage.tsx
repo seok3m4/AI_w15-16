@@ -176,6 +176,20 @@ function FriendList({
                   <Link className="button button-secondary" to="/app/friends/feed">
                     기록 보기
                   </Link>
+                  {item.user.friendAiSharingEnabled === true ? (
+                    <Link className="button button-secondary" to={`/app/friends/${item.user.id}/gift`}>
+                      선물 추천
+                    </Link>
+                  ) : (
+                    <button
+                      className="button button-secondary"
+                      disabled
+                      title="친구가 AI 공유에 동의하지 않았습니다"
+                      type="button"
+                    >
+                      선물 추천
+                    </button>
+                  )}
                   <button
                     className="button button-danger"
                     onClick={() => onDelete(item.id)}

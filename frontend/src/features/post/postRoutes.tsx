@@ -1,6 +1,7 @@
 import { Navigate, Route } from 'react-router-dom';
 import { CapsuleCreatePage, CapsuleDetailPage, CapsuleListPage } from '../capsule/CapsulePages';
 import { FriendFeedPage } from '../friend/FriendFeedPage';
+import { FriendGiftPage } from '../friend/FriendGiftPage';
 import { FriendsPage } from '../friend/FriendsPage';
 import { MemorySearchPage } from '../memory-search/MemorySearchPage';
 import { SettingsPage } from '../settings/SettingsPage';
@@ -14,6 +15,7 @@ export const postRoutes = (
     <Route index element={<PostFeedPage />} />
     <Route path="friends" element={<FriendsPage />} />
     <Route path="friends/feed" element={<FriendFeedPage />} />
+    <Route path="friends/:friendId/gift" element={<FriendGiftPage />} />
     <Route path="search" element={<PostSearchPage />} />
     <Route path="memory-search" element={<MemorySearchPage />} />
     <Route path="capsules" element={<CapsuleListPage />} />
