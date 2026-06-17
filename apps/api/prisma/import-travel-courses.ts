@@ -48,7 +48,9 @@ type SeedCourse = {
 
 type Args = {
   dryRun: boolean;
+  overwriteThumbnails: boolean;
   skipEmbeddings: boolean;
+  thumbnailsOnly: boolean;
   filePath: string;
   envFilePath: string;
 };
@@ -59,7 +61,9 @@ function parseArgs(): Args {
 
   return {
     dryRun: args.includes('--dry-run'),
+    overwriteThumbnails: args.includes('--overwrite-thumbnails'),
     skipEmbeddings: args.includes('--skip-embeddings'),
+    thumbnailsOnly: args.includes('--thumbnails-only'),
     filePath:
       args
         .find((arg) => arg.startsWith('--file='))
@@ -203,8 +207,65 @@ async function createCourse(
   });
 }
 
+async function backfillThumbnails(
+  prisma: PrismaClient,
+  courses: SeedCourse[],
+  overwriteThumbnails: boolean,
+) {
+  let updated = 0;
+  let skippedWithoutImage = 0;
+  let skippedAlreadySet = 0;
+  let missingPosts = 0;
+
+  for (const course of courses) {
+    if (!course.thumbnailUrl) {
+      skippedWithoutImage += 1;
+      continue;
+    }
+
+    const result = await prisma.post.updateMany({
+      where: overwriteThumbnails
+        ? { id: course.id }
+        : {
+            id: course.id,
+            OR: [{ thumbnailUrl: null }, { thumbnailUrl: '' }],
+          },
+      data: {
+        thumbnailUrl: course.thumbnailUrl,
+      },
+    });
+
+    if (result.count > 0) {
+      updated += result.count;
+      continue;
+    }
+
+    const existing = await prisma.post.findUnique({
+      where: { id: course.id },
+      select: { thumbnailUrl: true },
+    });
+
+    if (!existing) {
+      missingPosts += 1;
+    } else {
+      skippedAlreadySet += 1;
+    }
+  }
+
+  console.log(
+    `Thumbnail backfill complete. updated=${updated}, alreadySet=${skippedAlreadySet}, missingPosts=${missingPosts}, withoutImage=${skippedWithoutImage}`,
+  );
+}
+
 async function main() {
-  const { dryRun, envFilePath, filePath, skipEmbeddings } = parseArgs();
+  const {
+    dryRun,
+    envFilePath,
+    filePath,
+    overwriteThumbnails,
+    skipEmbeddings,
+    thumbnailsOnly,
+  } = parseArgs();
   const courses = readCourses(filePath);
   const ids = courses.map((course) => course.id);
 
@@ -212,17 +273,24 @@ async function main() {
     throw new Error('Import file contains duplicate course ids.');
   }
 
+  const imageCount = courses.filter((course) => course.thumbnailUrl).length;
   console.log(
-    `Ready to import ${courses.length} courses across ${SAMPLE_USERS.length} sample users.`,
+    thumbnailsOnly
+      ? `Ready to backfill thumbnails for ${imageCount}/${courses.length} courses.`
+      : `Ready to import ${courses.length} courses across ${SAMPLE_USERS.length} sample users.`,
   );
   console.log(`Environment file: ${envFilePath}`);
 
-  const distribution = new Map<string, number>();
-  courses.forEach((_, index) => {
-    const user = SAMPLE_USERS[index % SAMPLE_USERS.length];
-    distribution.set(user.name, (distribution.get(user.name) ?? 0) + 1);
-  });
-  console.table([...distribution.entries()].map(([name, count]) => ({ name, count })));
+  if (!thumbnailsOnly) {
+    const distribution = new Map<string, number>();
+    courses.forEach((_, index) => {
+      const user = SAMPLE_USERS[index % SAMPLE_USERS.length];
+      distribution.set(user.name, (distribution.get(user.name) ?? 0) + 1);
+    });
+    console.table(
+      [...distribution.entries()].map(([name, count]) => ({ name, count })),
+    );
+  }
 
   if (dryRun) {
     console.log('Dry run complete. No database changes were made.');
@@ -243,6 +311,11 @@ async function main() {
   await prisma.$connect();
 
   try {
+    if (thumbnailsOnly) {
+      await backfillThumbnails(prisma, courses, overwriteThumbnails);
+      return;
+    }
+
     const authors = await upsertSampleUsers(prisma);
     await prisma.post.deleteMany({ where: { id: { in: ids } } });
 
