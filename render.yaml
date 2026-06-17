@@ -5,8 +5,7 @@ services:
     plan: free
     region: singapore
     buildCommand: npm ci && npm run build -w mcp-server && npm run prisma:generate -w api && npm run build -w api
-    preDeployCommand: cd apps/api && npx prisma migrate deploy
-    startCommand: npm run start:prod -w api
+    startCommand: cd apps/api && npx prisma migrate deploy && npm run start:prod
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
