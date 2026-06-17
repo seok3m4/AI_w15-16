@@ -3,6 +3,7 @@
 // 검색된 코스를 컨텍스트로 넣어 게시판 Q&A 답변을 생성한다.
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { getSeedThumbnailUrl } from '../common/seed-thumbnails';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenAiService } from './openai.service';
 
@@ -253,7 +254,7 @@ export class RagService {
     city: row.city,
     content: row.content,
     duration: row.duration,
-    thumbnailUrl: row.thumbnailUrl,
+    thumbnailUrl: row.thumbnailUrl ?? getSeedThumbnailUrl(row.id),
     authorName: row.authorName,
     places: [],
     similarity: Number(row.similarity),
@@ -374,7 +375,7 @@ export class RagService {
         city: post.city,
         content: post.content,
         duration: post.duration,
-        thumbnailUrl: post.thumbnailUrl,
+        thumbnailUrl: post.thumbnailUrl ?? getSeedThumbnailUrl(post.id),
         authorName: post.author.name,
         places: [],
         similarity: score,
@@ -493,6 +494,7 @@ type SimilarRow = {
 
 // Prisma include 결과 중 키워드 fallback 점수 계산에 필요한 필드만 표현한 타입.
 type KeywordPost = {
+  id: string;
   title: string;
   city: string;
   content: string;
