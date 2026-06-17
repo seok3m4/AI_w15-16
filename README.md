@@ -411,9 +411,9 @@ npx.cmd prisma migrate status
 
 ## 12. 데모
 
-### 데모 화면
+### 메인 페이지 데모 화면
 
-![KBO Talk 데모 화면](docs/screenshots/baseball-ai-board-demo.png)
+![KBO Talk 메인 페이지 데모 화면](docs/screenshots/baseball-ai-board-demo.png)
 
 ### 추천 시연 흐름
 
