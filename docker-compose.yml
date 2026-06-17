@@ -1,0 +1,27 @@
+# 여러 컨테이너 서비스를 정의하는 Docker Compose 파일
+services:
+  # PostgreSQL 데이터베이스 서비스 이름
+  db:
+    # pgvector 확장이 포함된 PostgreSQL 이미지
+    image: pgvector/pgvector:pg16
+
+    # 컨테이너 이름
+    container_name: cine-review-db
+
+    # PostgreSQL 접속 정보
+    environment:
+      POSTGRES_USER: cine
+      POSTGRES_PASSWORD: cine_password
+      POSTGRES_DB: cine_review_ai
+
+    # 로컬 5433 포트를 컨테이너 5432 포트와 연결
+    ports:
+      - "5433:5432"
+
+    # DB 데이터를 컨테이너 삭제 후에도 유지하기 위한 볼륨
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# Docker가 관리하는 데이터 저장 공간
+volumes:
+  postgres_data:
