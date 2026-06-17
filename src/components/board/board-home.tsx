@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { BoardAssistantPanel } from "@/components/ai/board-assistant-panel";
-import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
 import { HotPostsPanel } from "@/components/board/hot-posts-panel";
 import { TeamTabs } from "@/components/games/team-tabs";
 import { TodayGameHub } from "@/components/games/today-game-hub";
@@ -71,7 +70,7 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
               태그 {selectedTags.length}개
             </span>
             <Link className="community-chip community-chip-link" href="/records">
-              기록실
+              순위/기록실
             </Link>
             <Link className="community-chip community-chip-link" href="/news">
               뉴스
@@ -105,7 +104,6 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
             onToggleTag={handleToggleTag}
             selectedTags={selectedTags}
           />
-          <KboStandingsPanel />
         </aside>
 
         <main className="min-w-0">

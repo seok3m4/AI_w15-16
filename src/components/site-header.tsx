@@ -7,7 +7,7 @@ import { AuthStatus } from "@/components/auth/auth-status";
 
 const navLinks = [
   { href: "/", label: "홈", match: "/" },
-  { href: "/records", label: "기록실", match: "/records" },
+  { href: "/records", label: "순위/기록실", match: "/records" },
   { href: "/news", label: "뉴스", match: "/news" },
   { href: "/posts/new", label: "글쓰기", match: "/posts/new" },
 ];

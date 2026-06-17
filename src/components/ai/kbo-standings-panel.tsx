@@ -120,7 +120,7 @@ export function KboStandingsPanel() {
     <section className="community-panel">
       <div className="community-panel-header">
         <div>
-          <h2 className="text-sm font-black text-[#1f3470]">KBO 순위</h2>
+          <h2 className="text-sm font-black text-[#1f3470]">KBO 팀 순위</h2>
         </div>
         <button
           className="text-xs font-bold text-[#667085] hover:text-[#2f4f9f] hover:underline disabled:cursor-not-allowed disabled:opacity-40"
@@ -162,35 +162,82 @@ export function KboStandingsPanel() {
       ) : null}
 
       {!isLoading && data?.result ? (
-        <ol className="divide-y divide-[#edf1f7]">
-          {data.result.rows.map((row) => (
-            <li className="flex gap-2 px-3 py-2" key={row.team}>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-[#2f4f9f] text-xs font-black text-white">
-                {row.rank}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="truncate text-xs font-black text-[#202632]">
-                    {row.team}
-                  </p>
-                  <span className="shrink-0 text-xs font-black text-[#1f3470]">
-                    {row.winningRate}
-                  </span>
+        <>
+          <ol className="divide-y divide-[#edf1f7] md:hidden">
+            {data.result.rows.map((row) => (
+              <li className="flex gap-2 px-3 py-2" key={row.team}>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-[#2f4f9f] text-xs font-black text-white">
+                  {row.rank}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-xs font-black text-[#202632]">
+                      {row.team}
+                    </p>
+                    <span className="shrink-0 text-xs font-black text-[#1f3470]">
+                      {row.winningRate}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#667085]">
+                    <span>
+                      {row.wins}승 {row.draws}무 {row.losses}패
+                    </span>
+                    <span>GB {row.gamesBehind}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#8a94a6]">
+                    <span>최근 10경기 {row.lastTenGames}</span>
+                    <span>{row.streak}</span>
+                  </div>
                 </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#667085]">
-                  <span>
-                    {row.wins}승 {row.draws}무 {row.losses}패
-                  </span>
-                  <span>GB {row.gamesBehind}</span>
-                </div>
-                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-[#8a94a6]">
-                  <span>최근 10경기 {row.lastTenGames}</span>
-                  <span>{row.streak}</span>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ol>
+              </li>
+            ))}
+          </ol>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[860px] border-collapse text-sm text-[#344054]">
+              <thead className="bg-[#f6f8fc] text-xs font-black text-[#667085]">
+                <tr>
+                  <th className="w-14 px-3 py-2 text-center">순위</th>
+                  <th className="px-3 py-2 text-left">팀</th>
+                  <th className="px-3 py-2 text-right">경기</th>
+                  <th className="px-3 py-2 text-right">승</th>
+                  <th className="px-3 py-2 text-right">무</th>
+                  <th className="px-3 py-2 text-right">패</th>
+                  <th className="px-3 py-2 text-right">승률</th>
+                  <th className="px-3 py-2 text-right">GB</th>
+                  <th className="px-3 py-2 text-right">최근 10경기</th>
+                  <th className="px-3 py-2 text-right">연속</th>
+                  <th className="px-3 py-2 text-right">홈</th>
+                  <th className="px-3 py-2 text-right">원정</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#edf1f7]">
+                {data.result.rows.map((row) => (
+                  <tr className="bg-white hover:bg-[#fbfcff]" key={row.team}>
+                    <td className="px-3 py-2 text-center font-black text-[#1f3470]">
+                      {row.rank}
+                    </td>
+                    <td className="px-3 py-2 font-black text-[#202632]">
+                      {row.team}
+                    </td>
+                    <td className="px-3 py-2 text-right">{row.games}</td>
+                    <td className="px-3 py-2 text-right">{row.wins}</td>
+                    <td className="px-3 py-2 text-right">{row.draws}</td>
+                    <td className="px-3 py-2 text-right">{row.losses}</td>
+                    <td className="px-3 py-2 text-right font-black text-[#d71920]">
+                      {row.winningRate}
+                    </td>
+                    <td className="px-3 py-2 text-right">{row.gamesBehind}</td>
+                    <td className="px-3 py-2 text-right">{row.lastTenGames}</td>
+                    <td className="px-3 py-2 text-right">{row.streak}</td>
+                    <td className="px-3 py-2 text-right">{row.homeRecord}</td>
+                    <td className="px-3 py-2 text-right">{row.awayRecord}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : null}
     </section>
   );

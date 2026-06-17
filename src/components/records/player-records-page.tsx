@@ -3,6 +3,8 @@
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 
+import { KboStandingsPanel } from "@/components/ai/kbo-standings-panel";
+
 type RecordType = "hitter" | "pitcher";
 
 type PlayerRecord = {
@@ -637,13 +639,28 @@ export function PlayerRecordsPage() {
   }
 
   return (
-    <section className="page-shell">
+    <section className="page-shell space-y-4">
       <div className="community-panel">
         <div className="community-page-header">
           <div>
             <h1 className="text-xl font-black tracking-tight text-[#071a3d]">
-              선수 기록실
+              순위/기록실
             </h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">
+              KBO 팀 순위와 선수 주요 기록을 한 페이지에서 확인합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <KboStandingsPanel />
+
+      <div className="community-panel">
+        <div className="community-page-header">
+          <div>
+            <h2 className="text-xl font-black tracking-tight text-[#071a3d]">
+              선수 기록실
+            </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">
               타자와 투수 주요 기록을 한 화면에서 비교하고, 선수명이나 팀으로 빠르게 찾아봅니다.
             </p>
