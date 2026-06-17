@@ -1,7 +1,7 @@
 services:
   - type: web
     runtime: node
-    name: week15-board-api
+    name: ai-w15-16-board-api
     plan: free
     region: singapore
     buildCommand: npm ci && npm run build -w mcp-server && npm run prisma:generate -w api && npm run build -w api
@@ -10,13 +10,13 @@ services:
     autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
-        value: 24.15.0
+        value: 24.14.1
       - key: DATABASE_URL
         fromDatabase:
-          name: week15-board-db
+          name: ai-w15-16-board-db
           property: connectionString
       - key: FRONTEND_URL
-        value: https://week15-board-web.onrender.com
+        value: https://ai-w15-16-board-web.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -28,15 +28,15 @@ services:
 
   - type: web
     runtime: static
-    name: week15-board-web
+    name: ai-w15-16-board-web
     buildCommand: npm ci && npm run build -w web
     staticPublishPath: apps/web/dist
     autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
-        value: 24.15.0
+        value: 24.14.1
       - key: VITE_API_BASE_URL
-        value: https://week15-board-api.onrender.com
+        value: https://ai-w15-16-board-api.onrender.com
       - key: VITE_KAKAO_MAP_KEY
         sync: false
     routes:
@@ -45,7 +45,7 @@ services:
         destination: /index.html
 
 databases:
-  - name: week15-board-db
+  - name: ai-w15-16-board-db
     plan: free
     region: singapore
     postgresMajorVersion: "16"
