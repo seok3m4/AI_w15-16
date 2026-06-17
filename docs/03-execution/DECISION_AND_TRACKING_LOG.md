@@ -38,7 +38,7 @@
 | D13 | Capsule compact context JSON 구조 | T5 | P2 | `purpose,summary,keyFacts[],sourcePostIds[],tags[]` | 확정 |
 | D14 | 친구 AI 동의 철회 후 기존 Capsule/Agent 결과 정책 | T5 | P3 | 신규 사용 차단 + 기존 친구 출처는 조회 시 제외, compact context는 재생성 필요 상태로 차단 | 확정 |
 | D15 | Agent 최대 step·시간·retry 한도 | T6/T4 | P3 | step≤8, 60s, retry≤1 | 확정 |
-| D16 | MCP 인증·scope 모델, credential 형식 | T6 | P3 | scope enum + 발급/폐기 토큰 | 보류 |
+| D16 | MCP 인증·scope 모델, credential 형식 | T6 | P3 | 앱 JWT 재사용 금지. 외부 MCP client는 `mmt_mcp_` scoped token을 `Authorization: Bearer`로 사용하고, 서버는 HMAC-SHA256 hash/secret_ref만 저장한다. scope는 `memory:read`, `capsule:read`, `friend_memory:read`로 시작하며 발급·폐기 가능 | 확정 |
 | D17 | AWS 도메인·Route 53·NAT 비용 범위 | T6 | P4 | 배포 직전 결정 | 보류 |
 
 ### A-3. 결정 변경 이력
@@ -112,7 +112,7 @@
 | INFRA-0(P0-INFRA-1~5) | 스캐폴딩·compose·DB·health·마이그레이션 | 진행 | | | P0-INFRA-1 완료. P0-INFRA-2 완료: PostgreSQL+pgvector compose 및 `CREATE EXTENSION vector` 초기화 추가, `pg_extension` vector 조회와 vector 캐스팅 검증 통과. 검토 반영: 병렬 compose 실행을 위해 고정 `container_name` 제거. P0-INFRA-3 완료: Spring Boot `/api/health`, FastAPI `/health` 200 반환. P0-INFRA-4 완료: `.env.example` 및 서비스별 환경 변수 로딩 추가, `docker compose --env-file .env.local up -d`로 postgres/backend/ai-server/frontend 4개 서비스 동시 기동과 backend·ai-server health, frontend 200 응답 검증. P0-INFRA-5 완료: Spring Boot Flyway/PostgreSQL 의존성 및 timestamp baseline migration 추가, P0/P1 핵심 테이블과 `memory_embeddings.embedding vector(1536)` 생성 검증 통과. 보완: D18에 따라 `embedding` nullable + `succeeded` 상태 필수 제약 follow-up migration 추가. T1과 공동 |
 | P1-BE-3 | async_jobs 작업큐·worker | 완료 | | | 2026-06-16: `feature/jobs` 공통 큐 구현. `async_jobs` attempt 제한 migration 추가, enqueue/find/claim/succeed/fail-or-retry/timeout recovery와 handler 기반 worker 골격 구현. 아직 REST polling API와 embedding handler는 P1-BE-4~7에서 연결. `backend\\gradlew.bat test` 통과. 2026-06-16 품질 보완: `completed_at` CASE expression의 PostgreSQL `timestamptz` 타입 추론 실패로 worker timeout recovery 로그가 주기적으로 에러를 내던 문제를 명시 캐스팅으로 수정. 회귀 테스트와 최신 backend 로그 확인 통과. |
 | P3-BE-5~8 | Agent tool·실행·승인 게이트 | 진행 | | | 2026-06-17: Agent Workflow 1차 slice 구현. `agent_runs`/`agent_steps`/`agent_approvals`/`tool_call_logs` migration 추가, `POST /api/v1/agent-runs`, `GET /api/v1/agent-runs/{runId}`, `GET /api/v1/agent-runs/{runId}/steps`, approve/reject API와 `AGENT_TASK` worker handler, FastAPI `/internal/v1/agent-runs/execute` client, Spring 내부 tool callback `/internal/v1/agent-tools/{toolName}` 추가. FE `/app/agent`, `/app/agent/approvals/:runId` 연결. 내부 tool은 run owner/allowedTools/status를 검증하고, 쓰기성 tool은 승인 요구만 반환한다. P3-BE-8의 친구 데이터 기반 Agent use case는 T5/T3 friend-memory public port 실제 연결이 남아 있어 후속 보강 필요. |
-| P3-BE-9~13 | MCP Server/Client BE | 대기 | | | |
+| P3-BE-9~13 | MCP Server/Client BE | 진행 | sjin | | 2026-06-17: MCP Server 1차 구현. `POST /mcp` JSON-RPC endpoint에 `initialize`, `tools/list`, `tools/call`을 추가하고 `search_memories`, `search_friend_memories`, `get_context_capsule`, `summarize_recent_posts` tool을 Spring Boot 권한 경계에서 실행한다. `POST /api/v1/mcp/server-credentials`, `GET /api/v1/mcp/tools`, `GET /api/v1/mcp/connections`, `DELETE /api/v1/mcp/connections/{connectionId}`, `GET /api/v1/mcp/call-logs` 관리 API와 S-18 `/app/mcp` 화면을 연결했다. `mcp_connections`/`mcp_connection_secrets`/`mcp_call_logs`/`mcp_oauth_states` migration 추가. 호출 로그는 argument key, status, error code 등 마스킹 요약만 저장한다. Notion MCP Client(P3-AI-2)와 외부 호출 실패를 Agent 결과에 반영하는 P3-BE-13 전체 통합은 T4 Notion Client 구현 후 마무리 필요. |
 | P4 전체 | 이력 API·smoke·AWS 배포·문서 동기화 | 대기 | | | |
 
 ---

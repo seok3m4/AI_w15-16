@@ -5,6 +5,7 @@ import { FriendFeedPage } from '../friend/FriendFeedPage';
 import { FriendGiftPage } from '../friend/FriendGiftPage';
 import { FriendsPage } from '../friend/FriendsPage';
 import { MemorySearchPage } from '../memory-search/MemorySearchPage';
+import { McpPage } from '../mcp/McpPage';
 import { SettingsPage } from '../settings/SettingsPage';
 import { PostDetailPage } from './PostDetailPage';
 import { PostEditorPage } from './PostEditorPage';
@@ -24,6 +25,7 @@ export const postRoutes = (
     <Route path="capsules/:capsuleId" element={<CapsuleDetailPage />} />
     <Route path="agent" element={<AgentRunPage />} />
     <Route path="agent/approvals/:runId" element={<AgentApprovalPage />} />
+    <Route path="mcp" element={<McpPage />} />
     <Route path="settings" element={<SettingsPage />} />
     <Route path="posts/new" element={<PostEditorPage mode="create" />} />
     <Route path="posts/:postId" element={<PostDetailPage />} />

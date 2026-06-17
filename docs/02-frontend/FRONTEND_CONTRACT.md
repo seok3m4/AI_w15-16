@@ -59,7 +59,7 @@ P4 화면은 구현에서 누락하지 않되, P0~P3 기능이 동작한 뒤 pol
 
 인증 보호 라우트에서 access token이 없으면 `/login`으로 이동한다. API `401`은 `POST /api/v1/auth/refresh`를 한 번 시도하고, 실패하면 access token을 삭제한 뒤 `/login`으로 이동한다.
 
-P2 구현 시점에는 `/app/memory-search`, `/app/friends`, `/app/friends/feed`, `/app/capsules`, `/app/capsules/new`, `/app/capsules/:capsuleId`, `/app/settings`가 실제 API에 연결된다. Agent, MCP 항목은 후속 P3 범위 전까지 `준비중` 배지와 disabled 스타일을 유지한다.
+P3 구현 시점에는 `/app/agent`, `/app/agent/approvals/:runId`, `/app/mcp`가 실제 API에 연결된다. `/app/mcp`는 MCP Server tool catalog, scoped credential 발급/폐기, connection 상태, 최근 호출 이력을 표시한다. Notion MCP Client 연결/승인 이후 실행 결과 UI는 T4 Notion Client 구현과 함께 확장한다.
 
 ---
 
@@ -161,7 +161,7 @@ Endpoint 함수는 `/api/v1`을 중복으로 붙이지 않는다. 예: `api.get(
 | memory | `searchMemories`, `summarizeMemorySearch`, `reindexMemories`, `getJob` |
 | capsules | `listCapsules`, `getCapsule`, `createCapsule`, `updateCapsule`, `deleteCapsule`, `getCompactContext` |
 | agent | `startAgentRun`, `listAgentRuns`, `getAgentRun`, `listAgentSteps`, `approveAgentRun`, `rejectAgentRun` |
-| mcp | REST API 확정 전까지 S-18은 API 명세의 MCP tool/connection 계약을 표시하는 read-only 화면으로 시작 |
+| mcp | `listMcpTools`, `listMcpConnections`, `createMcpServerCredential`, `revokeMcpConnection`, `listMcpCallLogs` |
 
 access token은 `sessionStorage`에서 읽어 `Authorization: Bearer <accessToken>` 헤더에만 넣는다. refresh token은 HttpOnly cookie이므로 프론트엔드 상태에 저장하지 않는다.
 

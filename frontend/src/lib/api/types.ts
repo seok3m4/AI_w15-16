@@ -428,3 +428,58 @@ export type AgentApprovalDecisionResponse = {
   agentRunStatus: string;
   updatedAt: string;
 };
+
+export type McpToolCatalogItem = {
+  name: string;
+  description: string;
+  requiredScopes: string[];
+};
+
+export type McpToolCatalogResponse = {
+  items: McpToolCatalogItem[];
+};
+
+export type McpConnectionSummaryResponse = {
+  id: string;
+  name: string;
+  provider: string;
+  direction: string;
+  status: string;
+  scopes: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type McpConnectionListResponse = {
+  items: McpConnectionSummaryResponse[];
+};
+
+export type McpCredentialCreateRequest = {
+  name: string;
+  scopes: string[];
+  expiresAt?: string | null;
+};
+
+export type McpCredentialCreateResponse = {
+  connectionId: string;
+  name: string;
+  provider: string;
+  status: string;
+  scopes: string[];
+  oneTimeToken: string;
+  createdAt: string;
+  expiresAt: string | null;
+};
+
+export type McpCallLogSummaryResponse = {
+  id: string;
+  toolName: string;
+  direction: string;
+  status: string;
+  errorCode: string | null;
+  createdAt: string;
+};
+
+export type McpCallLogListResponse = {
+  items: McpCallLogSummaryResponse[];
+};

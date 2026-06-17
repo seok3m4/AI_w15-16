@@ -17,11 +17,8 @@ const activeItems = [
   ['solar:magic-stars-linear', 'Memory Search', '/app/memory-search'],
   ['solar:box-minimalistic-linear', 'Capsule', '/app/capsules'],
   ['solar:robot-linear', 'Agent', '/app/agent'],
+  ['solar:plug-circle-linear', 'MCP', '/app/mcp'],
   ['solar:settings-linear', '설정', '/app/settings'],
-] as const;
-
-const upcomingItems = [
-  ['solar:plug-circle-linear', 'MCP'],
 ] as const;
 
 export function AppShell({ children, user }: AppShellProps) {
@@ -157,13 +154,6 @@ function NavigationItems() {
           <Icon icon={icon} aria-hidden="true" />
           <span className="nav-label">{label}</span>
         </NavLink>
-      ))}
-      {upcomingItems.map(([icon, label]) => (
-        <span className="nav-item disabled" key={label} aria-disabled="true">
-          <Icon icon={icon} aria-hidden="true" />
-          <span className="nav-label">{label}</span>
-          <span className="badge">준비중</span>
-        </span>
       ))}
     </nav>
   );

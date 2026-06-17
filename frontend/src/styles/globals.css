@@ -1370,6 +1370,65 @@ a {
   font-size: 13px;
 }
 
+.mcp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+}
+
+.mcp-credential-form {
+  display: grid;
+  gap: 14px;
+}
+
+.mcp-scope-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mcp-scope-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+  background: var(--color-soft);
+  color: var(--color-bodytext);
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mcp-scope-option input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-ink);
+}
+
+.mcp-token-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(63, 125, 78, 0.22);
+  border-radius: 12px;
+  background: rgba(63, 125, 78, 0.08);
+  padding: 12px;
+}
+
+.mcp-token-panel code {
+  overflow-x: auto;
+  color: var(--color-ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mcp-connection-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .memory-job-status {
   margin: 0;
   color: var(--color-bodytext);

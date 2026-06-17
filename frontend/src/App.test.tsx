@@ -1960,4 +1960,88 @@ describe('App auth flow', () => {
       `/app/agent/approvals/${runId}`,
     );
   });
+
+  it('loads MCP tools, connections, logs, and issues a scoped token', async () => {
+    const connectionId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    window.history.pushState({}, '', '/app/mcp');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/mcp/tools')) {
+        return jsonResponse({
+          items: [
+            {
+              name: 'search_memories',
+              description: 'Search my memories.',
+              requiredScopes: ['memory:read'],
+            },
+          ],
+        });
+      }
+      if (url.endsWith('/mcp/connections')) {
+        return jsonResponse({
+          items: [
+            {
+              id: connectionId,
+              name: 'Claude Desktop',
+              provider: 'server',
+              direction: 'server',
+              status: 'active',
+              scopes: ['memory:read'],
+              createdAt: '2026-06-17T03:10:00Z',
+              updatedAt: '2026-06-17T03:10:00Z',
+            },
+          ],
+        });
+      }
+      if (url.endsWith('/mcp/call-logs?page=0&size=20')) {
+        return jsonResponse({
+          items: [
+            {
+              id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+              toolName: 'search_memories',
+              direction: 'server_inbound',
+              status: 'succeeded',
+              errorCode: null,
+              createdAt: '2026-06-17T03:12:00Z',
+            },
+          ],
+        });
+      }
+      if (url.endsWith('/mcp/server-credentials') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          name: 'Claude Desktop',
+          scopes: ['memory:read'],
+        });
+        return jsonResponse(
+          {
+            connectionId,
+            name: 'Claude Desktop',
+            provider: 'server',
+            status: 'active',
+            scopes: ['memory:read'],
+            oneTimeToken: 'mmt_mcp_abc123',
+            createdAt: '2026-06-17T03:10:00Z',
+            expiresAt: null,
+          },
+          { status: 201 },
+        );
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'MCP connections' })).toBeInTheDocument();
+    expect(await screen.findAllByText('search_memories')).toHaveLength(2);
+    expect(screen.getByText('Claude Desktop')).toBeInTheDocument();
+    expect(screen.getByText('server_inbound')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Issue token' }));
+
+    expect(await screen.findByText('mmt_mcp_abc123')).toBeInTheDocument();
+  });
 });

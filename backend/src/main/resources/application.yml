@@ -40,3 +40,7 @@ memento:
     refresh-token-pepper: ${REFRESH_TOKEN_PEPPER}
     access-token-ttl-seconds: ${ACCESS_TOKEN_TTL_SECONDS:3600}
     refresh-token-ttl-seconds: ${REFRESH_TOKEN_TTL_SECONDS:1209600}
+  mcp:
+    token-pepper: ${MCP_TOKEN_PEPPER}
+    local-encryption-key-base64: ${MCP_LOCAL_ENCRYPTION_KEY_BASE64}
+    local-encryption-key-id: ${MCP_LOCAL_ENCRYPTION_KEY_ID}

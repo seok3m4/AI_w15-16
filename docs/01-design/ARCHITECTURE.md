@@ -328,12 +328,13 @@ MCP Server 공통 규칙:
 
 - 모든 호출은 어떤 사용자 컨텍스트로 실행되는지 식별되어야 한다.
 - 외부 MCP client 인증은 앱의 access token을 그대로 재사용하지 않는다.
-- MCP credential은 사용자와 scope에 묶어 발급하고, 원문은 한 번만 보여주며 서버에는 hash 또는 secret reference만 저장한다.
+- MCP Server credential은 `mmt_mcp_` scoped token으로 발급하고, 원문은 한 번만 보여주며 서버에는 HMAC-SHA256 hash와 secret reference만 저장한다.
 - MCP credential은 만료, 폐기, scope 축소가 가능해야 한다.
+- MVP scope는 `memory:read`, `capsule:read`, `friend_memory:read`로 시작한다.
 - scope 검증은 Spring Boot의 기존 권한 정책을 재사용한다.
 - 친구 데이터가 포함되면 `ownerUserId`, `ownerNickname`, `postId`, `title`, `sourceType`을 포함해 출처를 구조화한다.
 - 허용되지 않은 리소스는 존재 여부를 숨기기 위해 `404` 또는 MCP 대응 오류로 처리한다.
-- 호출 이력은 `mcp_call_logs`에 요약/마스킹 형태로 저장한다.
+- 호출 이력은 `mcp_call_logs`에 argument key, status, error code 등 요약/마스킹 형태로 저장하고 token, secret, raw prompt, provider 원문은 저장하지 않는다.
 
 ### 5.6 MCP Client와 Notion export
 
