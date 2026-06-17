@@ -449,14 +449,44 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 28px;
 }
 
-.pagination span {
-  min-width: 72px;
-  text-align: center;
+.pagination-pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.page-number {
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  background: var(--field);
   color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.page-number:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.page-number.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 .my-page-tabs {
@@ -1313,10 +1343,11 @@
 }
 
 /* 지도 번호 마커 (Kakao CustomOverlay 안에서 사용) */
-.map-pin {
+.course-map-pin {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
   border-radius: 50%;

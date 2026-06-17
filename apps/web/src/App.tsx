@@ -1,5 +1,12 @@
 // 📌 React 앱의 최상위 컴포넌트. 공통 Layout으로 헤더/푸터를 감싸고 페이지를 라우팅한다.
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from 'react-router-dom'
 import './App.css'
 import { AskPage } from './AskPage'
 import { AuthProvider } from './AuthContext'
@@ -24,10 +31,21 @@ function SignupRoute() {
   return token ? <Navigate to="/" replace /> : <SignupPage />
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* 인증 화면은 헤더/푸터 없는 단독 레이아웃 */}
           <Route path="/login" element={<LoginRoute />} />

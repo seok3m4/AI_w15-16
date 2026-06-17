@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { getSeedThumbnailUrl } from '../common/seed-thumbnails';
 import { PrismaService } from '../prisma/prisma.service';
 import { RagService } from '../rag/rag.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -402,6 +403,7 @@ export class PostService {
     const { _count, savedBy, ...rest } = post;
     return {
       ...rest,
+      thumbnailUrl: rest.thumbnailUrl ?? getSeedThumbnailUrl(rest.id),
       tags: post.tags.map((postTag) => postTag.tag),
       ...(Array.isArray(post.comments)
         ? {

@@ -45,16 +45,6 @@ export function Layout() {
             </NavLink>
             {token && (
               <NavLink
-                to="/posts/new"
-                className={({ isActive }) =>
-                  isActive ? 'nav-link active' : 'nav-link'
-                }
-              >
-                코스 작성
-              </NavLink>
-            )}
-            {token && (
-              <NavLink
                 to="/me"
                 className={({ isActive }) =>
                   isActive ? 'nav-link active' : 'nav-link'

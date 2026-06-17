@@ -31,7 +31,11 @@ export function CourseMap({ places, height = 320 }: Props) {
   );
   const showDayTabs = days.length > 1;
   const activeDay: number | "all" =
-    selectedDay ?? (showDayTabs ? days[0] : "all") ?? "all";
+    selectedDay === "all"
+      ? "all"
+      : selectedDay !== null && days.includes(selectedDay)
+        ? selectedDay
+        : (showDayTabs ? days[0] : "all") ?? "all";
   const numberedPlaces = useMemo<NumberedMapPlace[]>(
     () =>
       places.map((place, index) => ({
@@ -47,17 +51,6 @@ export function CourseMap({ places, height = 320 }: Props) {
         : numberedPlaces.filter((place) => (place.day ?? 1) === activeDay),
     [numberedPlaces, activeDay],
   );
-
-  // 코스가 바뀌었는데 선택 중인 일차가 사라졌으면 첫 일차를 다시 기본값으로 쓴다.
-  useEffect(() => {
-    if (
-      selectedDay !== null &&
-      selectedDay !== "all" &&
-      !days.includes(selectedDay)
-    ) {
-      setSelectedDay(null);
-    }
-  }, [days, selectedDay]);
 
   useEffect(() => {
     if (!containerRef.current || visiblePlaces.length === 0) return;
@@ -88,8 +81,10 @@ export function CourseMap({ places, height = 320 }: Props) {
           // 방문 순서를 보여주는 번호 마커.
           const pin = new kakao.maps.CustomOverlay({
             position,
-            yAnchor: 1,
-            content: `<div class="map-pin">${place.courseOrder}</div>`,
+            xAnchor: 0.5,
+            yAnchor: 0.5,
+            zIndex: 2,
+            content: `<div class="course-map-pin">${place.courseOrder}</div>`,
           });
           pin.setMap(map);
         });
@@ -102,6 +97,7 @@ export function CourseMap({ places, height = 320 }: Props) {
             strokeColor: "#0071e3",
             strokeOpacity: 0.9,
             strokeStyle: "solid",
+            zIndex: 1,
           });
           polyline.setMap(map);
           map.setBounds(bounds);

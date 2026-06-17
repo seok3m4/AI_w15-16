@@ -55,8 +55,16 @@ export function PostListPage() {
     state.kind === 'ready'
       ? Math.max(1, Math.ceil(state.data.total / state.data.limit))
       : 1
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   const isFiltered = Boolean(query.q || query.tag)
+
+  function goToPage(nextPage: number) {
+    const safePage = Math.min(totalPages, Math.max(1, nextPage))
+    if (safePage === page) return
+    setPage(safePage)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }
 
   // 검색 폼 제출 시 입력값을 확정 조건으로 옮기고 첫 페이지로 이동한다.
   function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -182,29 +190,39 @@ export function PostListPage() {
               </p>
             )}
 
-            <div className="pagination">
+            <nav className="pagination" aria-label="게시글 페이지">
               <button
                 type="button"
                 className="secondary-button"
                 disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() => goToPage(page - 1)}
               >
                 이전
               </button>
-              <span>
-                {page} / {totalPages}
-              </span>
+              <div className="pagination-pages">
+                {pageNumbers.map((pageNumber) => (
+                  <button
+                    type="button"
+                    className={
+                      pageNumber === page ? 'page-number active' : 'page-number'
+                    }
+                    aria-current={pageNumber === page ? 'page' : undefined}
+                    key={pageNumber}
+                    onClick={() => goToPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 className="secondary-button"
                 disabled={page >= totalPages}
-                onClick={() =>
-                  setPage((current) => Math.min(totalPages, current + 1))
-                }
+                onClick={() => goToPage(page + 1)}
               >
                 다음
               </button>
-            </div>
+            </nav>
           </>
         )}
       </section>
