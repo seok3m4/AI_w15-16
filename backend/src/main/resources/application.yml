@@ -28,6 +28,10 @@ memento:
     base-url: ${AI_SERVER_URL:http://ai-server:8000}
     connect-timeout: ${AI_SUMMARY_CONNECT_TIMEOUT:2s}
     read-timeout: ${AI_SUMMARY_READ_TIMEOUT:15s}
+  agent:
+    base-url: ${AI_SERVER_URL:http://ai-server:8000}
+    connect-timeout: ${AI_AGENT_CONNECT_TIMEOUT:2s}
+    read-timeout: ${AI_AGENT_READ_TIMEOUT:60s}
   auth:
     email-encryption-key-base64: ${EMAIL_ENCRYPTION_KEY_BASE64}
     email-encryption-key-id: ${EMAIL_ENCRYPTION_KEY_ID}

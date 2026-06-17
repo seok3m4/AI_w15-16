@@ -23,6 +23,8 @@ class DatabaseMigrationScriptTest {
             Pattern.compile("V\\d{12}__add_memory_reindex_dedupe_indexes\\.sql");
     private static final Pattern CONTEXT_CAPSULES_NAME =
             Pattern.compile("V\\d{12}__add_context_capsules\\.sql");
+    private static final Pattern AGENT_WORKFLOW_NAME =
+            Pattern.compile("V\\d{12}__add_agent_workflow_tables\\.sql");
 
     @Test
     void baselineMigrationCreatesP0P1SchemaWith1536DimensionEmbedding() throws IOException {
@@ -126,6 +128,31 @@ class DatabaseMigrationScriptTest {
         assertThat(sql).contains("chunk_id uuid null references memory_chunks (id) on delete set null");
         assertThat(sql).contains("create index idx_context_capsules_owner_active_created");
         assertThat(sql).contains("create index idx_capsule_sources_owner_user");
+    }
+
+    @Test
+    void followUpMigrationAddsAgentWorkflowTables() throws IOException {
+        assertThat(MIGRATION_DIR).isDirectory();
+
+        List<Path> migrations = findMigrations(AGENT_WORKFLOW_NAME);
+
+        assertThat(migrations).hasSize(1);
+
+        String sql = normalizedSql(migrations.getFirst());
+
+        assertThat(sql).contains("create table agent_runs");
+        assertThat(sql).contains("owner_id uuid not null references users (id) on delete cascade");
+        assertThat(sql).contains("allowed_tools jsonb not null default '[]'::jsonb");
+        assertThat(sql).contains("status varchar(30) not null");
+        assertThat(sql).contains("create table agent_steps");
+        assertThat(sql).contains("constraint uq_agent_steps_run_order unique (run_id, step_order)");
+        assertThat(sql).contains("create table agent_approvals");
+        assertThat(sql).contains("payload jsonb not null default '{}'::jsonb");
+        assertThat(sql).contains("expires_at timestamptz null");
+        assertThat(sql).contains("create table tool_call_logs");
+        assertThat(sql).contains("input jsonb not null default '{}'::jsonb");
+        assertThat(sql).contains("create index idx_agent_runs_owner_created");
+        assertThat(sql).contains("create index idx_tool_call_logs_run_created");
     }
 
     private static List<Path> findMigrations(Pattern fileNamePattern) throws IOException {

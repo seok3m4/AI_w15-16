@@ -1,4 +1,5 @@
 import { Navigate, Route } from 'react-router-dom';
+import { AgentApprovalPage, AgentRunPage } from '../agent/AgentPages';
 import { CapsuleCreatePage, CapsuleDetailPage, CapsuleListPage } from '../capsule/CapsulePages';
 import { FriendFeedPage } from '../friend/FriendFeedPage';
 import { FriendGiftPage } from '../friend/FriendGiftPage';
@@ -21,6 +22,8 @@ export const postRoutes = (
     <Route path="capsules" element={<CapsuleListPage />} />
     <Route path="capsules/new" element={<CapsuleCreatePage />} />
     <Route path="capsules/:capsuleId" element={<CapsuleDetailPage />} />
+    <Route path="agent" element={<AgentRunPage />} />
+    <Route path="agent/approvals/:runId" element={<AgentApprovalPage />} />
     <Route path="settings" element={<SettingsPage />} />
     <Route path="posts/new" element={<PostEditorPage mode="create" />} />
     <Route path="posts/:postId" element={<PostDetailPage />} />

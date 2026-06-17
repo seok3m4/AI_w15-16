@@ -1869,4 +1869,95 @@ describe('App auth flow', () => {
       `/app/posts/${FIRST_POST_ID}`,
     );
   });
+
+  it('starts an agent run and shows approval-required state', async () => {
+    const runId = '88888888-8888-8888-8888-888888888888';
+    const approvalId = '99999999-9999-9999-9999-999999999999';
+    window.history.pushState({}, '', '/app/agent');
+    sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, 'access-token');
+    let runCalls = 0;
+    mockFetch(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse(authMeResponse());
+      }
+      if (url.endsWith('/agent-runs') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          goal: '주간 회고를 만들고 Notion에 저장',
+          allowedTools: ['search_memories', 'summarize', 'notion_export'],
+        });
+        return jsonResponse(
+          {
+            id: runId,
+            goal: '주간 회고를 만들고 Notion에 저장',
+            status: 'pending',
+            requiresApproval: false,
+            result: null,
+            pendingApprovals: [],
+            failureReason: null,
+            createdAt: '2026-06-17T03:10:00Z',
+            updatedAt: '2026-06-17T03:10:00Z',
+          },
+          { status: 202 },
+        );
+      }
+      if (url.endsWith(`/agent-runs/${runId}`)) {
+        runCalls += 1;
+        return jsonResponse({
+          id: runId,
+          goal: '주간 회고를 만들고 Notion에 저장',
+          status: runCalls > 1 ? 'approval_required' : 'running',
+          requiresApproval: runCalls > 1,
+          result: null,
+          pendingApprovals:
+            runCalls > 1
+              ? [
+                  {
+                    id: approvalId,
+                    type: 'external_write',
+                    description: 'Notion 페이지를 생성합니다.',
+                    createdAt: '2026-06-17T03:10:10Z',
+                  },
+                ]
+              : [],
+          failureReason: null,
+          createdAt: '2026-06-17T03:10:00Z',
+          updatedAt: '2026-06-17T03:10:10Z',
+        });
+      }
+      if (url.endsWith(`/agent-runs/${runId}/steps?page=0&size=20`)) {
+        return jsonResponse({
+          items: [
+            {
+              id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+              stepOrder: 1,
+              toolName: 'search_memories',
+              status: 'succeeded',
+              inputSummary: '최근 기억 검색',
+              outputSummary: '관련 게시글 2개 발견',
+              createdAt: '2026-06-17T03:10:05Z',
+              updatedAt: '2026-06-17T03:10:05Z',
+            },
+          ],
+          page: { page: 0, size: 20, totalCount: 1, totalPages: 1 },
+        });
+      }
+      return jsonResponse({ detail: 'Not found' }, { status: 404 });
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Agent 실행' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Agent 목표'), {
+      target: { value: '주간 회고를 만들고 Notion에 저장' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '실행 시작' }));
+
+    expect(await screen.findByText('Notion 페이지를 생성합니다.')).toBeInTheDocument();
+    expect(screen.getByText('search_memories')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '승인 화면으로' })).toHaveAttribute(
+      'href',
+      `/app/agent/approvals/${runId}`,
+    );
+  });
 });

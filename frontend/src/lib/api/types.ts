@@ -372,3 +372,59 @@ export type UpdateContextCapsuleRequest = {
   title: string;
   purpose: string;
 };
+
+export type AgentRunStatus =
+  | 'pending'
+  | 'running'
+  | 'approval_required'
+  | 'succeeded'
+  | 'failed'
+  | 'rejected'
+  | string;
+
+export type AgentApprovalResponse = {
+  id: string;
+  type: string;
+  description: string;
+  createdAt: string;
+};
+
+export type AgentRunResponse = {
+  id: string;
+  goal: string;
+  status: AgentRunStatus;
+  requiresApproval: boolean;
+  result: unknown;
+  pendingApprovals: AgentApprovalResponse[];
+  failureReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentStepResponse = {
+  id: string;
+  stepOrder: number;
+  toolName: string;
+  status: string;
+  inputSummary: string | null;
+  outputSummary: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentStepListResponse = {
+  items: AgentStepResponse[];
+  page: PageResponse;
+};
+
+export type AgentRunStartRequest = {
+  goal: string;
+  allowedTools: string[];
+};
+
+export type AgentApprovalDecisionResponse = {
+  approvalId: string;
+  status: string;
+  agentRunStatus: string;
+  updatedAt: string;
+};

@@ -16,11 +16,11 @@ const activeItems = [
   ['solar:users-group-rounded-linear', '친구', '/app/friends'],
   ['solar:magic-stars-linear', 'Memory Search', '/app/memory-search'],
   ['solar:box-minimalistic-linear', 'Capsule', '/app/capsules'],
+  ['solar:robot-linear', 'Agent', '/app/agent'],
   ['solar:settings-linear', '설정', '/app/settings'],
 ] as const;
 
 const upcomingItems = [
-  ['solar:robot-linear', 'Agent'],
   ['solar:plug-circle-linear', 'MCP'],
 ] as const;
 
