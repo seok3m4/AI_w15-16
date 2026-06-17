@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정글 여행 발표 자료</title>
+<style>
+  :root {
+    --bg: #fbfbfd;
+    --ink: #1d1d1f;
+    --text: #303036;
+    --muted: #6e6e73;
+    --line: #dedee5;
+    --panel: #ffffff;
+    --soft: #f3f5f8;
+    --blue: #0b63ce;
+    --green: #0f8f7f;
+    --orange: #d96c11;
+    --red: #c43c44;
+    --shadow: 0 16px 44px rgba(22, 24, 35, 0.08);
+    --max: 1120px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    overflow: hidden;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: #f4f5f8;
+    background-image:
+      radial-gradient(920px 540px at -6% -12%, #e8ebf1, rgba(232, 235, 241, 0)),
+      radial-gradient(900px 540px at 106% 112%, #eaecf2, rgba(234, 236, 242, 0)),
+      radial-gradient(circle, rgba(26, 28, 42, 0.035) 1px, transparent 1.6px);
+    background-size: auto, auto, 26px 26px;
+    background-repeat: no-repeat, no-repeat, repeat;
+    background-attachment: fixed;
+  }
+
+  .deck {
+    position: fixed;
+    inset: 0;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 11vh 7vw 8vh;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(16px);
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s;
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .title-slide {
+    align-items: center;
+    text-align: center;
+  }
+
+  .inner {
+    width: min(100%, var(--max));
+  }
+
+  .narrow {
+    width: min(100%, 940px);
+  }
+
+  .slide.active .reveal {
+    animation: rise 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .slide.active .reveal:nth-child(1) { animation-delay: 0.03s; }
+  .slide.active .reveal:nth-child(2) { animation-delay: 0.10s; }
+  .slide.active .reveal:nth-child(3) { animation-delay: 0.17s; }
+  .slide.active .reveal:nth-child(4) { animation-delay: 0.24s; }
+  .slide.active .reveal:nth-child(5) { animation-delay: 0.31s; }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .label {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    color: var(--blue);
+    font-size: 14px;
+    font-weight: 760;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .label::before {
+    content: "";
+    width: 38px;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .title-slide .label {
+    justify-content: center;
+    color: var(--green);
+  }
+
+  .title-slide .label::after {
+    content: "";
+    width: 38px;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .title-slide .label::before {
+    display: none;
+  }
+
+  h1 {
+    font-size: clamp(52px, 8vw, 104px);
+    font-weight: 820;
+    line-height: 1.03;
+    letter-spacing: 0;
+  }
+
+  h2 {
+    max-width: 980px;
+    margin-bottom: 30px;
+    font-size: clamp(34px, 5vw, 62px);
+    font-weight: 790;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-size: clamp(20px, 2vw, 27px);
+    font-weight: 760;
+    line-height: 1.28;
+  }
+
+  p {
+    color: var(--text);
+    line-height: 1.72;
+    word-break: keep-all;
+  }
+
+  .subtitle {
+    max-width: 850px;
+    margin: 24px auto 0;
+    color: var(--muted);
+    font-size: clamp(18px, 2.1vw, 27px);
+    line-height: 1.55;
+    word-break: keep-all;
+  }
+
+  .title-accent {
+    background: linear-gradient(120deg, #1aa491, #0f8f7f 48%, #15604f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .title-mark {
+    font-size: clamp(40px, 5vw, 60px);
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 40px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 7px 15px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: #303036;
+    font-size: 14px;
+    font-weight: 680;
+    white-space: nowrap;
+  }
+
+  .lead-grid {
+    display: grid;
+    grid-template-columns: 1fr 0.9fr;
+    gap: 42px;
+    align-items: center;
+  }
+
+  .copy {
+    display: grid;
+    gap: 16px;
+    max-width: 780px;
+  }
+
+  .copy p {
+    font-size: clamp(18px, 1.7vw, 23px);
+  }
+
+  .copy.compact p {
+    font-size: clamp(16px, 1.45vw, 19px);
+  }
+
+  .panel {
+    border: 1px solid #ececf2;
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+
+  .summary-panel {
+    padding: 28px;
+  }
+
+  .summary-panel h3 {
+    margin-bottom: 16px;
+  }
+
+  .bullet-list {
+    display: grid;
+    gap: 12px;
+    list-style: none;
+  }
+
+  .bullet-list li {
+    position: relative;
+    padding-left: 20px;
+    color: var(--text);
+    font-size: clamp(15px, 1.35vw, 18px);
+    line-height: 1.56;
+    word-break: keep-all;
+  }
+
+  .bullet-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.72em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+
+  .bullet-list strong {
+    color: var(--ink);
+    font-weight: 760;
+  }
+
+  .icon-list {
+    display: grid;
+    gap: 26px;
+    list-style: none;
+  }
+
+  .icon-list li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: center;
+    color: var(--text);
+    font-size: clamp(16px, 1.5vw, 21px);
+    line-height: 1.5;
+    word-break: keep-all;
+  }
+
+  .icon-list .ico {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .icon-list strong {
+    color: var(--ink);
+    font-weight: 760;
+  }
+
+  .icon-list.goal .ico {
+    background: #e8f6f2;
+    border-color: #d3ece3;
+  }
+
+  .icon-list.sm {
+    gap: 12px;
+  }
+
+  .icon-list.sm li {
+    font-size: clamp(14px, 1.22vw, 17px);
+  }
+
+  .icon-list.sm .ico {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    font-size: 17px;
+  }
+
+  .tech-layout .bullet-list {
+    gap: 10px;
+  }
+
+  .tech-layout .bullet-list li {
+    font-size: clamp(14px, 1.14vw, 16px);
+    line-height: 1.48;
+  }
+
+  .two-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .three-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* 아키텍처: 카드 사이를 화살표로 연결해 흐름 표시 */
+  .arch-flow {
+    gap: 36px;
+  }
+
+  .arch-flow .feature-card {
+    position: relative;
+  }
+
+  .arch-flow .feature-card:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -28px;
+    transform: translateY(-50%);
+    color: #b6b6c0;
+    font-size: 22px;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  .feature-card {
+    min-height: 150px;
+    padding: 22px;
+  }
+
+  .feature-card .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 16px;
+    border-radius: 999px;
+    background: var(--soft);
+    color: var(--blue);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .feature-card p {
+    margin-top: 9px;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.56;
+  }
+
+  .flow-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .flow-step {
+    position: relative;
+    min-height: 108px;
+    padding: 19px 18px;
+  }
+
+  .flow-step h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .flow-step p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .flow-step::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -11px;
+    width: 20px;
+    height: 2px;
+    background: var(--line);
+  }
+
+  .flow-step:last-child::after {
+    display: none;
+  }
+
+  .overview-flow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 34px;
+  }
+
+  .overview-card {
+    position: relative;
+    min-height: 210px;
+    padding: 26px 22px 24px;
+    overflow: hidden;
+  }
+
+  .overview-card::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    transform: translateY(-50%);
+    color: #b6b6c0;
+    font-size: 30px;
+    line-height: 1;
+    z-index: 3;
+  }
+
+  .overview-card:last-child::after {
+    display: none;
+  }
+
+  .overview-no {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin-bottom: 18px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 820;
+  }
+
+  .overview-card h3 {
+    margin-bottom: 14px;
+    font-size: clamp(21px, 2vw, 28px);
+  }
+
+  .overview-card p {
+    color: var(--text);
+    font-size: clamp(16px, 1.45vw, 19px);
+    font-weight: 650;
+    line-height: 1.48;
+    word-break: keep-all;
+  }
+
+  .overview-card.key {
+    background: #f2faf7;
+    border-color: #cfe9df;
+  }
+
+  .overview-card.key .overview-no {
+    background: var(--green);
+  }
+
+  .stack {
+    display: grid;
+    gap: 14px;
+  }
+
+  .stack-item {
+    display: grid;
+    grid-template-columns: 132px 1fr;
+    gap: 18px;
+    align-items: start;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .stack-item:last-child {
+    border-bottom: 0;
+  }
+
+  .stack-item b {
+    color: var(--blue);
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .stack-item span {
+    color: var(--text);
+    font-size: clamp(15px, 1.35vw, 18px);
+    line-height: 1.58;
+    word-break: keep-all;
+  }
+
+  .tech-layout {
+    display: grid;
+    grid-template-columns: 0.92fr 1.08fr;
+    gap: 42px;
+    align-items: center;
+  }
+
+  .visual-slide {
+    align-items: center;
+    padding-top: 10vh;
+  }
+
+  .visual-slide .inner {
+    max-width: 1220px;
+  }
+
+  .visual-slide h2 {
+    width: 100%;
+    max-width: none;
+    font-size: clamp(32px, 4.2vw, 52px);
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+
+  .visual-copy .pill {
+    margin-bottom: 12px;
+  }
+
+  .visual-copy .bullet-list {
+    gap: 12px;
+  }
+
+  .visual-copy .bullet-list li {
+    padding-left: 18px;
+    font-size: clamp(16px, 1.28vw, 19px);
+    line-height: 1.5;
+  }
+
+  .visual-copy .bullet-list li::before {
+    top: 0.76em;
+    width: 7px;
+    height: 7px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    margin-bottom: 20px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .pill.rag {
+    background: #e8f6f2;
+    color: var(--green);
+  }
+
+  .pill.mcp {
+    background: #eaf2ff;
+    color: var(--blue);
+  }
+
+  .pill.agent {
+    background: #fff1e4;
+    color: var(--orange);
+  }
+
+  .code-flow {
+    min-height: 392px;
+    padding: 28px;
+    border-radius: 8px;
+    background: #191b1f;
+    color: #f4f7fb;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: clamp(13px, 1.17vw, 16px);
+    line-height: 1.82;
+    white-space: pre-wrap;
+    box-shadow: var(--shadow);
+  }
+
+  .code-flow .muted { color: #8b949e; }
+  .code-flow .blue { color: #79c0ff; }
+  .code-flow .green { color: #7ee787; }
+  .code-flow .orange { color: #ffa657; }
+
+  /* 노드 사이로 데이터가 흐르는 애니메이션 */
+  .code-flow.flow-anim {
+    white-space: normal;
+    line-height: 1.5;
+  }
+
+  .code-flow .cf-head {
+    color: #8b949e;
+    margin-bottom: 6px;
+  }
+
+  .code-flow .cf-gap {
+    height: 18px;
+  }
+
+  .code-flow .cf-node {
+    border-radius: 7px;
+    padding: 6px 9px;
+    margin: 0 -9px;
+  }
+
+  .code-flow .cf-step {
+    padding-left: 28px;
+  }
+
+  .slide.active .flow-anim .cf-node {
+    animation: nodeWave 7s linear infinite;
+  }
+
+  @keyframes nodeWave {
+    0% { background: transparent; box-shadow: none; }
+    3% { background: rgba(121, 192, 255, 0.06); box-shadow: none; }
+    8% {
+      background: rgba(121, 192, 255, 0.20);
+      box-shadow: inset 0 0 0 1px rgba(121, 192, 255, 0.45), 0 0 16px rgba(121, 192, 255, 0.22);
+    }
+    14% { background: transparent; box-shadow: none; }
+    100% { background: transparent; box-shadow: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active .flow-anim .cf-node { animation: none; }
+  }
+
+  /* RAG 다이어그램 (그림으로 한눈에) */
+  .diagram {
+    display: grid;
+    gap: 14px;
+    padding: 30px 28px;
+    align-self: center;
+  }
+
+  .lane-label {
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .lane-label b {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 8px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    vertical-align: middle;
+  }
+
+  .flow {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .node {
+    flex: 1;
+    display: grid;
+    gap: 7px;
+    justify-items: center;
+    align-content: center;
+    text-align: center;
+    padding: 16px 8px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(22, 24, 35, 0.05);
+  }
+
+  .node .e {
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .node .t {
+    font-size: 14px;
+    font-weight: 720;
+    color: var(--ink);
+    line-height: 1.32;
+    word-break: keep-all;
+  }
+
+  .node.key {
+    background: #eef7f3;
+    border-color: #cfe9df;
+  }
+
+  .arrow {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 30px;
+    color: #b6b6c0;
+    font-size: 19px;
+  }
+
+  .bridge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 2px 0;
+    color: var(--green);
+    font-size: 13px;
+    font-weight: 720;
+  }
+
+  .bridge::before,
+  .bridge::after {
+    content: "";
+    width: 30px;
+    height: 0;
+    border-top: 2px dashed #bfe3d5;
+  }
+
+  .branch {
+    display: grid;
+    gap: 12px;
+    flex: 1.3;
+  }
+
+  .branch .node {
+    padding: 13px 10px;
+  }
+
+  .node .tag {
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+  }
+
+  .node .tag.rag { color: var(--green); }
+  .node .tag.mcp { color: var(--blue); }
+
+  .diag-quote {
+    margin-bottom: 4px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--soft);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    word-break: keep-all;
+  }
+
+  .diag-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--soft);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 640;
+  }
+
+  .diag-note .e {
+    font-size: 18px;
+  }
+
+  .demo-list {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 30px;
+  }
+
+  .demo-step {
+    display: grid;
+    align-content: start;
+    min-height: 128px;
+    padding: 17px 13px;
+    text-align: center;
+  }
+
+  .demo-step b {
+    display: block;
+    color: var(--blue);
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .demo-step span {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 720;
+    line-height: 1.42;
+    word-break: keep-all;
+  }
+
+  .demo-slide {
+    align-items: center;
+    padding-top: 8vh;
+  }
+
+  .image-slide {
+    align-items: center;
+    padding-top: 8vh;
+  }
+
+  .image-slide h2 {
+    text-align: center;
+    max-width: none;
+    margin-bottom: 28px;
+  }
+
+  .arch-shot-wrap {
+    display: grid;
+    place-items: center;
+    width: 100%;
+  }
+
+  .arch-shot {
+    display: block;
+    width: min(100%, 1080px);
+    max-height: 64vh;
+    object-fit: contain;
+    border: 1px solid #ececf2;
+    border-radius: 8px;
+    box-shadow: 0 20px 54px rgba(22, 24, 35, 0.13);
+    background: #fff;
+  }
+
+  .demo-slide h2 {
+    text-align: center;
+    max-width: none;
+    margin-bottom: 34px;
+  }
+
+  .demo-shot-wrap {
+    display: grid;
+    place-items: center;
+    width: 100%;
+  }
+
+  .demo-shot {
+    display: block;
+    width: min(100%, 1120px);
+    max-height: 62vh;
+    object-fit: contain;
+    border: 1px solid #ececf2;
+    border-radius: 8px;
+    box-shadow: 0 22px 58px rgba(22, 24, 35, 0.16);
+    background: #fff;
+  }
+
+  .note {
+    margin-top: 26px;
+    padding: 22px 24px;
+    border-left: 4px solid var(--green);
+    background: #f2faf7;
+    color: #21554e;
+    font-size: clamp(16px, 1.45vw, 19px);
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue), var(--orange));
+    transition: width 0.28s ease;
+  }
+
+  .brand {
+    position: fixed;
+    top: 22px;
+    left: 30px;
+    z-index: 40;
+    color: rgba(29, 29, 31, 0.74);
+    font-size: 14px;
+    font-weight: 760;
+  }
+
+  .hint {
+    position: fixed;
+    top: 22px;
+    right: 30px;
+    z-index: 40;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 18px;
+    left: 30px;
+    z-index: 40;
+    display: flex;
+    gap: 8px;
+  }
+
+  .nav button {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .nav button:hover {
+    background: var(--soft);
+  }
+
+  .dots {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    z-index: 40;
+    display: flex;
+    gap: 9px;
+    transform: translateX(-50%);
+  }
+
+  .dots button {
+    width: 9px;
+    height: 9px;
+    border: 0;
+    border-radius: 999px;
+    background: #c7c7ce;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .dots button.on {
+    background: var(--ink);
+    transform: scale(1.25);
+  }
+
+  .counter {
+    position: fixed;
+    right: 30px;
+    bottom: 25px;
+    z-index: 40;
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 980px) {
+    body {
+      overflow: auto;
+    }
+
+    .deck {
+      position: relative;
+      min-height: 100vh;
+    }
+
+    .slide {
+      position: relative;
+      display: none;
+      min-height: 100vh;
+      padding: 92px 24px 90px;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    .lead-grid,
+    .two-columns,
+    .three-columns,
+    .flow-row,
+    .overview-flow,
+    .tech-layout,
+    .demo-list {
+      grid-template-columns: 1fr;
+    }
+
+    .flow-step::after,
+    .arch-flow .feature-card::after,
+    .overview-card::after {
+      display: none;
+    }
+
+    .stack-item {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .hint {
+      display: none;
+    }
+
+    .code-flow {
+      min-height: auto;
+      overflow-x: auto;
+    }
+
+    .visual-slide {
+      align-items: flex-start;
+      padding-top: 92px;
+    }
+
+    .visual-slide h2 {
+      white-space: normal;
+    }
+
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="brand">정글 여행 발표 자료</div>
+<div class="hint">화살표 또는 스페이스로 이동</div>
+
+<main class="deck" id="deck">
+  <section class="slide title-slide">
+    <div class="inner">
+      <div class="label reveal">01 표지</div>
+      <div class="title-mark reveal">🌴</div>
+      <h1 class="reveal"><span class="title-accent">정글 여행</span></h1>
+      <p class="subtitle reveal">국내 숨은 여행 코스를 지도와 AI로 탐색</p>
+      <p class="subtitle reveal">장소 순서 기반 코스 공유 · AI 유사 코스 추천 · 실제 장소 정보 연결</p>
+      <div class="chips reveal">
+        <span class="chip">React</span>
+        <span class="chip">NestJS</span>
+        <span class="chip">PostgreSQL · pgvector</span>
+        <span class="chip">OpenAI</span>
+        <span class="chip">Kakao Maps</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" style="align-items:center">
+    <div class="inner">
+      <div class="label reveal">02 프로젝트 개요</div>
+      <h2 class="reveal">기존 여행 후기의 한계</h2>
+      <div class="overview-flow reveal">
+        <div class="panel overview-card">
+          <span class="overview-no">1</span>
+          <h3>기존 후기</h3>
+          <p>장소명과 감상 중심</p>
+        </div>
+        <div class="panel overview-card">
+          <span class="overview-no">2</span>
+          <h3>부족한 점</h3>
+          <p>방문 순서와 이동 동선 파악 어려움</p>
+        </div>
+        <div class="panel overview-card key">
+          <span class="overview-no">3</span>
+          <h3>해결 방식</h3>
+          <p>장소를 순서대로 등록하고 지도에 표시</p>
+        </div>
+        <div class="panel overview-card key">
+          <span class="overview-no">4</span>
+          <h3>확장</h3>
+          <p>쌓인 코스 데이터를 AI 추천과 질문 답변에 재활용</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <div class="label reveal">03 주요 구현 기능</div>
+      <h2 class="reveal">게시판 기능과 AI 기능의 결합</h2>
+      <div class="two-columns reveal">
+        <div class="panel summary-panel">
+          <h3>게시판 기능</h3>
+          <ul class="icon-list sm">
+            <li><span class="ico">🔐</span><div>회원가입과 로그인</div></li>
+            <li><span class="ico">✍️</span><div>여행 코스 게시글 작성, 수정, 삭제</div></li>
+            <li><span class="ico">🗺️</span><div>경유지 저장과 지도 표시</div></li>
+            <li><span class="ico">🔎</span><div>검색, 태그, 페이징</div></li>
+            <li><span class="ico">💬</span><div>댓글, 좋아요, 저장, 마이페이지</div></li>
+            <li><span class="ico">🧭</span><div>장소 순서 기반 코스 동선 확인</div></li>
+          </ul>
+        </div>
+        <div class="panel summary-panel">
+          <h3>AI 기능</h3>
+          <ul class="icon-list sm goal">
+            <li><span class="ico">🧠</span><div>RAG 기반 유사 코스 추천</div></li>
+            <li><span class="ico">🗨️</span><div>게시판 데이터를 활용한 Q&amp;A</div></li>
+            <li><span class="ico">📍</span><div>MCP를 통한 실제 장소 검색</div></li>
+            <li><span class="ico">🤖</span><div>Agent 기반 여행 질문 도우미</div></li>
+            <li><span class="ico">🔗</span><div>답변 + 참고 코스 + 장소 칩 반환</div></li>
+          </ul>
+        </div>
+      </div>
+      <div class="note reveal">AI 기능을 별도 실험 기능이 아닌, 게시판 데이터 활용을 위한 흐름으로 연결</div>
+    </div>
+  </section>
+
+  <section class="slide image-slide">
+    <div class="inner">
+      <div class="label reveal">04 전체 아키텍처</div>
+      <h2 class="reveal">전체 아키텍처</h2>
+      <div class="arch-shot-wrap reveal">
+        <img class="arch-shot" src="screenshots/architecture.png" alt="정글 여행 전체 아키텍처 다이어그램">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide visual-slide">
+    <div class="inner">
+      <div class="label reveal">05 RAG 기능</div>
+      <h2 class="reveal">RAG: 게시판 데이터를 지식으로 전환</h2>
+      <div class="tech-layout">
+        <div class="reveal visual-copy">
+          <span class="pill rag">RAG</span>
+          <div class="copy compact">
+            <ul class="bullet-list">
+              <li><strong>목표</strong>: 게시판 글을 AI 답변의 근거로 사용</li>
+              <li><strong>저장</strong>: 제목 · 본문 · 지역 · 태그 · 경유지 임베딩</li>
+              <li><strong>보관</strong>: PostEmbedding(pgvector)에 벡터 저장</li>
+              <li><strong>검색</strong>: 질문 벡터와 게시글 벡터 비교</li>
+              <li><strong>생성</strong>: 가까운 코스를 컨텍스트로 답변/추천 생성</li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel diagram reveal">
+          <div class="lane">
+            <div class="lane-label"><b>1</b>게시글을 저장해 둘 때</div>
+            <div class="flow">
+              <div class="node"><span class="e">📝</span><span class="t">게시글</span></div>
+              <div class="arrow">→</div>
+              <div class="node"><span class="e">🧬</span><span class="t">임베딩 변환</span></div>
+              <div class="arrow">→</div>
+              <div class="node key"><span class="e">🗄️</span><span class="t">pgvector<br>벡터 저장</span></div>
+            </div>
+          </div>
+
+          <div class="bridge">저장된 벡터를 질문과 비교</div>
+
+          <div class="lane">
+            <div class="lane-label"><b>2</b>질문에 답할 때</div>
+            <div class="flow">
+              <div class="node"><span class="e">💬</span><span class="t">질문</span></div>
+              <div class="arrow">→</div>
+              <div class="node"><span class="e">🧬</span><span class="t">임베딩 변환</span></div>
+              <div class="arrow">→</div>
+              <div class="node"><span class="e">🔍</span><span class="t">유사 코스<br>검색</span></div>
+              <div class="arrow">→</div>
+              <div class="node key"><span class="e">🤖</span><span class="t">AI 답변<br>생성</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide visual-slide">
+    <div class="inner">
+      <div class="label reveal">06 MCP 기능</div>
+      <h2 class="reveal">MCP: 장소 검색 기능의 도구화</h2>
+      <div class="tech-layout">
+        <div class="reveal visual-copy">
+          <span class="pill mcp">MCP</span>
+          <div class="copy compact">
+            <ul class="bullet-list">
+              <li><strong>목표</strong>: Kakao 장소 검색을 AI 도구로 분리</li>
+              <li><strong>도구</strong>: place_search로 장소 키워드 수신</li>
+              <li><strong>호출</strong>: NestJS → MCP 서버 → Kakao Local API</li>
+              <li><strong>결과</strong>: 장소 이름 · 주소 · 좌표 · 링크 반환</li>
+              <li><strong>보안</strong>: API 키와 검색 로직은 백엔드에 보관</li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel diagram reveal">
+          <div class="lane">
+            <div class="lane-label">장소 검색 도구 호출 흐름</div>
+            <div class="flow">
+              <div class="node"><span class="e">🖥️</span><span class="t">NestJS<br>(MCP 클라이언트)</span></div>
+              <div class="arrow">→</div>
+              <div class="node"><span class="e">🔌</span><span class="t">MCP 서버<br>place_search</span></div>
+              <div class="arrow">→</div>
+              <div class="node"><span class="e">🗺️</span><span class="t">Kakao<br>Local API</span></div>
+              <div class="arrow">→</div>
+              <div class="node key"><span class="e">📍</span><span class="t">장소 이름<br>주소 · 좌표</span></div>
+            </div>
+          </div>
+          <div class="diag-note"><span class="e">🔒</span><div>API 키와 검색 로직은 <strong>백엔드(MCP 서버)에만</strong> 보관 — 브라우저에 노출 안 함</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide visual-slide">
+    <div class="inner">
+      <div class="label reveal">07 Agent 기능</div>
+      <h2 class="reveal">Agent: RAG와 MCP의 조합</h2>
+      <div class="tech-layout">
+        <div class="reveal visual-copy">
+          <span class="pill agent">Agent</span>
+          <div class="copy compact">
+            <ul class="bullet-list">
+              <li><strong>질문</strong>: 사용자의 여행 질문 입력</li>
+              <li><strong>판단</strong>: function calling으로 필요한 도구 선택</li>
+              <li><strong>검색</strong>: RAG로 게시판 관련 코스 수집</li>
+              <li><strong>확인</strong>: MCP로 실제 장소 주소 · 좌표 조회</li>
+              <li><strong>응답</strong>: 답변 · 참고 게시글 · 장소 칩 반환</li>
+            </ul>
+          </div>
+        </div>
+        <div class="panel diagram reveal">
+          <div class="diag-quote">“부산에서 바다와 맛집을 같이 즐길 수 있는 코스를 추천해줘”</div>
+          <div class="flow">
+            <div class="node"><span class="e">💬</span><span class="t">질문</span></div>
+            <div class="arrow">→</div>
+            <div class="node"><span class="e">🤖</span><span class="t">Agent<br>도구 선택</span></div>
+            <div class="arrow">→</div>
+            <div class="branch">
+              <div class="node"><span class="e">🔍</span><span class="t"><span class="tag rag">RAG</span> · 관련 코스 검색</span></div>
+              <div class="node"><span class="e">📍</span><span class="t"><span class="tag mcp">MCP</span> · 실제 장소 확인</span></div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node key"><span class="e">✅</span><span class="t">최종 답변<br>글 + 장소 칩</span></div>
+          </div>
+          <div class="diag-note"><span class="e">🧠</span><div>질문 상황에 따라 Agent가 <strong>두 도구를 골라 조합</strong></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide demo-slide">
+    <div class="inner">
+      <div class="label reveal">08 데모</div>
+      <h2 class="reveal">데모</h2>
+      <div class="demo-shot-wrap reveal">
+        <img class="demo-shot" src="screenshots/demo-home.png" alt="정글 여행 서비스 메인 화면">
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <div class="label reveal">09 회고</div>
+      <h2 class="reveal">AI 기술별 역할 정리</h2>
+      <div class="three-columns reveal">
+        <div class="panel feature-card">
+          <span class="num">RAG</span>
+          <h3>내부 데이터 활용</h3>
+          <p>게시판 코스를 임베딩으로 저장 · 질문과 가까운 글 검색 · 출처 기반 답변</p>
+        </div>
+        <div class="panel feature-card">
+          <span class="num">MCP</span>
+          <h3>외부 기능 분리</h3>
+          <p>장소 검색과 API 키를 백엔드 도구로 분리 · AI가 호출 가능하게 만듦</p>
+        </div>
+        <div class="panel feature-card">
+          <span class="num">Agent</span>
+          <h3>도구 조합</h3>
+          <p>질문에 따라 RAG와 MCP를 선택 · 답변과 장소 칩까지 함께 구성</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="inner">
+      <div class="label reveal">10 한계점과 개선 방향</div>
+      <h2 class="reveal">한계점과 개선 방향</h2>
+      <div class="two-columns reveal">
+        <div class="panel summary-panel">
+          <h3>한계점</h3>
+          <ul class="bullet-list">
+            <li><strong>외부 API 의존</strong>: 비용, 응답 속도, 레이트리밋 영향</li>
+            <li><strong>임베딩 캐싱 부족</strong>: 같은 질문도 매번 임베딩 생성</li>
+            <li><strong>답변 스트리밍 미적용</strong>: 사용자가 느끼는 대기 시간 증가</li>
+            <li><strong>긴 게시글 처리 한계</strong>: 본문 일부 정보 누락 가능</li>
+          </ul>
+        </div>
+        <div class="panel summary-panel">
+          <h3>개선 방향</h3>
+          <ul class="bullet-list">
+            <li>자주 들어오는 질문에 대한 임베딩 캐싱</li>
+            <li>AI 답변 스트리밍 적용</li>
+            <li>긴 게시글을 청킹해서 더 정교하게 검색</li>
+            <li>Agent 도구 확장과 이미지 저장 구조 개선</li>
+            <li>반복 질문/인기 질문 프리컴퓨트</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note reveal">프로젝트 의미: AI 기능 추가를 넘어, 서비스 데이터와 외부 도구의 연결 방식 실험</div>
+    </div>
+  </section>
+</main>
+
+<div class="dots" id="dots"></div>
+<div class="counter" id="counter">1 / 10</div>
+<div class="nav">
+  <button id="prev" type="button" aria-label="이전 슬라이드">&lsaquo;</button>
+  <button id="next" type="button" aria-label="다음 슬라이드">&rsaquo;</button>
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll(".slide")];
+  const dotsWrap = document.getElementById("dots");
+  const counter = document.getElementById("counter");
+  const progress = document.getElementById("progress");
+  let current = 0;
+
+  slides.forEach((_, index) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `${index + 1}번 슬라이드로 이동`);
+    dot.addEventListener("click", () => go(index));
+    dotsWrap.appendChild(dot);
+  });
+
+  const dots = [...dotsWrap.children];
+
+  function go(index) {
+    current = Math.max(0, Math.min(slides.length - 1, index));
+    slides.forEach((slide, slideIndex) => {
+      slide.classList.toggle("active", slideIndex === current);
+    });
+    dots.forEach((dot, dotIndex) => {
+      dot.classList.toggle("on", dotIndex === current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+  }
+
+  function next() {
+    go(current + 1);
+  }
+
+  function prev() {
+    go(current - 1);
+  }
+
+  document.getElementById("next").addEventListener("click", next);
+  document.getElementById("prev").addEventListener("click", prev);
+
+  window.addEventListener("keydown", (event) => {
+    if (["ArrowRight", "ArrowDown", " ", "PageDown"].includes(event.key)) {
+      event.preventDefault();
+      next();
+    }
+    if (["ArrowLeft", "ArrowUp", "PageUp"].includes(event.key)) {
+      event.preventDefault();
+      prev();
+    }
+    if (event.key === "Home") {
+      go(0);
+    }
+    if (event.key === "End") {
+      go(slides.length - 1);
+    }
+  });
+
+  let touchStartX = 0;
+  window.addEventListener("touchstart", (event) => {
+    touchStartX = event.touches[0].clientX;
+  }, { passive: true });
+  window.addEventListener("touchend", (event) => {
+    const deltaX = event.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(deltaX) > 50) {
+      deltaX < 0 ? next() : prev();
+    }
+  }, { passive: true });
+
+  go(0);
+</script>
+</body>
+</html>
