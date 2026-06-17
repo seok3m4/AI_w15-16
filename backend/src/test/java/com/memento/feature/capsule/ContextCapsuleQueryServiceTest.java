@@ -15,6 +15,8 @@ class ContextCapsuleQueryServiceTest {
             UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID CAPSULE_ID =
             UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID POST_ID =
+            UUID.fromString("33333333-3333-3333-3333-333333333333");
     private static final Instant NOW = Instant.parse("2026-06-17T00:00:00Z");
 
     @Test
@@ -62,6 +64,47 @@ class ContextCapsuleQueryServiceTest {
     }
 
     @Test
+    void compactContextReturnsOnlyExternalLlmFieldsForOwnCapsule() {
+        UUID secondPostId = UUID.fromString("44444444-4444-4444-4444-444444444444");
+        CapturingContextCapsuleRepository repository = new CapturingContextCapsuleRepository();
+        repository.findRecord = Optional.of(new ContextCapsuleRecord(
+                CAPSULE_ID,
+                OWNER_ID,
+                "title-1",
+                "purpose-1",
+                "query",
+                "summary-1",
+                List.of("fact-1", "fact-2"),
+                List.of("tag1", "tag2"),
+                false,
+                List.of(
+                        sourceRecord(POST_ID),
+                        sourceRecord(secondPostId)),
+                NOW,
+                NOW));
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(repository);
+
+        ContextCapsuleCompactContextResponse response = service.compactContext(OWNER_ID, CAPSULE_ID);
+
+        assertThat(repository.capturedOwnerIdForLookup).isEqualTo(OWNER_ID);
+        assertThat(repository.capturedLookupCapsuleId).isEqualTo(CAPSULE_ID);
+        assertThat(response).isEqualTo(new ContextCapsuleCompactContextResponse(
+                "purpose-1",
+                "summary-1",
+                List.of("fact-1", "fact-2"),
+                List.of(POST_ID, secondPostId),
+                List.of("tag1", "tag2")));
+    }
+
+    @Test
+    void compactContextThrowsNotFoundWhenNoActiveCapsuleExists() {
+        ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
+
+        assertThatThrownBy(() -> service.compactContext(OWNER_ID, CAPSULE_ID))
+                .isInstanceOf(ContextCapsuleNotFoundException.class);
+    }
+
+    @Test
     void listRejectsInvalidPageParameters() {
         ContextCapsuleQueryService service = new ContextCapsuleQueryService(new CapturingContextCapsuleRepository());
 
@@ -99,6 +142,18 @@ class ContextCapsuleQueryServiceTest {
                 false,
                 List.of(),
                 NOW,
+                NOW);
+    }
+
+    private static ContextCapsuleSourceRecord sourceRecord(UUID postId) {
+        return new ContextCapsuleSourceRecord(
+                postId,
+                UUID.fromString("55555555-5555-5555-5555-555555555555"),
+                OWNER_ID,
+                "cutan",
+                "source-title",
+                "source-snippet",
+                "post",
                 NOW);
     }
 

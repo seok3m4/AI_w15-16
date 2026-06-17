@@ -1350,6 +1350,29 @@ DELETE /api/v1/context-capsules/{capsuleId}
 
 Response `204 No Content`
 
+### 8.6 Capsule compact context 조회
+
+```http
+GET /api/v1/context-capsules/{capsuleId}/compact-context
+```
+
+Response `200 OK`:
+
+```json
+{
+  "purpose": "외부 LLM에게 최근 프로젝트 맥락 전달",
+  "summary": "최근 프로젝트에서 인증, 친구 권한, RAG 흐름을 설계했다.",
+  "keyFacts": [
+    "JWT Bearer 인증을 사용한다.",
+    "친구 AI 사용은 전역 opt-in이 필요하다."
+  ],
+  "sourcePostIds": ["uuid"],
+  "tags": ["프로젝트", "API"]
+}
+```
+
+`sourcePostIds`는 Capsule 생성 시 검증되어 저장된 근거 게시글 ID만 포함한다. 현재 사용자 소유의 active Capsule만 조회할 수 있으며, 미존재/삭제/타인 소유 Capsule은 `CAPSULE_NOT_FOUND`로 은닉한다.
+
 ## 9. Agent와 승인 API
 
 ### 9.1 Agent 실행 시작
