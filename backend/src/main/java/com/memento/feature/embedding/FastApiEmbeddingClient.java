@@ -1,6 +1,7 @@
 package com.memento.feature.embedding;
 
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestTemplate;
 
 @Component
@@ -11,7 +12,7 @@ class FastApiEmbeddingClient {
     private final RestTemplate restTemplate;
     private final EmbeddingProperties properties;
 
-    FastApiEmbeddingClient(RestTemplate restTemplate, EmbeddingProperties properties) {
+    FastApiEmbeddingClient(@Qualifier("embeddingRestTemplate") RestTemplate restTemplate, EmbeddingProperties properties) {
         this.restTemplate = restTemplate;
         this.properties = properties;
     }

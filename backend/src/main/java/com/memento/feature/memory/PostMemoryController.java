@@ -5,6 +5,7 @@ import com.memento.feature.auth.CurrentUser;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 class PostMemoryController {
 
     private final PostMemoryFeatureService service;
+    private final MemorySummaryService summaryService;
 
-    PostMemoryController(PostMemoryFeatureService service) {
+    PostMemoryController(PostMemoryFeatureService service, MemorySummaryService summaryService) {
         this.service = service;
+        this.summaryService = summaryService;
     }
 
     @GetMapping("/api/v1/posts/{postId}/memory-status")
@@ -48,6 +51,18 @@ class PostMemoryController {
             @CurrentUser AuthenticatedUserPrincipal currentUser,
             @Valid @RequestBody MemorySearchRequest request) {
         return service.searchMemories(currentUser.userId(), request);
+    }
+
+    @PostMapping("/api/v1/memory-search/summarize")
+    ResponseEntity<Object> summarizeMemorySearch(
+            @CurrentUser AuthenticatedUserPrincipal currentUser,
+            @Valid @RequestBody MemorySummaryRequest request) {
+        try {
+            return ResponseEntity.ok(summaryService.summarize(currentUser.userId(), request));
+        } catch (MemorySummaryTimeoutException exception) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(summaryService.enqueue(currentUser.userId(), request));
+        }
     }
 
     @PostMapping("/api/v1/friends/{friendId}/memory-search")

@@ -59,6 +59,18 @@ class PostMemoryExceptionHandler {
                 List.of());
     }
 
+    @ExceptionHandler(MemorySummaryProviderException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    ProblemDetailsResponse handleMemorySummaryProviderFailed(HttpServletRequest request) {
+        return problem(
+                "Summary provider unavailable",
+                HttpStatus.BAD_GATEWAY,
+                "SUMMARY_PROVIDER_UNAVAILABLE",
+                "Memory summary provider is temporarily unavailable.",
+                request.getRequestURI(),
+                List.of());
+    }
+
     @ExceptionHandler(ReindexRequestInvalidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ProblemDetailsResponse handleReindexRequestInvalid(
@@ -141,7 +153,7 @@ class PostMemoryExceptionHandler {
     }
 
     private boolean isMemorySearch(HttpServletRequest request) {
-        return request.getRequestURI().endsWith("/memory-search");
+        return request.getRequestURI().contains("/memory-search");
     }
 
     record ProblemDetailsResponse(

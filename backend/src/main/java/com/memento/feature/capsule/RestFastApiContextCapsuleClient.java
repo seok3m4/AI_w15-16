@@ -1,6 +1,7 @@
 package com.memento.feature.capsule;
 
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,7 +13,9 @@ class RestFastApiContextCapsuleClient implements FastApiContextCapsuleClient {
     private final RestTemplate restTemplate;
     private final ContextCapsuleProperties properties;
 
-    RestFastApiContextCapsuleClient(RestTemplate restTemplate, ContextCapsuleProperties properties) {
+    RestFastApiContextCapsuleClient(
+            @Qualifier("contextCapsuleRestTemplate") RestTemplate restTemplate,
+            ContextCapsuleProperties properties) {
         this.restTemplate = restTemplate;
         this.properties = properties;
     }
