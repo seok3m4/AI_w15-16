@@ -6,6 +6,7 @@ import {
 } from "@/lib/ai/moderation-agent";
 import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { getCurrentUser } from "@/lib/auth/session";
+import { stripPostImageMarkdown } from "@/lib/posts/content";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateUpdatePostInput } from "@/lib/posts/validation";
 import { prisma } from "@/lib/prisma";
@@ -98,7 +99,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const moderation = await runModerationAgent({
       targetType: "post",
       title: validation.data.title,
-      content: validation.data.content ?? "",
+      content: stripPostImageMarkdown(validation.data.content ?? ""),
     });
 
     if (moderation.verdict === "block") {

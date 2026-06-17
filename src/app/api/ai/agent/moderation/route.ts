@@ -4,6 +4,7 @@ import {
   type ModerationTargetType,
   runModerationAgent,
 } from "@/lib/ai/moderation-agent";
+import { stripPostImageMarkdown } from "@/lib/posts/content";
 
 export const runtime = "nodejs";
 
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
     const result = await runModerationAgent({
       targetType,
       title: getString(body.title),
-      content,
+      content: stripPostImageMarkdown(content),
     });
 
     return NextResponse.json({

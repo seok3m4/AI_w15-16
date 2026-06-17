@@ -14,6 +14,7 @@ import type {
   UrlBriefingResult,
 } from "@/lib/mcp/baseball-briefing-tools";
 import { invokeBaseballMcpTool } from "@/lib/mcp/json-rpc";
+import { getPostPreviewText } from "@/lib/posts/content";
 import { prisma } from "@/lib/prisma";
 
 export type BoardAssistantMessage = {
@@ -346,7 +347,7 @@ function extractPlayerNameCandidates(question: string): string[] {
 }
 
 function getExcerpt(content: string): string {
-  const normalized = content.replace(/\s+/g, " ").trim();
+  const normalized = getPostPreviewText(content, 140);
 
   return normalized.length > 140
     ? `${normalized.slice(0, 140)}...`

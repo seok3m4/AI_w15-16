@@ -2,6 +2,7 @@ import {
   validateOptionalTagNames,
   validateTagNames,
 } from "@/lib/tags/validation";
+import { POST_CONTENT_MAX_LENGTH } from "@/lib/posts/content";
 
 type ValidationResult<T> =
   | {
@@ -28,7 +29,7 @@ type UpdatePostInput = {
 const TITLE_MIN_LENGTH = 2;
 const TITLE_MAX_LENGTH = 120;
 const CONTENT_MIN_LENGTH = 1;
-const CONTENT_MAX_LENGTH = 20_000;
+const CONTENT_MAX_LENGTH = POST_CONTENT_MAX_LENGTH;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

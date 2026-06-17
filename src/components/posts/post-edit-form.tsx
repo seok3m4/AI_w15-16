@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { PostImageUploader } from "@/components/posts/post-image-uploader";
+import {
+  extractPostImageAttachments,
+  POST_CONTENT_MAX_LENGTH,
+  serializePostContent,
+  type PostImageAttachment,
+} from "@/lib/posts/content";
+
 type CurrentUser = {
   id: string;
   email: string;
@@ -84,6 +92,9 @@ export function PostEditForm({ postId }: PostEditFormProps) {
   const [post, setPost] = useState<Post | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [imageAttachments, setImageAttachments] = useState<
+    PostImageAttachment[]
+  >([]);
   const [tags, setTags] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,7 +157,9 @@ export function PostEditForm({ postId }: PostEditFormProps) {
 
         setPost(postData.post);
         setTitle(postData.post.title);
-        setContent(postData.post.content);
+        const parsedContent = extractPostImageAttachments(postData.post.content);
+        setContent(parsedContent.text);
+        setImageAttachments(parsedContent.attachments);
         setTags(joinTags(postData.post.tags));
 
         if (userResponse.ok) {
@@ -244,6 +257,11 @@ export function PostEditForm({ postId }: PostEditFormProps) {
       return;
     }
 
+    const contentWithAttachments = serializePostContent(
+      content,
+      imageAttachments,
+    );
+
     setIsSubmitting(true);
 
     try {
@@ -255,7 +273,7 @@ export function PostEditForm({ postId }: PostEditFormProps) {
         credentials: "include",
         body: JSON.stringify({
           title,
-          content,
+          content: contentWithAttachments,
           tags: parseTags(tags),
         }),
       });
@@ -361,16 +379,24 @@ export function PostEditForm({ postId }: PostEditFormProps) {
               />
             </label>
 
-            <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4">
-              <span className="text-sm font-semibold text-[#172033]">본문</span>
+            <section className="community-subpanel grid gap-3 bg-[#fbfcfe] p-4">
+              <span className="text-sm font-semibold text-[#172033]">
+                본문
+              </span>
               <textarea
                 className="community-textarea min-h-72 resize-y text-sm leading-6"
-                maxLength={20000}
+                maxLength={POST_CONTENT_MAX_LENGTH}
                 onChange={(event) => setContent(event.target.value)}
                 required
                 value={content}
               />
-            </label>
+              <PostImageUploader
+                attachments={imageAttachments}
+                contentLength={content.length}
+                disabled={isSubmitting || isModerating}
+                onChange={setImageAttachments}
+              />
+            </section>
 
             <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4">
               <span className="text-sm font-semibold text-[#172033]">태그</span>

@@ -9,6 +9,7 @@ import {
   getOpenAIApiKey,
   MAX_RAG_LIMIT,
 } from "@/lib/ai/config";
+import { stripPostImageMarkdown } from "@/lib/posts/content";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { prisma } from "@/lib/prisma";
 
@@ -106,7 +107,7 @@ function buildPostKnowledgeText(post: PostForEmbedding): string {
     `제목: ${post.title}`,
     `태그: ${tags}`,
     "본문:",
-    post.content,
+    stripPostImageMarkdown(post.content),
   ].join("\n");
 }
 
@@ -117,7 +118,7 @@ function buildDraftKnowledgeText(draft: DraftForEmbedding): string {
     `제목: ${draft.title}`,
     `태그: ${tags}`,
     "본문:",
-    draft.content,
+    stripPostImageMarkdown(draft.content),
   ].join("\n");
 }
 
@@ -356,14 +357,14 @@ async function summarizeSimilarPosts(
     "",
     "[현재 게시글]",
     `제목: ${sourcePost.title}`,
-    `본문: ${sourcePost.content.slice(0, 1200)}`,
+    `본문: ${stripPostImageMarkdown(sourcePost.content).slice(0, 1200)}`,
     "",
     "[유사 게시글]",
     ...similarPosts.map((post, index) =>
       [
         `${index + 1}. ${post.title}`,
         `태그: ${post.tags.map((tag) => tag.name).join(", ") || "없음"}`,
-        `본문: ${post.content.slice(0, 700)}`,
+        `본문: ${stripPostImageMarkdown(post.content).slice(0, 700)}`,
       ].join("\n"),
     ),
   ].join("\n");
@@ -459,7 +460,7 @@ async function summarizeRelatedPostBundle(input: {
         `${index + 1}. ${post.title}`,
         `태그: ${post.tags.map((tag) => tag.name).join(", ") || "없음"}`,
         `추천점수: ${post.counts.voteScore}, 댓글: ${post.counts.comments}, 조회: ${post.counts.views}`,
-        `본문: ${post.content.slice(0, 900)}`,
+        `본문: ${stripPostImageMarkdown(post.content).slice(0, 900)}`,
       ].join("\n"),
     ),
   ].join("\n");

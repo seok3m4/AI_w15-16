@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { SimilarPostsPanel } from "@/components/ai/similar-posts-panel";
 import { CommentSection } from "@/components/comments/comment-section";
+import { PostContentRenderer } from "@/components/posts/post-content-renderer";
 
 type CurrentUser = {
   id: string;
@@ -391,9 +392,10 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
                 </span>
               </div>
 
-              <div className="mt-5 break-words whitespace-pre-wrap border-t border-[#d8deea] pt-6 text-[15px] leading-8 text-[#202632]">
-                {post.content}
-              </div>
+              <PostContentRenderer
+                className="mt-5 break-words border-t border-[#d8deea] pt-6 text-[15px] leading-8 text-[#202632]"
+                content={post.content}
+              />
 
               <div className="mt-6 rounded-sm border border-[#d8deea] bg-[#f8fafc] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">

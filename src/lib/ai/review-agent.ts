@@ -14,6 +14,7 @@ import type {
   McpToolResult,
 } from "@/lib/mcp/baseball-briefing-tools";
 import { invokeBaseballMcpTool } from "@/lib/mcp/json-rpc";
+import { getPostPreviewText } from "@/lib/posts/content";
 import { prisma } from "@/lib/prisma";
 
 type AgentToolName =
@@ -322,7 +323,9 @@ function getSearchKeyword(memo: string, favoriteTeam: string): string {
 }
 
 function getPreview(content: string): string {
-  return content.length > 120 ? `${content.slice(0, 120)}...` : content;
+  const preview = getPostPreviewText(content, 120);
+
+  return preview.length >= 120 ? `${preview}...` : preview;
 }
 
 function getMessageText(content: unknown): string {

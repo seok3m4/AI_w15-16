@@ -7,6 +7,7 @@ import {
 import { getCurrentUser } from "@/lib/auth/session";
 import { refreshPostEmbedding } from "@/lib/ai/rag";
 import { toPaginationResponse } from "@/lib/pagination";
+import { stripPostImageMarkdown } from "@/lib/posts/content";
 import { parsePostListQuery } from "@/lib/posts/query";
 import { postSelect, toPostResponse } from "@/lib/posts/serializer";
 import { validateCreatePostInput } from "@/lib/posts/validation";
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
   const moderation = await runModerationAgent({
     targetType: "post",
     title: validation.data.title,
-    content: validation.data.content,
+    content: stripPostImageMarkdown(validation.data.content),
   });
 
   if (moderation.verdict === "block") {

@@ -8,6 +8,13 @@ import {
   ReviewAgentPanel,
   type ReviewAgentDraft,
 } from "@/components/ai/review-agent-panel";
+import { PostImageUploader } from "@/components/posts/post-image-uploader";
+import {
+  getPostPreviewText,
+  POST_CONTENT_MAX_LENGTH,
+  serializePostContent,
+  type PostImageAttachment,
+} from "@/lib/posts/content";
 
 type CurrentUser = {
   id: string;
@@ -105,7 +112,9 @@ function formatSimilarity(value: number): string {
 }
 
 function getPreview(content: string): string {
-  return content.length > 96 ? `${content.slice(0, 96)}...` : content;
+  const preview = getPostPreviewText(content, 96);
+
+  return preview.length >= 96 ? `${preview}...` : preview;
 }
 
 function isBlockingDuplicateRisk(risk: DuplicateRisk): boolean {
@@ -162,6 +171,9 @@ export function PostCreateForm({
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
+  const [imageAttachments, setImageAttachments] = useState<
+    PostImageAttachment[]
+  >([]);
   const [tags, setTags] = useState(formatTags(initialTags));
   const [existingTags, setExistingTags] = useState<ExistingTag[]>([]);
   const [isTagsLoading, setIsTagsLoading] = useState(true);
@@ -347,6 +359,11 @@ export function PostCreateForm({
       return;
     }
 
+    const contentWithAttachments = serializePostContent(
+      content,
+      imageAttachments,
+    );
+
     setIsSubmitting(true);
 
     try {
@@ -358,7 +375,7 @@ export function PostCreateForm({
         credentials: "include",
         body: JSON.stringify({
           title,
-          content,
+          content: contentWithAttachments,
           tags: parseTags(tags),
         }),
       });
@@ -553,16 +570,22 @@ export function PostCreateForm({
             />
           </label>
 
-          <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
-            본문
+          <section className="community-subpanel grid gap-3 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
+            <span>본문</span>
             <textarea
               className="community-textarea min-h-72 resize-y text-sm font-normal leading-6"
-              maxLength={20000}
+              maxLength={POST_CONTENT_MAX_LENGTH}
               onChange={(event) => setContent(event.target.value)}
               required
               value={content}
             />
-          </label>
+            <PostImageUploader
+              attachments={imageAttachments}
+              contentLength={content.length}
+              disabled={isSubmitting || isModerating}
+              onChange={setImageAttachments}
+            />
+          </section>
 
           <label className="community-subpanel grid gap-2 bg-[#fbfcfe] p-4 text-sm font-semibold text-[#172033]">
             태그

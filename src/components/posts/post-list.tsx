@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { getPostPreviewText } from "@/lib/posts/content";
+
 type CurrentUser = {
   id: string;
   email: string;
@@ -76,7 +78,7 @@ function getPrimaryTag(tags: Tag[]): string {
 }
 
 function getPostPreview(content: string): string {
-  return content.replace(/\s+/g, " ").trim().slice(0, 120);
+  return getPostPreviewText(content);
 }
 
 function renderTagButton(

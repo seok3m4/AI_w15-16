@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { getPostPreviewText } from "@/lib/posts/content";
+
 type Tag = {
   id: string;
   name: string;
@@ -35,7 +37,9 @@ function formatSimilarity(value: number): string {
 }
 
 function getPreview(content: string): string {
-  return content.length > 96 ? `${content.slice(0, 96)}...` : content;
+  const preview = getPostPreviewText(content, 96);
+
+  return preview.length >= 96 ? `${preview}...` : preview;
 }
 
 function joinClassNames(...values: Array<string | undefined>): string {
