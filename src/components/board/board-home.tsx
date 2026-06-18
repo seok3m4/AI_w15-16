@@ -89,15 +89,32 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
             ) : null}
           </div>
         </div>
+
+        <div className="grid grid-cols-4 gap-1 border-t border-[#d8deea] bg-white p-2 text-center text-[11px] font-black text-[#475569] md:hidden">
+          <a className="community-chip w-full" href="#games">
+            오늘 경기
+          </a>
+          <Link className="community-chip w-full" href="/posts/new">
+            글쓰기
+          </Link>
+          <Link className="community-chip w-full" href="/news">
+            뉴스
+          </Link>
+          <Link className="community-chip w-full" href="/records">
+            기록
+          </Link>
+        </div>
       </div>
 
-      <TodayGameHub
-        onSelectTeam={handleSelectTeam}
-        selectedTeam={selectedTeam}
-      />
+      <div className="scroll-mt-24" id="games">
+        <TodayGameHub
+          onSelectTeam={handleSelectTeam}
+          selectedTeam={selectedTeam}
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
-        <aside className="space-y-3 lg:sticky lg:top-28 lg:self-start">
+        <aside className="order-2 space-y-3 lg:order-none lg:sticky lg:top-28 lg:self-start">
           <TeamTabs onSelectTeam={handleSelectTeam} selectedTeam={selectedTeam} />
           <TagFilterPanel
             onClearTags={handleClearTags}
@@ -106,7 +123,7 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
           />
         </aside>
 
-        <main className="min-w-0">
+        <main className="order-1 min-w-0 lg:order-none">
           <PostList
             onClearFilters={handleClearFilters}
             onClearTags={handleClearTags}
@@ -119,7 +136,7 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
           />
         </main>
 
-        <aside className="space-y-3 lg:sticky lg:top-28 lg:self-start">
+        <aside className="order-3 space-y-3 lg:order-none lg:sticky lg:top-28 lg:self-start">
           <HotPostsPanel selectedTeam={selectedTeam} />
           <BoardAssistantPanel selectedTeam={selectedTeam} />
         </aside>

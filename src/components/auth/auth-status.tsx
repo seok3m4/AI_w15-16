@@ -92,11 +92,11 @@ export function AuthStatus() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="community-header-pill max-w-40 font-bold text-white">
+      <span className="community-header-pill max-w-28 font-bold text-white sm:max-w-40">
         <span className="truncate">{user.nickname}</span>
       </span>
       <Link
-        className="community-header-link border border-white/20 bg-white/10"
+        className="community-header-link hidden border border-white/20 bg-white/10 sm:inline-flex"
         href="/me"
       >
         마이페이지
