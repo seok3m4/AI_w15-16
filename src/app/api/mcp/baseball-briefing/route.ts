@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         id: null,
         error: {
           code: -32001,
-          message: "Unauthorized MCP request.",
+          message: "권한을 확인해주세요.",
         },
       },
       { status: 401 },
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         id: null,
         error: {
           code: -32700,
-          message: "Invalid JSON body.",
+          message: "요청 내용을 확인해주세요.",
         },
       },
       { status: 400 },

@@ -39,7 +39,27 @@ type ReviewAgentPanelProps = {
 };
 
 function getStepLabel(step: AgentStep): string {
-  return `${step.toolName} · ${step.status}`;
+  if (step.toolName === "recommend_review_tags") {
+    return "태그 추천";
+  }
+
+  if (step.toolName === "search_board_posts") {
+    return "관련 글 확인";
+  }
+
+  if (step.toolName === "fetch_baseball_news_briefing") {
+    return "기사 확인";
+  }
+
+  if (step.toolName === "fetch_kbo_games") {
+    return "경기 정보 확인";
+  }
+
+  if (step.toolName === "fetch_kbo_game_record") {
+    return "기록 확인";
+  }
+
+  return step.status === "success" ? "자료 확인" : "확인 필요";
 }
 
 export function ReviewAgentPanel({ onApplyDraft }: ReviewAgentPanelProps) {

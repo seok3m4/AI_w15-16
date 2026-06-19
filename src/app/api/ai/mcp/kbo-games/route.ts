@@ -18,7 +18,7 @@ function getStringParam(value: unknown): string | undefined {
 
 function getMcpResult(value: unknown): McpToolResult<KboGamesResult> {
   if (!isRecord(value) || !("structuredContent" in value)) {
-    throw new Error("MCP response is invalid.");
+    throw new Error("경기 정보를 확인하지 못했습니다.");
   }
 
   return value as McpToolResult<KboGamesResult>;
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "KBO game lookup failed.";
+      error instanceof Error ? error.message : "경기 정보를 확인하지 못했습니다.";
 
     return NextResponse.json(
       {
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "KBO game lookup failed.";
+      error instanceof Error ? error.message : "경기 정보를 확인하지 못했습니다.";
 
     return NextResponse.json(
       {

@@ -24,20 +24,20 @@ function parseInput(body: unknown):
       message: string;
     } {
   if (!isRecord(body)) {
-    return { ok: false, message: "Request body is invalid." };
+    return { ok: false, message: "요청 내용을 확인해주세요." };
   }
 
   const mode = body.mode;
   const input = typeof body.input === "string" ? body.input.trim() : "";
 
   if (mode !== "keyword" && mode !== "url") {
-    return { ok: false, message: "mode must be keyword or url." };
+    return { ok: false, message: "정리 방식을 확인해주세요." };
   }
 
   if (input.length < 2 || input.length > MAX_INPUT_LENGTH) {
     return {
       ok: false,
-      message: `input must be between 2 and ${MAX_INPUT_LENGTH} characters.`,
+      message: `입력 내용은 2자 이상 ${MAX_INPUT_LENGTH}자 이하로 작성해주세요.`,
     };
   }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { message: "Request body is invalid." },
+      { message: "요청 내용을 확인해주세요." },
       { status: 400 },
     );
   }
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error
         ? error.message
-        : "MCP briefing failed.";
+        : "뉴스를 정리하지 못했습니다.";
 
     return NextResponse.json(
       {

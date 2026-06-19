@@ -58,7 +58,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
     } catch {
       setData({
         status: "unavailable",
-        message: "승부 예측을 생성하지 못했습니다.",
+        message: "경기 전망을 정리하지 못했습니다.",
       });
     } finally {
       setIsLoading(false);
@@ -69,7 +69,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
     <section className="community-panel mt-4">
       <div className="community-panel-header community-panel-header-stack">
         <div>
-          <h2 className="text-sm font-black text-[#1f3470]">승부 예측</h2>
+          <h2 className="text-sm font-black text-[#1f3470]">경기 전망</h2>
           <p className="mt-1 text-xs text-[#667085]">
             순위, 선발, 라인업 기준 관전 포인트
           </p>
@@ -81,16 +81,16 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
           type="button"
         >
           {isLoading
-            ? "예측 중"
+            ? "정리 중"
             : hasRequested
-              ? "다시 예측"
-              : "승부 예측"}
+              ? "다시 보기"
+              : "전망 보기"}
         </button>
       </div>
 
       {!hasRequested ? (
         <p className="px-3 py-4 text-sm text-[#667085]">
-          경기 전력과 공개된 라인업을 기준으로 참고용 예측을 봅니다.
+          경기 전력과 공개된 라인업을 기준으로 관전 포인트를 봅니다.
         </p>
       ) : null}
 
@@ -111,7 +111,7 @@ export function GamePredictionPanel({ game }: GamePredictionPanelProps) {
           <div className="community-subpanel bg-[#fbfcff] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-black text-[#667085]">예측 우세</p>
+                <p className="text-xs font-black text-[#667085]">전망 우세</p>
                 <p className="mt-1 text-xl font-black text-[#d71920]">
                   {data.result.predictedTeam}
                 </p>

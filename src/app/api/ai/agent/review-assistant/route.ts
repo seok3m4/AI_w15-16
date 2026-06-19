@@ -15,14 +15,14 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { message: "Request body is invalid." },
+      { message: "요청 내용을 확인해주세요." },
       { status: 400 },
     );
   }
 
   if (!isRecord(body) || typeof body.memo !== "string") {
     return NextResponse.json(
-      { message: "memo is required." },
+      { message: "경기 메모를 입력해주세요." },
       { status: 400 },
     );
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error
         ? error.message
-        : "AI Agent review assistant failed.";
+        : "리뷰 초안을 만들지 못했습니다.";
 
     return NextResponse.json(
       {

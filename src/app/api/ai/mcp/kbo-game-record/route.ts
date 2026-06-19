@@ -16,7 +16,7 @@ function getMcpResult(
   value: unknown,
 ): McpToolResult<KboGameRecordBriefingResult> {
   if (!isRecord(value) || !("structuredContent" in value)) {
-    throw new Error("MCP response is invalid.");
+    throw new Error("경기 기록을 확인하지 못했습니다.");
   }
 
   return value as McpToolResult<KboGameRecordBriefingResult>;
@@ -29,14 +29,14 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { message: "Request body is invalid." },
+      { message: "요청 내용을 확인해주세요." },
       { status: 400 },
     );
   }
 
   if (!isRecord(body)) {
     return NextResponse.json(
-      { message: "Request body must be an object." },
+      { message: "요청 내용을 확인해주세요." },
       { status: 400 },
     );
   }
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error
         ? error.message
-        : "KBO official record briefing failed.";
+        : "경기 기록을 정리하지 못했습니다.";
 
     return NextResponse.json(
       {

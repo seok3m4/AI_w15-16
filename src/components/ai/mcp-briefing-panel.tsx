@@ -56,7 +56,7 @@ export function McpBriefingPanel() {
       if (!response.ok) {
         setData({
           status: "unavailable",
-          message: responseData.message ?? "브리핑을 생성하지 못했습니다.",
+          message: responseData.message ?? "뉴스를 정리하지 못했습니다.",
         });
         return;
       }
@@ -80,13 +80,13 @@ export function McpBriefingPanel() {
             뉴스 정리
           </p>
           <h2 className="mt-1 text-base font-black text-[#071a3d]">
-          뉴스/URL 브리핑
-        </h2>
+            뉴스 링크 정리
+          </h2>
           <p className="mt-0.5 text-xs leading-5 text-[#667085]">
-          기사 링크와 키워드 짧은 정리
+            키워드나 기사 링크를 넣으면 핵심만 정리합니다.
           </p>
         </div>
-        <span className="community-chip community-chip-link">브리핑</span>
+        <span className="community-chip community-chip-link">기사 정리</span>
       </div>
 
       <form className="grid gap-3 p-4" onSubmit={handleSubmit}>
@@ -122,7 +122,7 @@ export function McpBriefingPanel() {
           disabled={isLoading || input.trim().length < 2}
           type="submit"
         >
-          {isLoading ? "브리핑 생성 중" : "브리핑 생성"}
+          {isLoading ? "정리 중" : "정리하기"}
         </button>
       </form>
 
@@ -136,7 +136,7 @@ export function McpBriefingPanel() {
         <div className="space-y-4 p-4 pt-1">
           <div className="community-subpanel p-3">
             <p className="text-xs font-black uppercase text-[#64748b]">
-              브리핑
+              정리 내용
             </p>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#071a3d]">
               {data.briefing.briefing}

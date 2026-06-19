@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "unavailable",
-        message: "Request body is invalid.",
+        message: "요청 내용을 확인해주세요.",
       },
       { status: 400 },
     );
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "unavailable",
-        message: "question is required.",
+        message: "질문을 입력해주세요.",
       },
       { status: 400 },
     );
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Board assistant failed.";
+      error instanceof Error ? error.message : "답변을 만들지 못했습니다.";
 
     return NextResponse.json(
       {

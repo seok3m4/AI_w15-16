@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "unavailable",
-        message: "예측할 경기 정보가 필요합니다.",
+        message: "경기 정보를 확인해주세요.",
       },
       { status: 400 },
     );
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "승부 예측을 생성하지 못했습니다.";
+      error instanceof Error ? error.message : "경기 전망을 정리하지 못했습니다.";
 
     return NextResponse.json(
       {

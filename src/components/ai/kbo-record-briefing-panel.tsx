@@ -82,7 +82,7 @@ export function KboRecordBriefingPanel({
         setData({
           status: "unavailable",
           message:
-            responseData.message ?? "공식 기록 브리핑을 생성하지 못했습니다.",
+            responseData.message ?? "경기 기록을 정리하지 못했습니다.",
         });
         return;
       }
@@ -103,10 +103,10 @@ export function KboRecordBriefingPanel({
       <div className="community-panel-header">
         <div>
           <h2 className="text-sm font-black text-[#1f3470]">
-            공식 기록 브리핑
+            경기 기록 포인트
           </h2>
           <p className="mt-1 text-xs text-[#667085]">
-            공식 기록 기준 경기 포인트
+            공식 기록 기준으로 승부 포인트를 확인합니다.
           </p>
         </div>
         <button
@@ -119,7 +119,7 @@ export function KboRecordBriefingPanel({
             ? "조회 중"
             : hasRequested
               ? "다시 조회"
-              : "공식 기록 보기"}
+              : "기록 포인트 보기"}
         </button>
       </div>
 
@@ -131,7 +131,7 @@ export function KboRecordBriefingPanel({
 
       {isLoading ? (
         <p className="px-3 py-4 text-sm text-[#667085]">
-          KBO 공식 기록을 가져오는 중입니다.
+          경기 기록을 확인하는 중입니다.
         </p>
       ) : null}
 

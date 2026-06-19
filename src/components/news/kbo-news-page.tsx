@@ -169,7 +169,7 @@ export function KboNewsPage() {
           [article.id]: {
             isLoading: false,
             message:
-              responseData.message ?? "URL 브리핑을 생성하지 못했습니다.",
+              responseData.message ?? "기사를 정리하지 못했습니다.",
           },
         }));
         return;
@@ -242,7 +242,7 @@ export function KboNewsPage() {
           <div className="border-t border-[#edf1f7] bg-[#fbfcff] px-4 py-4 sm:px-5">
             <div className="rounded-sm border border-[#d8deea] bg-white p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-black text-[#667085]">URL 브리핑</p>
+                <p className="text-xs font-black text-[#667085]">기사 정리</p>
                 <span className="rounded-sm bg-[#eef3ff] px-2 py-1 text-[11px] font-black text-[#2f4f9f]">
                   기사 요약 완료
                 </span>
@@ -469,10 +469,10 @@ export function KboNewsPage() {
                         type="button"
                       >
                         {state?.isLoading
-                          ? "브리핑 중"
+                          ? "정리 중"
                           : state?.briefing
-                            ? "다시 브리핑"
-                            : "URL 브리핑"}
+                            ? "다시 정리"
+                            : "기사 정리"}
                       </button>
                       <a
                         className="community-button-secondary w-full"
