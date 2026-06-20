@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BoardAssistantPanel } from "@/components/ai/board-assistant-panel";
 import { HotPostsPanel } from "@/components/board/hot-posts-panel";
@@ -12,12 +12,64 @@ import { TagFilterPanel } from "@/components/tags/tag-filter-panel";
 
 type BoardHomeProps = {
   initialTags?: string[];
+  initialTeam?: string;
 };
 
-export function BoardHome({ initialTags = [] }: BoardHomeProps) {
+type AuthMeResponse = {
+  user?: {
+    favoriteTeam: string | null;
+  };
+};
+
+export function BoardHome({
+  initialTags = [],
+  initialTeam = "",
+}: BoardHomeProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
-  const [selectedTeam, setSelectedTeam] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState(initialTeam);
+  const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
+  const [hasLoadedUserPreference, setHasLoadedUserPreference] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFavoriteTeam() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as AuthMeResponse;
+        const nextFavoriteTeam = data.user?.favoriteTeam ?? null;
+
+        if (isMounted) {
+          setFavoriteTeam(nextFavoriteTeam);
+
+          if (!initialTeam && nextFavoriteTeam) {
+            setSelectedTeam((currentTeam) => currentTeam || nextFavoriteTeam);
+          }
+        }
+      } catch {
+        // 응원팀 개인화는 실패해도 기본 게시판 사용을 막지 않습니다.
+      } finally {
+        if (isMounted) {
+          setHasLoadedUserPreference(true);
+        }
+      }
+    }
+
+    void loadFavoriteTeam();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialTeam]);
 
   function handleToggleTag(tagName: string) {
     setSelectedTags((currentTags) => {
@@ -58,14 +110,38 @@ export function BoardHome({ initialTags = [] }: BoardHomeProps) {
         <div className="community-panel-header community-panel-header-stack">
           <div>
             <h1 className="text-base font-black text-[#071a3d]">
-              {selectedTeam ? `${selectedTeam} 게시판` : "전체 게시판"}
+              {selectedTeam
+                ? selectedTeam === favoriteTeam
+                  ? `${selectedTeam} 응원팀 홈`
+                  : `${selectedTeam} 게시판`
+                : "전체 게시판"}
             </h1>
             <p className="mt-1 text-xs font-bold text-[#667085]">
-              오늘 경기와 팀별 이야기를 모아봅니다.
+              {selectedTeam === favoriteTeam && favoriteTeam
+                ? "내 팀 경기와 관련 글을 먼저 모아봅니다."
+                : "오늘 경기와 팀별 이야기를 모아봅니다."}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+            {favoriteTeam ? (
+              <button
+                className={[
+                  "community-chip",
+                  selectedTeam === favoriteTeam
+                    ? "community-chip-accent"
+                    : "community-chip-link",
+                ].join(" ")}
+                onClick={() => handleSelectTeam(favoriteTeam)}
+                type="button"
+              >
+                내 팀 {favoriteTeam}
+              </button>
+            ) : hasLoadedUserPreference ? (
+              <Link className="community-chip community-chip-link" href="/me">
+                응원팀 설정
+              </Link>
+            ) : null}
             <span className="community-chip community-chip-muted">
               태그 {selectedTags.length}개
             </span>

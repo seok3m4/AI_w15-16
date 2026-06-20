@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { KBO_TEAMS } from "@/lib/kbo/game";
+
 type MyPageUser = {
   id: string;
   email: string;
   nickname: string;
+  favoriteTeam: string | null;
   createdAt: string;
 };
 
@@ -151,6 +154,124 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+function FavoriteTeamSettings({
+  user,
+  onUpdateUser,
+}: {
+  user: MyPageUser;
+  onUpdateUser: (user: MyPageUser) => void;
+}) {
+  const [favoriteTeam, setFavoriteTeam] = useState(user.favoriteTeam ?? "");
+  const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSaveFavoriteTeam() {
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/me/preferences", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          favoriteTeam,
+        }),
+      });
+      const data = (await response.json()) as {
+        user?: MyPageUser;
+        message?: string;
+      };
+
+      if (!response.ok || !data.user) {
+        throw new Error(data.message ?? "응원팀을 저장하지 못했습니다.");
+      }
+
+      onUpdateUser(data.user);
+      setMessage(
+        data.user.favoriteTeam
+          ? `${data.user.favoriteTeam} 중심으로 홈 화면이 맞춰집니다.`
+          : "응원팀 설정을 해제했습니다.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "응원팀을 저장하지 못했습니다.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const hasChanged = favoriteTeam !== (user.favoriteTeam ?? "");
+
+  return (
+    <section className="community-subpanel bg-white p-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-base font-black text-[#071a3d]">응원팀 설정</h2>
+          <p className="mt-1 text-sm leading-6 text-[#64748b]">
+            홈에서 내 팀 경기, 팀 게시글, 관련 정보를 먼저 볼 수 있습니다.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            className="community-input min-w-44 text-sm"
+            onChange={(event) => setFavoriteTeam(event.target.value)}
+            value={favoriteTeam}
+          >
+            <option value="">설정 안 함</option>
+            {KBO_TEAMS.map((teamName) => (
+              <option key={teamName} value={teamName}>
+                {teamName}
+              </option>
+            ))}
+          </select>
+          <button
+            className="community-button-primary disabled:cursor-not-allowed disabled:bg-[#94a3b8]"
+            disabled={isSaving || !hasChanged}
+            onClick={() => void handleSaveFavoriteTeam()}
+            type="button"
+          >
+            {isSaving ? "저장 중" : "저장"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="community-chip community-chip-accent">
+          현재 응원팀 {user.favoriteTeam ?? "없음"}
+        </span>
+        {user.favoriteTeam ? (
+          <Link
+            className="community-chip community-chip-link"
+            href={`/?team=${encodeURIComponent(user.favoriteTeam)}`}
+          >
+            내 팀 홈 보기
+          </Link>
+        ) : null}
+      </div>
+
+      {message ? (
+        <p
+          className={[
+            "mt-3 rounded-sm border px-3 py-2 text-sm",
+            message.includes("못했습니다") || message.includes("확인")
+              ? "border-[#fecaca] bg-[#fff1f2] text-[#b91c1c]"
+              : "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]",
+          ].join(" ")}
+        >
+          {message}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export function MyPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
@@ -208,6 +329,22 @@ export function MyPage() {
 
     return activity.stats.receivedUpVotes + activity.stats.receivedDownVotes;
   }, [activity]);
+
+  function handleUpdateUser(user: MyPageUser) {
+    setState((currentState) => {
+      if (currentState.status !== "success") {
+        return currentState;
+      }
+
+      return {
+        status: "success",
+        data: {
+          ...currentState.data,
+          user,
+        },
+      };
+    });
+  }
 
   return (
     <div className="page-shell">
@@ -288,6 +425,11 @@ export function MyPage() {
                 </div>
               </div>
             </section>
+
+            <FavoriteTeamSettings
+              onUpdateUser={handleUpdateUser}
+              user={activity.user}
+            />
 
             <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <StatCard label="작성 글" value={activity.stats.posts} />

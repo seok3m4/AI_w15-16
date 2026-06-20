@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       id: true,
       email: true,
       nickname: true,
+      favoriteTeam: true,
       passwordHash: true,
       createdAt: true,
     },
