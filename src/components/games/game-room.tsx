@@ -114,6 +114,62 @@ function canPredictGame(game: KboGame): boolean {
   return game.status === "scheduled" || game.status === "live";
 }
 
+function getPhaseCopy(game: KboGame, resultText: string) {
+  if (game.status === "scheduled") {
+    return {
+      title: "경기 전",
+      description: "선발투수, 라인업, 경기 전망을 먼저 확인해보세요.",
+    };
+  }
+
+  if (game.status === "live") {
+    return {
+      title: "경기 중",
+      description: "스코어와 문자중계를 보면서 경기 흐름을 따라갈 수 있습니다.",
+    };
+  }
+
+  return {
+    title: resultText,
+    description: "박스스코어, 선수 기록, 관련 글을 보며 경기를 복기해보세요.",
+  };
+}
+
+function getFocusItems(game: KboGame): string[] {
+  if (game.status === "scheduled") {
+    return ["선발투수 확인", "라인업 공개 여부 확인", "경기 전망 보기"];
+  }
+
+  if (game.status === "live") {
+    return ["문자중계 확인", "현재 스코어 확인", "관련 글 흐름 보기"];
+  }
+
+  return ["박스스코어 확인", "타자/투수 기록 보기", "경기 리뷰 작성"];
+}
+
+function SectionIntro({
+  description,
+  id,
+  title,
+}: {
+  description: string;
+  id: string;
+  title: string;
+}) {
+  return (
+    <div className="scroll-mt-28" id={id}>
+      <div className="mb-2 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-black text-[#1f3470]">{title}</h2>
+          <p className="mt-1 text-xs leading-5 text-[#667085]">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
   const decodedGameKey = safeDecode(gameKey);
   const [date, setDate] = useState(initialDate || getTodayInputValue());
@@ -359,121 +415,158 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
   ]
     .filter(Boolean)
     .join(" · ");
+  const phaseCopy = getPhaseCopy(game, resultText);
+  const focusItems = getFocusItems(game);
+  const roomNavItems = [
+    {
+      href: "#game-live",
+      label: game.status === "scheduled" ? "경기 전" : "중계",
+      description: game.status === "scheduled" ? "시작 전 정보" : "문자중계",
+    },
+    {
+      href: "#game-lineup",
+      label: "라인업",
+      description: canPredictGame(game) ? "전망 포함" : "출전 선수",
+    },
+    {
+      href: "#game-records",
+      label: "기록",
+      description: "박스스코어",
+    },
+    {
+      href: "#game-community",
+      label: "관련 글",
+      description: "요약과 글 목록",
+    },
+  ];
 
   return (
     <section className="page-shell pt-5">
-      <div className="community-panel">
-        <div className="community-panel-header community-panel-header-stack px-4 py-3">
-          <div className="w-full">
+      <div className="community-panel overflow-hidden">
+        <div className="border-b border-[#d8deea] bg-[#fbfcff] px-4 py-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-black text-[#d71920]">
-                {game.displayDate || game.gameDate} · {game.stadium || "경기장 미정"}
+                {game.displayDate || game.gameDate} ·{" "}
+                {game.stadium || "경기장 미정"}
               </p>
               <h1 className="mt-1 text-2xl font-black text-[#1f3470]">
                 {game.awayTeam} VS {game.homeTeam}
               </h1>
               <p className="mt-2 text-sm font-bold text-[#667085]">
-                {resultText} · {getScoreText(game)}
+                {phaseCopy.title} · {getScoreText(game)}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 className="community-input text-sm"
                 onChange={(event) => setDate(event.target.value)}
                 type="date"
                 value={date}
               />
+              <Link
+                className="community-button-secondary px-3 text-sm"
+                href="/"
+              >
+                홈으로
+              </Link>
+              <Link
+                className="community-button-primary px-3 text-sm"
+                href={getWriteReviewHref(game)}
+              >
+                리뷰 쓰기
+              </Link>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-4 p-4">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="community-subpanel grid bg-white sm:grid-cols-[1fr_160px_1fr]">
-                <div className="px-4 py-5 text-center">
-                  <p className="text-xl font-black text-[#1f3470]">
-                    {game.awayTeam}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-[#667085]">
-                    선발 {getPitcherName(game.awayStartingPitcher)}
-                  </p>
-                  <p className="mt-2 text-4xl font-black text-[#202632]">
-                    {game.awayScore ?? "-"}
-                  </p>
-                </div>
-                <div className="border-y border-[#d8deea] bg-[#f6f8fc] px-4 py-5 text-center sm:border-x sm:border-y-0">
-                  <span className="community-chip community-chip-accent px-2">
-                    {getStatusLabel(game.status)}
-                  </span>
-                  <p className="mt-3 text-sm font-black text-[#1f3470]">
-                    {getScoreText(game)}
-                  </p>
-                  <p className="mt-1 text-xs text-[#667085]">
-                    {game.time || "시간 미정"}
-                  </p>
-                </div>
-                <div className="px-4 py-5 text-center">
-                  <p className="text-xl font-black text-[#1f3470]">
-                    {game.homeTeam}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-[#667085]">
-                    선발 {getPitcherName(game.homeStartingPitcher)}
-                  </p>
-                  <p className="mt-2 text-4xl font-black text-[#202632]">
-                    {game.homeScore ?? "-"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="community-subpanel bg-[#fbfcff] p-3">
-                  <p className="text-xs font-bold text-[#667085]">지금 상황</p>
-                  <p className="mt-1 text-sm font-black text-[#202632]">
-                    {resultText}
-                  </p>
-                  <p className="mt-2 text-xs leading-5 text-[#667085]">
-                    {game.time || "시간 미정"} · {game.stadium || "구장 미정"}
-                  </p>
-                </div>
-
-                <div className="community-subpanel bg-[#fbfcff] p-3">
-                  <p className="text-xs font-bold text-[#667085]">투수 흐름</p>
-                  <p className="mt-1 text-sm font-black leading-6 text-[#202632]">
-                    {startingPitcherText || "선발 정보 미정"}
-                  </p>
-                  {decisionPitcherText ? (
-                    <p className="mt-2 text-xs font-bold leading-5 text-[#d71920]">
-                      {decisionPitcherText}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    className="community-button-primary text-xs"
-                    href={getWriteReviewHref(game)}
-                  >
-                    리뷰 쓰기
-                  </Link>
-                  <Link
-                    className="community-button-secondary text-xs"
-                    href="/"
-                  >
-                    홈으로
-                  </Link>
-                </div>
-              </div>
+        <div className="p-4">
+          <div className="grid overflow-hidden rounded-sm border border-[#d8deea] bg-white md:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)]">
+            <div className="px-4 py-5 text-center md:text-left">
+              <p className="text-sm font-black text-[#667085]">원정</p>
+              <p className="mt-1 text-2xl font-black text-[#1f3470]">
+                {game.awayTeam}
+              </p>
+              <p className="mt-2 text-xs font-bold text-[#667085]">
+                선발 {getPitcherName(game.awayStartingPitcher)}
+              </p>
+              <p className="mt-3 text-5xl font-black text-[#202632]">
+                {game.awayScore ?? "-"}
+              </p>
             </div>
 
-            <div
-              className={[
-                "grid gap-3",
-                shouldShowGameNote
-                  ? "xl:grid-cols-3 md:grid-cols-2"
-                  : "xl:grid-cols-2 md:grid-cols-2",
-              ].join(" ")}
-            >
+            <div className="border-y border-[#d8deea] bg-[#f6f8fc] px-4 py-5 text-center md:border-x md:border-y-0">
+              <span className="community-chip community-chip-accent px-2">
+                {getStatusLabel(game.status)}
+              </span>
+              <p className="mt-3 text-lg font-black text-[#1f3470]">
+                {getScoreText(game)}
+              </p>
+              <p className="mt-1 text-xs font-bold text-[#667085]">
+                {game.time || "시간 미정"}
+              </p>
+              <p className="mt-4 text-xs leading-5 text-[#667085]">
+                {phaseCopy.description}
+              </p>
+            </div>
+
+            <div className="px-4 py-5 text-center md:text-right">
+              <p className="text-sm font-black text-[#667085]">홈</p>
+              <p className="mt-1 text-2xl font-black text-[#1f3470]">
+                {game.homeTeam}
+              </p>
+              <p className="mt-2 text-xs font-bold text-[#667085]">
+                선발 {getPitcherName(game.homeStartingPitcher)}
+              </p>
+              <p className="mt-3 text-5xl font-black text-[#202632]">
+                {game.homeScore ?? "-"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="sticky top-16 z-20 border-y border-[#d8deea] bg-white/95 px-3 py-2 backdrop-blur">
+          <div className="grid grid-cols-4 gap-2">
+            {roomNavItems.map((item) => (
+              <a
+                className="rounded-sm border border-[#d8deea] bg-[#fbfcff] px-2 py-2 text-center hover:border-[#2f4f9f] hover:bg-white"
+                href={item.href}
+                key={item.href}
+              >
+                <span className="block text-xs font-black text-[#1f3470]">
+                  {item.label}
+                </span>
+                <span className="mt-0.5 hidden text-[11px] font-bold text-[#667085] sm:block">
+                  {item.description}
+                </span>
+              </a>
+            ))}
+          </div>
+        </nav>
+
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-4 p-4">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="community-subpanel bg-[#fbfcff] p-3">
+                <p className="text-xs font-bold text-[#667085]">지금 상황</p>
+                <p className="mt-1 text-sm font-black text-[#202632]">
+                  {resultText}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-[#667085]">
+                  {game.time || "시간 미정"} · {game.stadium || "구장 미정"}
+                </p>
+              </div>
+              <div className="community-subpanel bg-[#fbfcff] p-3">
+                <p className="text-xs font-bold text-[#667085]">투수 흐름</p>
+                <p className="mt-1 text-sm font-black leading-6 text-[#202632]">
+                  {startingPitcherText || "선발 정보 미정"}
+                </p>
+                {decisionPitcherText ? (
+                  <p className="mt-2 text-xs font-bold leading-5 text-[#d71920]">
+                    {decisionPitcherText}
+                  </p>
+                ) : null}
+              </div>
               <div className="community-subpanel bg-[#fbfcff] p-3">
                 <p className="text-xs font-bold text-[#667085]">중계</p>
                 <p className="mt-1 text-sm font-black text-[#202632]">
@@ -496,19 +589,55 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               ) : null}
             </div>
 
-            <KboBoxscorePanel game={game} />
+            <div className="scroll-mt-28" id="game-live">
+              <SectionIntro
+                description={
+                  game.status === "scheduled"
+                    ? "경기 전에는 시작 시간과 중계 정보를 확인하고, 진행 중에는 문자중계를 볼 수 있습니다."
+                    : "경기 흐름과 회차별 문자중계를 확인합니다."
+                }
+                id="game-live-title"
+                title={game.status === "scheduled" ? "경기 전 정보" : "실시간 중계"}
+              />
+              <LiveGamecastPanel game={game} />
+            </div>
 
-            <LiveGamecastPanel game={game} />
+            <div className="scroll-mt-28" id="game-lineup">
+              <SectionIntro
+                description="공식 라인업과 선발 정보를 보고, 경기 전에는 관전 포인트를 정리합니다."
+                id="game-lineup-title"
+                title="라인업과 전망"
+              />
+              <KboLineupPanel game={game} />
+              {canPredictGame(game) ? <GamePredictionPanel game={game} /> : null}
+            </div>
 
-            <KboLineupPanel game={game} />
+            <div className="scroll-mt-28" id="game-records">
+              <SectionIntro
+                description="이닝별 점수, 타자 기록, 투수 기록, 공식 기록 포인트를 한 번에 확인합니다."
+                id="game-records-title"
+                title="경기 기록"
+              />
+              <KboBoxscorePanel game={game} />
+              <KboRecordBriefingPanel game={game} />
+            </div>
 
-            {canPredictGame(game) ? <GamePredictionPanel game={game} /> : null}
-
-            <section className="community-panel mt-4">
+            <section className="community-panel mt-4 scroll-mt-28" id="game-community">
               <div className="community-panel-header">
-                <h2 className="text-sm font-black text-[#1f3470]">
-                  이 경기 관련 글
-                </h2>
+                <div>
+                  <h2 className="text-sm font-black text-[#1f3470]">
+                    이 경기 관련 글
+                  </h2>
+                  <p className="mt-1 text-xs text-[#667085]">
+                    같은 팀 태그가 달린 글과 경기방 요약
+                  </p>
+                </div>
+                <Link
+                  className="community-button-secondary community-button-compact"
+                  href={getWriteReviewHref(game)}
+                >
+                  리뷰 쓰기
+                </Link>
               </div>
               <RelatedPostSummaryPanel
                 description={summaryDescription}
@@ -554,12 +683,29 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
                 </div>
               ) : null}
             </section>
-
-            <KboRecordBriefingPanel game={game} />
           </div>
 
           <aside className="border-t border-[#d8deea] bg-[#fbfcff] p-4 lg:sticky lg:top-28 lg:self-start lg:border-l lg:border-t-0">
             <section className="community-subpanel bg-white p-3">
+              <h2 className="text-sm font-black text-[#1f3470]">
+                먼저 보면 좋은 것
+              </h2>
+              <ol className="mt-3 grid gap-2">
+                {focusItems.map((item, index) => (
+                  <li
+                    className="flex items-center gap-2 text-sm font-bold text-[#202632]"
+                    key={item}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-[#1f3470] text-[11px] font-black text-white">
+                      {index + 1}
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            <section className="community-subpanel mt-3 bg-white p-3">
               <h2 className="text-sm font-black text-[#1f3470]">경기 정보</h2>
               <dl className="mt-3 grid gap-2 text-sm">
                 <div className="flex items-start justify-between gap-3">
