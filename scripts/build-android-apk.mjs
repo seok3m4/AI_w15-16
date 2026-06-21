@@ -10,8 +10,10 @@ const dryRun = process.argv.includes("--dry-run");
 const installAfterBuild = process.argv.includes("--install");
 const buildVariant = process.argv.includes("--release") ? "release" : "debug";
 const task = buildVariant === "release" ? "assembleRelease" : "assembleDebug";
-const apkFileName =
-  buildVariant === "release" ? "app-release-unsigned.apk" : "app-debug.apk";
+const apkFileNames =
+  buildVariant === "release"
+    ? ["app-release.apk", "app-release-unsigned.apk"]
+    : ["app-debug.apk"];
 
 function run(command, args = [], options = {}) {
   const result = spawnSync(command, args, {
@@ -131,6 +133,20 @@ function buildInstallCommand(apkPath) {
   };
 }
 
+function findApkPath() {
+  const apkDir = path.join(androidDir, "app", "build", "outputs", "apk", buildVariant);
+
+  for (const fileName of apkFileNames) {
+    const candidate = path.join(apkDir, fileName);
+
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return path.join(apkDir, apkFileNames[0]);
+}
+
 function createGradleExecution(command, args) {
   if (isWindows && command.endsWith(".bat")) {
     const escapePowerShellValue = (value) => value.replaceAll("'", "''");
@@ -151,14 +167,14 @@ function createGradleExecution(command, args) {
 const gradle = findGradleCommand();
 const buildArgs = [...(gradle?.argsPrefix ?? []), task];
 const javaHome = findAndroidStudioBundledJavaHome();
-const apkPath = path.join(
+const expectedApkPath = path.join(
   androidDir,
   "app",
   "build",
   "outputs",
   "apk",
   buildVariant,
-  apkFileName,
+  apkFileNames[0],
 );
 
 if (installAfterBuild && buildVariant === "release") {
@@ -189,10 +205,10 @@ console.log(`Android build command: ${gradle.command} ${buildArgs.join(" ")}`);
 if (javaHome && !process.env.JAVA_HOME) {
   console.log(`Using Android Studio bundled JAVA_HOME: ${javaHome}`);
 }
-console.log(`Expected APK path: ${apkPath}`);
+console.log(`Expected APK path: ${expectedApkPath}`);
 
 if (installAfterBuild) {
-  const installCommand = buildInstallCommand(apkPath);
+  const installCommand = buildInstallCommand(expectedApkPath);
   console.log(`Android install command: ${installCommand.command} ${installCommand.args.join(" ")}`);
 }
 
@@ -223,6 +239,7 @@ if (!buildResult.ok) {
   process.exit(buildResult.status || 1);
 }
 
+const apkPath = findApkPath();
 console.log(`Android APK build finished: ${apkPath}`);
 
 if (installAfterBuild) {

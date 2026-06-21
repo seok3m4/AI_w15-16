@@ -409,7 +409,22 @@ npm.cmd run build
 npx.cmd prisma migrate status
 ```
 
-## 12. 데모
+## 12. 배포
+
+웹 배포는 Vercel, 운영 DB는 Supabase PostgreSQL + pgvector, Android 앱 배포 파일은 GitHub Release를 기준으로 준비합니다.
+
+배포 절차는 [docs/deployment.md](docs/deployment.md)에 정리했습니다.
+
+최종 포트폴리오에는 아래 링크를 정리합니다.
+
+```text
+Web Demo: https://<vercel-domain>
+Mobile App: https://<vercel-domain>/mobile-app
+KBO App Improvement Case Study: https://<vercel-domain>/portfolio/kbo-app
+Android APK Release: https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0
+```
+
+## 13. 데모
 
 ### 메인 페이지 데모 화면
 
@@ -443,7 +458,7 @@ npx.cmd prisma migrate status
 | 야구 게시판 도우미 | Agent |
 | 경기 승부 예측 | Agent |
 
-## 13. 현재 검증 결과
+## 14. 현재 검증 결과
 
 현재 로컬 환경에서 다음 항목을 확인했습니다.
 
@@ -471,7 +486,7 @@ npx.cmd prisma migrate status
 - Agent 모더레이션 allow/warn/block 확인
 - 홈 화면 라우트 `200` 응답 확인
 
-## 14. 회고, 한계점, 개선 아이디어
+## 15. 회고, 한계점, 개선 아이디어
 
 ### 회고
 

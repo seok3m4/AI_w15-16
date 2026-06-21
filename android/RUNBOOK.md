@@ -78,7 +78,7 @@ npm.cmd run verify:android
 
 이 명령은 Android 필수 파일, `AndroidManifest.xml` 권한/딥링크, WebView 설정, JavaScript bridge, 알림 bridge, 이미지 파일 선택, 웹-앱 연결 컴포넌트가 빠지지 않았는지 확인합니다.
 
-Gradle wrapper 또는 시스템 Gradle이 준비된 환경에서는 CLI로 debug APK 빌드도 시도할 수 있습니다. 현재 PC처럼 Gradle이 없으면 명확한 안내를 출력합니다.
+프로젝트에 Gradle wrapper가 포함되어 있어 Android SDK와 Java가 준비된 환경에서는 CLI로 debug APK 빌드도 시도할 수 있습니다.
 
 ```powershell
 npm.cmd run android:build
@@ -90,7 +90,7 @@ npm.cmd run android:build
 npm.cmd run android:build -- --install
 ```
 
-`--install`은 debug APK 기준으로 사용합니다. release APK는 일반적으로 별도 서명이 필요하므로 `npm.cmd run android:build -- --release`로 산출물을 만든 뒤 Android Studio 또는 서명 설정을 통해 배포용 APK/AAB를 준비합니다.
+`--install`은 debug APK 기준으로 사용합니다. release APK는 일반적으로 별도 서명이 필요하므로 `npm.cmd run android:release`로 산출물을 만든 뒤 Android Studio 또는 `android/keystore.properties` 서명 설정을 통해 배포용 APK/AAB를 준비합니다.
 
 실제로 빌드하지 않고 어떤 빌드 명령을 사용할지만 확인하려면 dry-run을 사용합니다.
 
@@ -130,7 +130,7 @@ kotlin {
 npm.cmd run verify:android:env
 ```
 
-이 명령은 Android Studio, Gradle wrapper, 시스템 Gradle, Java, Android SDK, ADB 상태를 진단합니다. 현재 프로젝트에는 Gradle wrapper가 포함되어 있지 않으므로 CLI APK 빌드는 별도 Gradle 설정이 필요합니다. Android Studio IDE 실행은 Android Studio, Java, SDK, ADB가 감지되면 가능합니다.
+이 명령은 Android Studio, Gradle wrapper, 시스템 Gradle, Java, Android SDK, ADB 상태를 진단합니다. 현재 프로젝트에는 Gradle wrapper가 포함되어 있어 Android SDK와 Java가 준비되어 있으면 CLI APK 빌드도 가능합니다. Android Studio IDE 실행은 Android Studio, Java, SDK, ADB가 감지되면 가능합니다.
 
 연결된 Android 기기나 생성된 에뮬레이터가 있는지 확인하려면 다음 명령을 실행합니다.
 

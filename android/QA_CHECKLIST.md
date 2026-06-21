@@ -14,7 +14,7 @@
 - [ ] 웹 프로젝트 루트에서 `npm.cmd run android:setup-local`로 `android/local.properties`를 생성한다.
 - [ ] 웹 프로젝트 루트에서 `npm.cmd run mobile:dev`로 Next.js 서버를 실행한다.
 - [ ] `npm.cmd run android:open` 또는 Android Studio의 Open 메뉴로 `android` 폴더를 연다.
-- [ ] Gradle wrapper 또는 시스템 Gradle이 준비된 환경이면 `npm.cmd run android:build`로 debug APK 빌드를 확인한다.
+- [ ] `npm.cmd run android:build`로 debug APK 빌드를 확인한다.
 - [ ] 기기 연결 후 `npm.cmd run android:deep-link -- --dry-run app`으로 ADB 딥링크 명령 생성이 되는지 확인한다.
 - [ ] 기기 연결 후 `npm.cmd run android:share -- --dry-run "https://sports.news.example/kbo"`로 ADB 공유 명령 생성이 되는지 확인한다.
 - [ ] 앱 설치 후 `npm.cmd run android:smoke -- --run`으로 앱 홈, 글쓰기, 경기방 딥링크와 공유 수신을 한 번에 확인한다.
@@ -24,6 +24,7 @@
 - [ ] 에뮬레이터에서 실행할 경우 `KBO_WEB_APP_URL`이 `http://10.0.2.2:3000/mobile-app`인지 확인한다.
 - [ ] 실제 기기에서 실행할 경우 `npm.cmd run android:set-url -- local <PC_LAN_IP>`로 `KBO_WEB_APP_URL`을 PC LAN IP로 바꾼다.
 - [ ] 배포 URL 테스트는 `npm.cmd run android:set-url -- url <배포_URL>/mobile-app`으로 연결 주소를 바꾼다.
+- [ ] GitHub Release에 올릴 APK는 `npm.cmd run android:release`로 빌드한다.
 
 ## 앱 실행
 
@@ -97,7 +98,8 @@
 
 ## 현재 한계
 
-- 이 저장소에는 Gradle wrapper가 포함되어 있지 않다.
-- CLI APK 빌드는 Android Studio 또는 로컬 Gradle/Android SDK 설정이 필요하다.
+- 이 저장소에는 Gradle wrapper가 포함되어 있다.
+- CLI APK 빌드는 Android SDK와 Java 설정이 필요하다.
 - 개발용 기본 URL은 `10.0.2.2`를 사용하므로 실제 기기에서는 배포 URL 또는 PC LAN IP로 변경해야 한다.
 - URL 변경 후에는 Android Studio에서 다시 Sync/Run해야 `BuildConfig.KBO_WEB_APP_URL`에 반영된다.
+- release APK를 실제 설치 파일로 공유하려면 로컬 keystore로 서명해야 한다.
