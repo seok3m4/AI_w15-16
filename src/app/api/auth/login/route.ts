@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   }
 
   const { email, password } = validation.data;
+  try {
   const user = await prisma.user.findUnique({
     where: { email },
     select: {
@@ -56,4 +57,12 @@ export async function POST(request: Request) {
   setAuthCookie(response, token);
 
   return response;
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { message: "로그인 처리 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
+  }
 }

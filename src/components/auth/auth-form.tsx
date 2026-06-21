@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
 type AuthMode = "login" | "signup";
@@ -36,7 +35,6 @@ const copy = {
 } satisfies Record<AuthMode, Record<string, string>>;
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter();
   const config = copy[mode];
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
@@ -92,8 +90,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         return;
       }
 
-      router.push("/");
-      router.refresh();
+      window.location.assign("/");
     } catch {
       setMessage("네트워크 연결을 확인해주세요.");
     } finally {
