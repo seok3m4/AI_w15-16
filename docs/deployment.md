@@ -136,6 +136,12 @@ npm.cmd run deploy:check
 npm.cmd run verify:kbo-app
 ```
 
+Vercel 배포 후 실제 URL 검증:
+
+```powershell
+npm.cmd run deploy:verify -- https://<vercel-domain>
+```
+
 ## 7. Android 앱 URL 변경
 
 웹 배포 URL이 확정되면 Android 앱이 로드할 URL을 바꿉니다.
@@ -265,6 +271,18 @@ gh release create v0.1.0 android/app/build/outputs/apk/release/app-release.apk -
 - GitHub Release APK: `https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0`
 
 README에는 실제 URL이 확정된 뒤 링크를 추가합니다.
+
+URL placeholder는 스크립트로 한 번에 바꿀 수 있습니다.
+
+```powershell
+npm.cmd run deploy:update-links -- --web-url https://<vercel-domain>
+```
+
+GitHub Release URL도 함께 지정하려면:
+
+```powershell
+npm.cmd run deploy:update-links -- --web-url https://<vercel-domain> --release-url https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0
+```
 
 ## 12. 배포 전 체크리스트
 

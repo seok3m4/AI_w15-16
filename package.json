@@ -27,6 +27,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "deploy:check": "npm run lint && npm run build && npx prisma migrate status",
+    "deploy:verify": "node scripts/verify-deployed-web.mjs",
+    "deploy:update-links": "node scripts/update-deployment-links.mjs",
     "seed:demo-posts": "node scripts/seed-demo-posts.mjs",
     "verify:android": "node scripts/verify-android-shell.mjs",
     "verify:android:devices": "node scripts/verify-android-devices.mjs",
