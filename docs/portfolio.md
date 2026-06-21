@@ -1,43 +1,75 @@
-# Portfolio Summary
+# KBO Talk 서비스 소개
 
-KBO Talk는 KBO 야구 커뮤니티 게시판을 웹과 Android 앱 형태로 확장한 포트폴리오 프로젝트입니다.
+## 한 줄 소개
 
-## Links
+KBO Talk는 야구 팬이 경기 정보, 기록, 뉴스, 커뮤니티를 한 흐름 안에서 볼 수 있도록 만든 KBO 팬 게시판 겸 모바일 앱형 서비스입니다.
 
-```text
-Web Demo: https://jungle-ai-board.vercel.app
-Mobile App: https://jungle-ai-board.vercel.app/mobile-app
-KBO App Improvement Case Study: https://jungle-ai-board.vercel.app/portfolio/kbo-app
-GitHub Repository: https://github.com/kominsuk1064/jungle-ai-board
-Android APK Release: https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0
-```
+## 링크
 
-## One-line Description
+| 구분 | URL |
+| --- | --- |
+| 게시판 URL | https://jungle-ai-board.vercel.app |
+| 앱 URL | https://jungle-ai-board.vercel.app/mobile-app |
+| 서비스 소개 페이지 | https://jungle-ai-board.vercel.app/portfolio/kbo-app |
+| GitHub | https://github.com/kominsuk1064/jungle-ai-board |
 
-KBO 경기 리뷰, 기록실, 뉴스, 경기방, 커뮤니티 게시판을 하나로 묶고 RAG, MCP, AI Agent 기능을 사용자 흐름 안에 녹인 비공식 야구 팬 커뮤니티 웹/앱입니다.
+## 이 앱은 무엇인가요?
 
-## What To Show
+야구 팬은 경기 전에는 선발투수와 라인업을 보고, 경기 중에는 스코어와 문자중계를 확인하고, 경기 후에는 박스스코어, 기사, 팬 반응을 다시 찾아봅니다.
 
-1. 웹 메인에서 게시글, 오늘의 경기, 인기글, 야구 도우미 확인
-2. 글쓰기에서 유사 글 확인과 리뷰 초안 생성
-3. 경기방에서 스코어, 라인업, 박스스코어, 문자중계, 관련 글 요약 확인
-4. 뉴스 페이지에서 URL 브리핑 확인
-5. 기록실에서 팀 순위와 선수 기록 확인
-6. `/mobile-app`에서 앱형 홈/경기/기록/뉴스/MY 탭 확인
-7. `/portfolio/kbo-app`에서 KBO 앱 개선 분석과 구현 매핑 확인
-8. Android APK 설치 후 WebView 앱, 딥링크, 공유, 이미지 첨부 흐름 확인
+KBO Talk는 이 흐름을 게시판과 연결한 서비스입니다. 팬이 정보를 확인하는 데서 끝나지 않고, 바로 경기 리뷰를 남기고 다른 팬의 의견을 볼 수 있게 만드는 것을 목표로 했습니다.
 
-## Technical Highlights
+## 핵심 기능
 
-- Next.js App Router + React + TypeScript
-- PostgreSQL + Prisma + pgvector
-- OpenAI API + LangChain.js
-- RAG: 유사 게시글 추천, 중복 글 방지, 경기/팀별 관련 글 요약
-- MCP: JSON-RPC 기반 KBO 경기/기록/뉴스 URL 브리핑 도구
-- Agent: 리뷰 초안, 모더레이션, 야구 도우미, 승부 예측
-- PWA: manifest, service worker, install prompt
-- Android: WebView, deep link, share intent, file chooser, notification bridge
+- 경기방: 선발투수, 라인업, 문자중계, 박스스코어, 타자/투수 기록, 관련 글을 한 화면에서 확인
+- 야구 게시판: 경기 리뷰, 선수 분석, 팀 이슈 작성 및 댓글, 태그, 검색, 페이지네이션 지원
+- 커뮤니티 기능: 조회수, 추천/비추천, 인기글, 이미지 첨부, 마이페이지 제공
+- 기록실: KBO 순위, 타자 기록, 투수 기록 확인
+- 뉴스: 야구 뉴스 목록과 URL 브리핑 흐름 제공
+- 모바일 앱형 화면: 홈, 경기, 기록, 뉴스, MY 탭으로 구성
+- Android 확장: WebView 기반 APK로 모바일 앱처럼 실행 가능
 
-## Portfolio Positioning
+## KBO 앱 개선점을 어떻게 담았나요?
 
-이 프로젝트는 KBO 공식 앱을 대체하려는 서비스가 아니라, 공개된 공식 웹/모바일 화면과 앱스토어 정보를 참고해 팬 커뮤니티 관점에서 개선 아이디어를 구현한 개인 포트폴리오 프로젝트입니다.
+### 1. 흩어진 경기 정보를 경기방으로 묶기
+
+기존 야구 앱을 사용할 때 일정, 라인업, 문자중계, 박스스코어, 관련 글을 각각 찾아야 하는 흐름이 불편하다고 느꼈습니다.
+
+이 프로젝트에서는 경기 하나를 기준으로 경기 전, 경기 중, 경기 후 정보를 경기방에 모았습니다. 팬은 특정 경기에 들어가면 선발투수, 라인업, 문자중계, 박스스코어, 타자/투수 기록, 관련 글을 이어서 확인할 수 있습니다.
+
+### 2. 정보 확인에서 팬 참여로 이어지게 만들기
+
+뉴스나 기록을 확인한 뒤 사용자의 행동이 끊기지 않도록 했습니다.
+
+뉴스 URL은 브리핑으로 정리할 수 있고, 경기방에서는 관련 글을 확인하거나 리뷰를 작성할 수 있습니다. 정보 소비가 게시글 작성과 댓글 참여로 이어지도록 설계했습니다.
+
+### 3. 모바일에서 자주 쓰는 메뉴를 앞에 두기
+
+모바일에서는 많은 메뉴보다 자주 쓰는 흐름이 중요하다고 생각했습니다.
+
+그래서 모바일 앱형 화면은 홈, 경기, 기록, 뉴스, MY 중심으로 단순화했습니다. 팬이 자주 확인하는 오늘의 경기, 기록, 뉴스, 내 활동을 빠르게 볼 수 있도록 구성했습니다.
+
+## AI 기능은 어떻게 넣었나요?
+
+기술명이 화면에서 먼저 보이기보다, 사용자가 필요한 순간에 도움을 받는 흐름으로 배치했습니다.
+
+- 비슷한 게시글 추천과 중복 글 방지
+- 경기/팀별 관련 글 요약
+- 뉴스 URL 브리핑
+- 경기 리뷰 초안 작성 도우미
+- 게시글/댓글 작성 시 운영 모더레이터
+- 야구 게시판 도우미 챗봇
+
+## 기술 스택
+
+- Frontend / Backend: Next.js, React, TypeScript
+- Database: PostgreSQL, Prisma, pgvector
+- AI: OpenAI API, LangChain.js
+- Deployment: Vercel, Supabase
+- Mobile: PWA, Android WebView
+
+## 포트폴리오에서 강조할 점
+
+이 프로젝트는 단순히 야구 게시판을 만든 것이 아니라, 실제 야구 팬의 사용 흐름을 기준으로 서비스를 다시 구성해본 프로젝트입니다.
+
+경기 전 정보 확인, 경기 중 중계 확인, 경기 후 기록과 뉴스 확인, 팬 커뮤니티 참여까지 이어지는 흐름을 하나의 서비스 안에 담았습니다. KBO 앱을 참고하되 그대로 복제하기보다, 팬이 더 자연스럽게 사용할 수 있는 경기 중심 경험을 만드는 데 집중했습니다.

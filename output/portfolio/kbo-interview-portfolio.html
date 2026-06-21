@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KBO Fan Hub 포트폴리오</title>
+  <style>
+    :root {
+      --navy: #071a3d;
+      --blue: #1f3470;
+      --red: #d71920;
+      --ink: #111827;
+      --muted: #667085;
+      --line: #d7deea;
+      --soft: #f4f7fb;
+      --white: #ffffff;
+      --pale-red: #fff1f1;
+      --pale-blue: #edf3ff;
+      --green: #12805c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #dfe6f1;
+      color: var(--ink);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .deck {
+      display: grid;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .slide {
+      position: relative;
+      overflow: hidden;
+      width: 1280px;
+      height: 720px;
+      background: var(--white);
+      box-shadow: 0 16px 40px rgba(7, 26, 61, 0.12);
+    }
+
+    .dark {
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    .soft {
+      background: var(--soft);
+    }
+
+    .kicker {
+      position: absolute;
+      left: 72px;
+      top: 54px;
+      color: var(--red);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .title {
+      position: absolute;
+      left: 72px;
+      top: 90px;
+      width: 1080px;
+      height: 74px;
+      margin: 0;
+      color: var(--navy);
+      font-size: 44px;
+      line-height: 1.22;
+      font-weight: 900;
+    }
+
+    .dark .title {
+      color: var(--white);
+    }
+
+    .subtitle {
+      position: absolute;
+      left: 72px;
+      top: 166px;
+      width: 1000px;
+      color: var(--muted);
+      font-size: 21px;
+      line-height: 1.52;
+      font-weight: 400;
+    }
+
+    .dark .subtitle {
+      color: #d8e3ff;
+    }
+
+    .footer {
+      position: absolute;
+      left: 72px;
+      bottom: 26px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .page {
+      position: absolute;
+      right: 72px;
+      bottom: 26px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cover-band {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 162px;
+      height: 720px;
+      background: var(--red);
+    }
+
+    .cover-title {
+      position: absolute;
+      left: 228px;
+      top: 92px;
+      width: 610px;
+      height: 230px;
+      margin: 0;
+      color: #ffffff;
+      font-size: 54px;
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .cover-copy {
+      position: absolute;
+      left: 228px;
+      top: 314px;
+      width: 600px;
+      color: #d8e3ff;
+      font-size: 23px;
+      line-height: 1.55;
+    }
+
+    .cover-meta {
+      position: absolute;
+      left: 228px;
+      bottom: 82px;
+      color: #ffffff;
+      font-size: 19px;
+      line-height: 1.8;
+      font-weight: 800;
+    }
+
+    .phone-frame {
+      position: absolute;
+      right: 120px;
+      top: 58px;
+      width: 320px;
+      height: 594px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 34px 32px;
+    }
+
+    .phone-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 20px;
+      display: block;
+    }
+
+    .grid-2 {
+      position: absolute;
+      left: 72px;
+      top: 230px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+      width: 1136px;
+    }
+
+    .grid-3 {
+      position: absolute;
+      left: 72px;
+      top: 230px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      width: 1136px;
+    }
+
+    .grid-4 {
+      position: absolute;
+      left: 72px;
+      top: 226px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      width: 1136px;
+    }
+
+    .card {
+      min-height: 184px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(7, 26, 61, 0.06);
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--red);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .card h3 {
+      margin: 0 0 14px;
+      color: var(--navy);
+      font-size: 25px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.52;
+    }
+
+    .timeline {
+      position: absolute;
+      left: 72px;
+      top: 230px;
+      width: 1136px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .step {
+      height: 226px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+      padding: 24px;
+    }
+
+    .step b {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      margin-bottom: 20px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--red);
+      color: var(--white);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .step h3 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 25px;
+      font-weight: 900;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .screen-card {
+      position: absolute;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--white);
+      padding: 18px;
+      box-shadow: 0 12px 28px rgba(7, 26, 61, 0.1);
+    }
+
+    .screen-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+      display: block;
+    }
+
+    .label {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      padding: 0 22px;
+      border-radius: 10px;
+      background: var(--pale-red);
+      color: var(--red);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .table {
+      position: absolute;
+      left: 72px;
+      top: 220px;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      width: 1136px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: 0 10px 26px rgba(7, 26, 61, 0.08);
+    }
+
+    .table > div {
+      min-height: 78px;
+      padding: 20px 26px;
+      border-bottom: 1px solid var(--line);
+      font-size: 18px;
+      line-height: 1.48;
+    }
+
+    .table > div:nth-child(odd) {
+      background: var(--navy);
+      color: var(--white);
+      font-weight: 900;
+    }
+
+    .table > div:nth-child(even) {
+      color: var(--ink);
+    }
+
+    .table > div:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    .tech-row {
+      position: absolute;
+      left: 72px;
+      top: 214px;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      width: 1136px;
+      border-top: 1px solid var(--line);
+    }
+
+    .tech-row div {
+      min-height: 70px;
+      padding: 17px 22px;
+      border-bottom: 1px solid var(--line);
+      font-size: 17px;
+      line-height: 1.42;
+    }
+
+    .tech-row div:nth-child(odd) {
+      color: var(--navy);
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .tech-row div:nth-child(even) {
+      color: var(--muted);
+    }
+
+    .closing-title {
+      position: absolute;
+      left: 72px;
+      top: 92px;
+      width: 650px;
+      height: 220px;
+      margin: 0;
+      color: var(--white);
+      font-size: 54px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .closing-copy {
+      position: absolute;
+      left: 72px;
+      top: 332px;
+      width: 610px;
+      color: #d8e3ff;
+      font-size: 23px;
+      line-height: 1.55;
+    }
+
+    .closing-box {
+      position: absolute;
+      right: 78px;
+      top: 112px;
+      width: 440px;
+      min-height: 420px;
+      border-radius: 24px;
+      background: var(--white);
+      padding: 44px;
+      color: var(--ink);
+    }
+
+    .closing-box h3 {
+      margin: 0 0 26px;
+      color: var(--navy);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .closing-box p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide dark" data-slide="01">
+      <div class="cover-band"></div>
+      <p class="kicker" style="color:#afc5ff; left:228px;">KBO Fan Hub 포트폴리오</p>
+      <h1 class="cover-title">오늘 경기 보는<br />흐름을 직접<br />만들어봤습니다</h1>
+      <p class="cover-copy">
+        KBO 팬이 경기 전, 경기 중, 경기 후에 찾는 정보를 한 화면에서 이어보는 서비스로 정리했습니다.
+      </p>
+      <p class="cover-meta">고민석 · KBO 앱 서비스 기획 / 데이터 분석 지원<br />웹 데모 · 모바일 앱형 화면 · Android APK</p>
+      <div class="phone-frame"><img src="deck-assets/mobile-home.png" alt="KBO Fan Hub 모바일 홈" /></div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">01</div>
+    </section>
+
+    <section class="slide soft" data-slide="02">
+      <p class="kicker">다시 정리한 기준</p>
+      <h2 class="title">포트폴리오는 짧게 이해되고, 깊게 질문받아야 합니다</h2>
+      <p class="subtitle">
+        참고 글의 핵심을 제 프로젝트에 맞춰 적용했습니다.
+      </p>
+      <div class="grid-4">
+        <article class="card">
+          <strong>01</strong>
+          <h3>15초 소개</h3>
+          <p>내가 어떤 사람인지, 어떤 문제를 봤는지 먼저 보이게 했습니다.</p>
+        </article>
+        <article class="card">
+          <strong>02</strong>
+          <h3>처음 보는 사람</h3>
+          <p>서비스 흐름과 화면을 같이 보여줘 프로젝트 맥락을 줄였습니다.</p>
+        </article>
+        <article class="card">
+          <strong>03</strong>
+          <h3>트러블슈팅</h3>
+          <p>문제, 시도, 해결, 배운 점이 보이도록 따로 분리했습니다.</p>
+        </article>
+        <article class="card">
+          <strong>04</strong>
+          <h3>기술 선택 이유</h3>
+          <p>기술을 나열하지 않고 어디에 왜 썼는지 적었습니다.</p>
+        </article>
+      </div>
+      <div class="footer">참고: Velog 신입 개발자 포트폴리오 작성법</div>
+      <div class="page">02</div>
+    </section>
+
+    <section class="slide" data-slide="03">
+      <p class="kicker">프로젝트 한눈에 보기</p>
+      <h2 class="title">경기 정보와 팬 커뮤니티를 한 흐름으로 묶었습니다</h2>
+      <p class="subtitle">
+        야구팬은 오늘 경기에서 시작해 라인업, 문자중계, 기록, 뉴스, 팬 의견으로 이동합니다. 이 흐름을 경기방 중심으로 재구성했습니다.
+      </p>
+      <div class="timeline">
+        <article class="step">
+          <b>1</b>
+          <h3>경기 전</h3>
+          <p>경기 시간, 양 팀, 선발투수, 라인업을 빠르게 확인합니다.</p>
+        </article>
+        <article class="step">
+          <b>2</b>
+          <h3>경기 중</h3>
+          <p>스코어와 이닝별 문자중계로 흐름을 따라갑니다.</p>
+        </article>
+        <article class="step">
+          <b>3</b>
+          <h3>경기 후</h3>
+          <p>박스스코어, 타자 기록, 투수 기록, 뉴스로 다시 봅니다.</p>
+        </article>
+        <article class="step">
+          <b>4</b>
+          <h3>참여</h3>
+          <p>리뷰를 쓰고 댓글과 추천으로 다른 팬 의견에 반응합니다.</p>
+        </article>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">03</div>
+    </section>
+
+    <section class="slide" data-slide="04">
+      <p class="kicker">처음 보는 사람을 위한 화면</p>
+      <h2 class="title">웹은 게시판답게, 모바일은 앱 홈처럼 나눴습니다</h2>
+      <p class="subtitle">웹에서는 글과 경기 정보를 넓게 보고, 모바일에서는 자주 쓰는 탭을 앞에 뒀습니다.</p>
+      <div class="screen-card" style="left:72px; top:214px; width:700px; height:390px;">
+        <img src="deck-assets/web-home.png" alt="웹 메인 화면" />
+      </div>
+      <div class="screen-card" style="left:824px; top:150px; width:240px; height:470px;">
+        <img src="deck-assets/mobile-home.png" alt="모바일 앱형 화면" />
+      </div>
+      <div class="label" style="left:92px; top:622px;">웹 커뮤니티</div>
+      <div class="label" style="left:840px; top:622px; background:var(--pale-blue); color:var(--blue);">모바일 앱형 홈</div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">04</div>
+    </section>
+
+    <section class="slide soft" data-slide="05">
+      <p class="kicker">내가 직접 한 역할</p>
+      <h2 class="title">기획부터 배포와 APK까지 혼자 이어봤습니다</h2>
+      <p class="subtitle">
+        개인 프로젝트라서 특정 기능 일부가 아니라 서비스 흐름 전체를 직접 경험했습니다.
+      </p>
+      <div class="grid-3">
+        <article class="card">
+          <strong>기획</strong>
+          <h3>팬 이동 흐름 정리</h3>
+          <p>오늘 경기에서 시작해 경기방, 기록실, 뉴스, 글쓰기로 이어지는 흐름을 잡았습니다.</p>
+        </article>
+        <article class="card">
+          <strong>구현</strong>
+          <h3>웹·API·DB</h3>
+          <p>Next.js 화면과 API, PostgreSQL/Prisma 모델, 게시판 기능을 구현했습니다.</p>
+        </article>
+        <article class="card">
+          <strong>확장</strong>
+          <h3>모바일과 배포</h3>
+          <p>Vercel/Supabase 배포, 모바일 앱형 화면, Android WebView APK까지 연결했습니다.</p>
+        </article>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">05</div>
+    </section>
+
+    <section class="slide" data-slide="06">
+      <p class="kicker">핵심 기능</p>
+      <h2 class="title">경기방은 경기 전·중·후가 끊기지 않아야 합니다</h2>
+      <p class="subtitle">
+        경기방은 이번 프로젝트의 중심 화면입니다. 데이터가 없을 때도 빈 화면 대신 현재 상태를 알려주는 데 신경 썼습니다.
+      </p>
+      <div class="table">
+        <div>경기 전</div>
+        <div>경기 시간, 양 팀, 선발투수, 라인업을 보여줍니다.</div>
+        <div>경기 중</div>
+        <div>스코어와 1회부터 9회까지 문자중계를 확인할 수 있습니다.</div>
+        <div>경기 후</div>
+        <div>박스스코어, 타자 기록, 투수 기록, 승리/패전/세이브 투수를 보여줍니다.</div>
+        <div>참여</div>
+        <div>관련 글 요약, 리뷰 작성, 댓글과 추천으로 커뮤니티 흐름을 이어갑니다.</div>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">06</div>
+    </section>
+
+    <section class="slide soft" data-slide="07">
+      <p class="kicker">트러블슈팅 1</p>
+      <h2 class="title">유사 글 검색은 DB 환경부터 맞춰야 했습니다</h2>
+      <p class="subtitle">
+        RAG 기능을 붙이는 과정에서 pgvector 확장과 배포 DB 설정이 맞지 않으면 기능이 시작되지 않는다는 것을 경험했습니다.
+      </p>
+      <div class="table">
+        <div>문제</div>
+        <div>로컬 PostgreSQL에 pgvector 확장이 없어 migration이 실패했습니다.</div>
+        <div>시도</div>
+        <div>문자열 저장, 별도 Vector DB, PostgreSQL 통합 방식을 비교했습니다.</div>
+        <div>해결</div>
+        <div>로컬과 Supabase DB에 vector 확장을 활성화하고 게시글 임베딩 저장 흐름을 만들었습니다.</div>
+        <div>배운 점</div>
+        <div>AI 기능은 모델 호출뿐 아니라 DB 확장, migration, 배포 환경까지 같이 맞아야 합니다.</div>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">07</div>
+    </section>
+
+    <section class="slide soft" data-slide="08">
+      <p class="kicker">트러블슈팅 2</p>
+      <h2 class="title">외부 데이터는 없을 때까지 고려해야 했습니다</h2>
+      <p class="subtitle">
+        KBO 경기 데이터는 경기 상태에 따라 선발, 라인업, 기록 공개 여부가 달랐습니다.
+      </p>
+      <div class="table">
+        <div>문제</div>
+        <div>예정 경기, 진행 중 경기, 종료 경기마다 가져올 수 있는 데이터가 달랐습니다.</div>
+        <div>시도</div>
+        <div>라인업 공개 전/후, 종료 경기, 오늘 경기, 과거 경기를 나눠 확인했습니다.</div>
+        <div>해결</div>
+        <div>라인업 미공개, 기록 준비 중, 종료 경기 상태에 따라 버튼과 안내 문구를 다르게 처리했습니다.</div>
+        <div>배운 점</div>
+        <div>외부 연동은 데이터를 가져오는 코드보다 데이터가 없을 때의 UX가 더 중요했습니다.</div>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">08</div>
+    </section>
+
+    <section class="slide" data-slide="09">
+      <p class="kicker">기술 스택</p>
+      <h2 class="title">기술은 선택 이유와 사용 경험으로 설명했습니다</h2>
+      <p class="subtitle">
+        단순 나열 대신, 어떤 문제를 해결하기 위해 어떤 기술을 썼는지 적었습니다.
+      </p>
+      <div class="tech-row">
+        <div>Next.js / React</div>
+        <div>웹 화면과 API를 한 프로젝트에서 관리하고, 게시판·경기방·모바일 앱형 화면을 컴포넌트로 나눴습니다.</div>
+        <div>TypeScript / Prisma</div>
+        <div>게시글, 댓글, 경기 데이터처럼 구조가 있는 값을 타입과 DB schema로 연결했습니다.</div>
+        <div>PostgreSQL / pgvector</div>
+        <div>게시판 데이터와 유사 글 검색용 임베딩을 하나의 DB에서 다루기 위해 사용했습니다.</div>
+        <div>OpenAI / LangChain.js</div>
+        <div>비슷한 글, 관련 글 요약, 리뷰 초안처럼 글쓰기 주변 기능을 구현했습니다.</div>
+        <div>Vercel / Supabase / Android WebView</div>
+        <div>웹 배포, 운영 DB, 모바일 앱형 APK까지 실제로 확인 가능한 산출물로 연결했습니다.</div>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">09</div>
+    </section>
+
+    <section class="slide dark" data-slide="10">
+      <h2 class="closing-title">면접에서 이야기하고 싶은 것은 구현보다 과정입니다</h2>
+      <p class="closing-copy">
+        왜 경기방 구조를 잡았는지, 어떤 문제를 만났는지, 기술을 왜 선택했는지를 중심으로 설명하겠습니다.
+      </p>
+      <div class="closing-box">
+        <h3>제출 링크</h3>
+        <p>웹 데모<br /><b>jungle-ai-board.vercel.app</b></p>
+        <p>모바일 앱형 화면<br /><b>/mobile-app</b></p>
+        <p>앱 개선안 페이지<br /><b>/portfolio/kbo-app</b></p>
+        <p>GitHub / Android APK<br /><b>kominsuk1064/jungle-ai-board</b></p>
+      </div>
+      <div class="footer">KBO Talk / KBO Fan Hub</div>
+      <div class="page">10</div>
+    </section>
+  </main>
+</body>
+</html>

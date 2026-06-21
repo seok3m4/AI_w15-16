@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KBO Talk Portfolio - KBO 앱 서비스 개선 제안</title>
+  <meta
+    name="description"
+    content="KBO 앱 서비스 기획 직무 제출용 KBO Talk / KBO Fan Hub 포트폴리오"
+  />
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #071a3d;
+      --navy-2: #102a5c;
+      --blue: #1f3470;
+      --red: #d71920;
+      --ink: #101828;
+      --muted: #5b667a;
+      --line: #d7deea;
+      --soft: #f4f7fb;
+      --soft-blue: #edf3ff;
+      --soft-red: #fff1f1;
+      --white: #ffffff;
+      --shadow: 0 18px 40px rgba(7, 26, 61, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(7, 26, 61, 0.08), rgba(244, 247, 251, 0.9) 340px),
+        #f4f7fb;
+      color: var(--ink);
+      font-family:
+        "Pretendard",
+        "Noto Sans KR",
+        "Malgun Gothic",
+        "Apple SD Gothic Neo",
+        Arial,
+        sans-serif;
+      line-height: 1.65;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .document {
+      width: min(100%, 650px);
+      margin: 0 auto;
+      padding: 24px 16px 56px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--navy);
+    }
+
+    .brand-mark span:first-child {
+      display: inline-grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      background: var(--red);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .hero {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background:
+        linear-gradient(135deg, rgba(215, 25, 32, 0.92), rgba(215, 25, 32, 0) 34%),
+        linear-gradient(135deg, #071a3d 0%, #0b1e45 50%, #153d7a 100%);
+      color: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-inner {
+      padding: 30px 28px 26px;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 33px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      margin: 16px 0 0;
+      max-width: 540px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 14px;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .hero-meta div {
+      padding: 13px 18px;
+      border-right: 1px solid rgba(255, 255, 255, 0.13);
+    }
+
+    .hero-meta div:last-child {
+      border-right: 0;
+    }
+
+    .hero-meta b {
+      display: block;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.66);
+    }
+
+    .hero-meta span {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 14px 0 20px;
+    }
+
+    .nav a {
+      display: flex;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .section {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      box-shadow: 0 8px 24px rgba(7, 26, 61, 0.06);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px 6px;
+    }
+
+    .section-kicker {
+      margin: 0 0 4px;
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 21px;
+      line-height: 1.32;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      color: var(--navy);
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .section-body {
+      padding: 14px 24px 24px;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .links-grid,
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .link-card,
+    .stat-card,
+    .fit-card,
+    .idea-card,
+    .feature-card,
+    .note-card {
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .link-card {
+      display: block;
+      padding: 12px;
+      transition: transform 140ms ease, border-color 140ms ease;
+    }
+
+    .link-card:hover {
+      border-color: var(--red);
+      transform: translateY(-1px);
+    }
+
+    .link-card b {
+      display: block;
+      color: var(--navy);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .link-card span {
+      display: block;
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+      color: var(--muted);
+      font-size: 10.5px;
+      line-height: 1.35;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stat-card {
+      padding: 13px 10px;
+      background: linear-gradient(180deg, #ffffff, #f7f9fd);
+    }
+
+    .stat-card b {
+      display: block;
+      color: var(--red);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .stat-card span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .fit-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .fit-card {
+      display: grid;
+      grid-template-columns: 178px 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .fit-card b {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background: var(--navy);
+      color: var(--white);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .fit-card span {
+      display: block;
+      padding: 12px;
+      color: var(--ink);
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .journey-step {
+      position: relative;
+      min-height: 118px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .journey-step strong {
+      display: inline-flex;
+      width: 24px;
+      height: 24px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      background: var(--red);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .journey-step b {
+      display: block;
+      color: var(--navy);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .journey-step span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+
+    .idea-grid,
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .idea-card,
+    .feature-card,
+    .note-card {
+      padding: 14px;
+    }
+
+    .idea-card small,
+    .feature-card small {
+      display: inline-flex;
+      margin-bottom: 8px;
+      padding: 2px 7px;
+      border: 1px solid #b8c7ea;
+      background: var(--soft-blue);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .idea-card p,
+    .feature-card p,
+    .note-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.2px;
+      line-height: 1.55;
+    }
+
+    .feature-card ul,
+    .note-card ul {
+      margin: 8px 0 0;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .ai-map {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .ai-row {
+      display: grid;
+      grid-template-columns: 120px 82px 1fr;
+      border: 1px solid var(--line);
+      background: var(--white);
+    }
+
+    .ai-row b,
+    .ai-row em,
+    .ai-row span {
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .ai-row b {
+      color: var(--navy);
+    }
+
+    .ai-row em {
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      color: var(--red);
+      font-style: normal;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .ai-row span {
+      color: var(--muted);
+    }
+
+    .screenshot-frame {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .screenshot-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #cfd8e6;
+      background: var(--white);
+    }
+
+    .caption {
+      margin: 8px 2px 0;
+      color: var(--muted);
+      font-size: 11.5px;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .check-list {
+      margin: 0;
+      padding-left: 17px;
+      color: var(--muted);
+      font-size: 12.2px;
+      line-height: 1.7;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .timeline-item b {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      background: var(--navy);
+      color: var(--white);
+      font-size: 11px;
+    }
+
+    .timeline-item span {
+      display: block;
+      padding: 6px 0 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12.2px;
+      line-height: 1.55;
+    }
+
+    .submission-box {
+      margin-top: 14px;
+      border: 1px solid #f5a3a6;
+      background: var(--soft-red);
+      padding: 14px;
+      color: #7a0910;
+      font-size: 12.2px;
+      font-weight: 800;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 20px 4px 0;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    @media (max-width: 560px) {
+      .document {
+        padding: 14px 10px 42px;
+      }
+
+      .hero h1 {
+        font-size: 26px;
+      }
+
+      .hero-inner,
+      .section-header,
+      .section-body {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .hero-meta,
+      .nav,
+      .links-grid,
+      .stats-grid,
+      .journey,
+      .idea-grid,
+      .feature-grid,
+      .two-column {
+        grid-template-columns: 1fr;
+      }
+
+      .fit-card,
+      .ai-row {
+        grid-template-columns: 1fr;
+      }
+
+      .ai-row em {
+        border-left: 0;
+        border-right: 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .document {
+        width: 650px;
+        padding: 0;
+      }
+
+      .section,
+      .hero {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .nav {
+        display: none;
+      }
+
+      a {
+        color: inherit;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="document">
+    <header class="topbar">
+      <div class="brand-mark">
+        <span>KBO</span>
+        <span>KBO Talk Portfolio</span>
+      </div>
+      <span>2026.06 · 고민석</span>
+    </header>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">미디어사업팀 KBO 앱 서비스 기획 제출용</p>
+        <h1>KBO 앱 서비스 개선 포트폴리오</h1>
+        <p>
+          KBO 공식 서비스의 경기, 기록, 뉴스 정보를 팬 커뮤니티 사용 흐름으로 다시 묶고
+          웹과 Android 앱 프로토타입으로 구현한 서비스 개선 제안입니다.
+        </p>
+      </div>
+      <div class="hero-meta">
+        <div>
+          <b>Project</b>
+          <span>KBO Talk / KBO Fan Hub</span>
+        </div>
+        <div>
+          <b>Role Fit</b>
+          <span>앱 서비스 기획</span>
+        </div>
+        <div>
+          <b>Output</b>
+          <span>Web · Mobile · APK</span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="nav" aria-label="문서 바로가기">
+      <a href="#fit">직무 매칭</a>
+      <a href="#solution">개선안</a>
+      <a href="#implementation">구현 범위</a>
+      <a href="#demo">데모</a>
+    </nav>
+
+    <section class="section" id="summary">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Executive Summary</p>
+          <h2>공식 정보와 팬 참여를 하나의 앱 흐름으로 연결</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="lead">
+          이 포트폴리오는 KBO 공식 앱을 대체하려는 서비스가 아니라, 공개된 공식 웹/모바일 화면과
+          앱스토어 정보를 바탕으로 팬이 경기 정보를 확인하고, 기록을 비교하고, 뉴스와 리뷰로 참여하는
+          흐름을 더 자연스럽게 만드는 개선 제안입니다.
+        </p>
+        <div class="stats-grid">
+          <div class="stat-card"><b>9</b><span>핵심 화면 흐름</span></div>
+          <div class="stat-card"><b>3</b><span>경기·기록·뉴스 축</span></div>
+          <div class="stat-card"><b>5</b><span>개선 제안 영역</span></div>
+          <div class="stat-card"><b>1</b><span>Android APK</span></div>
+        </div>
+        <div class="links-grid">
+          <a class="link-card" href="https://jungle-ai-board.vercel.app" target="_blank" rel="noreferrer">
+            <b>웹 데모</b>
+            <span>https://jungle-ai-board.vercel.app</span>
+          </a>
+          <a class="link-card" href="https://jungle-ai-board.vercel.app/mobile-app" target="_blank" rel="noreferrer">
+            <b>모바일 앱형 화면</b>
+            <span>https://jungle-ai-board.vercel.app/mobile-app</span>
+          </a>
+          <a class="link-card" href="https://jungle-ai-board.vercel.app/portfolio/kbo-app" target="_blank" rel="noreferrer">
+            <b>KBO 앱 개선안 페이지</b>
+            <span>https://jungle-ai-board.vercel.app/portfolio/kbo-app</span>
+          </a>
+          <a class="link-card" href="https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0" target="_blank" rel="noreferrer">
+            <b>Android APK Release</b>
+            <span>github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="fit">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Role Fit</p>
+          <h2>채용 직무 요구사항과 포트폴리오 연결</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="fit-grid">
+          <div class="fit-card">
+            <b>KBO 앱 메뉴 및 서비스 구조 분석</b>
+            <span>공식 웹/모바일의 일정, 결과, 기록, 선수, 뉴스 구조를 팬 사용 흐름 기준으로 재구성했습니다.</span>
+          </div>
+          <div class="fit-card">
+            <b>기록·영상·서비스 연계 구조 조사</b>
+            <span>경기방을 중심으로 일정, 기록, 뉴스, 하이라이트, 리뷰 작성 동선을 연결하는 개선안을 제안했습니다.</span>
+          </div>
+          <div class="fit-card">
+            <b>앱 개선사항과 요구사항 문서화</b>
+            <span>응원팀 홈, 경기방, 기록실, 뉴스 브리핑, 글쓰기 흐름을 요구사항과 성공 지표까지 정리했습니다.</span>
+          </div>
+          <div class="fit-card">
+            <b>개발사·유관 부서 협업 자료</b>
+            <span>Next.js 웹, API, DB, Android WebView 앱으로 직접 구현해 논의 가능한 프로토타입을 만들었습니다.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="problem">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Problem Definition</p>
+          <h2>팬은 하나의 경기를 중심으로 정보를 보고 싶다</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="lead">
+          KBO 공식 서비스는 일정, 결과, 기록, 선수 정보, 뉴스 등 중요한 정보를 충분히 제공합니다.
+          다만 팬 입장에서는 한 경기를 기준으로 필요한 정보가 여러 메뉴에 흩어져 있다고 느낄 수 있습니다.
+          그래서 경기 전, 경기 중, 경기 후 사용 동선을 하나의 흐름으로 재배치했습니다.
+        </p>
+        <div class="journey">
+          <div class="journey-step">
+            <strong>1</strong>
+            <b>경기 전</b>
+            <span>오늘 경기, 선발 투수, 라인업, 응원팀 관련 정보를 빠르게 확인합니다.</span>
+          </div>
+          <div class="journey-step">
+            <strong>2</strong>
+            <b>경기 중</b>
+            <span>경기방에서 스코어, 문자중계, 흐름을 보며 팬 의견으로 이동합니다.</span>
+          </div>
+          <div class="journey-step">
+            <strong>3</strong>
+            <b>경기 후</b>
+            <span>박스스코어, 선수 기록, 뉴스, 리뷰 작성까지 자연스럽게 이어집니다.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="solution">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Service Proposal</p>
+          <h2>핵심 개선 방향</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="idea-grid">
+          <article class="idea-card">
+            <small>01 Game Room</small>
+            <h3>경기방 중심 구조</h3>
+            <p>일정, 선발 투수, 라인업, 문자중계, 박스스코어, 관련 글을 경기 하나의 화면에 통합했습니다.</p>
+          </article>
+          <article class="idea-card">
+            <small>02 Personalized Home</small>
+            <h3>응원팀 기반 개인화 홈</h3>
+            <p>응원팀을 설정하면 관련 경기, 게시글, 뉴스, 활동을 먼저 확인할 수 있도록 앱 홈을 설계했습니다.</p>
+          </article>
+          <article class="idea-card">
+            <small>03 Records</small>
+            <h3>기록실 탐색 개선</h3>
+            <p>팀 순위와 타자·투수 기록을 분리해 팬이 선수 성적을 더 빠르게 비교할 수 있게 했습니다.</p>
+          </article>
+          <article class="idea-card">
+            <small>04 News Flow</small>
+            <h3>뉴스에서 참여로 연결</h3>
+            <p>뉴스 URL을 브리핑하고 글쓰기 소재로 활용해 읽기 이후 행동으로 이어지게 만들었습니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="implementation">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Implementation</p>
+          <h2>실제 구현 범위</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="feature-grid">
+          <article class="feature-card">
+            <small>Community</small>
+            <h3>기본 커뮤니티 기능</h3>
+            <ul>
+              <li>회원가입, 로그인, 로그아웃</li>
+              <li>게시글 CRUD, 댓글, 태그, 검색, 페이지네이션</li>
+              <li>조회수, 추천/비추천, 인기글, 마이페이지</li>
+              <li>이미지 첨부 글쓰기</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <small>KBO Fan Service</small>
+            <h3>KBO 팬 서비스 기능</h3>
+            <ul>
+              <li>오늘의 경기, 경기방, 선발/승패/세이브 투수</li>
+              <li>라인업, 문자중계, 박스스코어</li>
+              <li>타자/투수 기록, 팀 순위, KBO 뉴스</li>
+              <li>응원팀 설정, 모바일 앱형 홈</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="experience">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">AI as Experience</p>
+          <h2>AI 기능은 기술명이 아니라 사용자 경험으로 숨김</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="lead">
+          화면에서는 RAG, MCP, Agent라는 기술명을 앞세우기보다 사용자가 실제로 이해하는 행동명으로 배치했습니다.
+        </p>
+        <div class="ai-map">
+          <div class="ai-row"><b>유사 글 보기</b><em>RAG</em><span>현재 글과 비슷한 기존 게시글을 찾아 추천합니다.</span></div>
+          <div class="ai-row"><b>중복 글 알림</b><em>RAG</em><span>글쓰기 중 비슷한 글이 있으면 작성 전에 안내합니다.</span></div>
+          <div class="ai-row"><b>뉴스/URL 브리핑</b><em>MCP</em><span>외부 뉴스 URL을 읽고 게시글에 활용 가능한 브리핑을 만듭니다.</span></div>
+          <div class="ai-row"><b>경기 정보 브리핑</b><em>MCP</em><span>KBO 경기 일정, 결과, 공식 기록을 도구처럼 조회합니다.</span></div>
+          <div class="ai-row"><b>리뷰 초안 작성</b><em>Agent</em><span>경기 메모와 관련 정보를 바탕으로 글 초안을 생성합니다.</span></div>
+          <div class="ai-row"><b>야구 도우미</b><em>Agent</em><span>게시글, 기록실, 경기방, 순위 정보를 바탕으로 질문에 답합니다.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evidence">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Evidence</p>
+          <h2>구현 화면과 검증 결과</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="screenshot-frame">
+          <img src="assets/baseball-ai-board-demo.png" alt="KBO Talk 웹 메인 화면" />
+          <p class="caption">웹 메인 화면에서 게시판, 오늘의 경기, 인기글, 기록/뉴스/경기방 진입점을 함께 확인할 수 있습니다.</p>
+        </div>
+        <div class="two-column">
+          <article class="note-card">
+            <h3>검증 완료</h3>
+            <ul class="check-list">
+              <li>로컬 lint 및 build 통과</li>
+              <li>Vercel 배포 확인</li>
+              <li>Supabase PostgreSQL migration 적용</li>
+              <li>회원가입, 로그인, 쿠키 인증 흐름 확인</li>
+            </ul>
+          </article>
+          <article class="note-card">
+            <h3>기술 스택</h3>
+            <ul class="check-list">
+              <li>Next.js, React, TypeScript</li>
+              <li>PostgreSQL, Prisma, pgvector</li>
+              <li>OpenAI API, LangChain.js</li>
+              <li>Android WebView, PWA</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="demo">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Demo Script</p>
+          <h2>면접 또는 설명용 시연 순서</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="timeline">
+          <div class="timeline-item"><b>01</b><span>웹 메인에서 KBO Talk 전체 구조와 게시판 흐름을 소개합니다.</span></div>
+          <div class="timeline-item"><b>02</b><span>오늘의 경기에서 경기방으로 진입해 선발 투수, 라인업, 문자중계, 박스스코어를 확인합니다.</span></div>
+          <div class="timeline-item"><b>03</b><span>기록실에서 팀 순위와 선수 기록을 확인하고 팬의 반복 방문 동선을 설명합니다.</span></div>
+          <div class="timeline-item"><b>04</b><span>뉴스 페이지에서 KBO 뉴스를 확인한 뒤 URL 브리핑으로 글쓰기 소재를 만듭니다.</span></div>
+          <div class="timeline-item"><b>05</b><span>글쓰기에서 이미지 첨부, 태그 선택, 유사 글 확인, 리뷰 초안 생성을 보여줍니다.</span></div>
+          <div class="timeline-item"><b>06</b><span>모바일 앱형 화면과 Android APK Release까지 연결해 실제 앱 서비스 기획 산출물임을 설명합니다.</span></div>
+        </div>
+        <div class="submission-box">
+          제출 참고: 채용 사이트가 HTML 확장자를 직접 받지 않을 수 있어, 이 HTML은 ZIP으로 묶어 제출하거나 브라우저에서 PDF로 인쇄해 제출할 수 있습니다.
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">Closing</p>
+          <h2>지원 직무와의 연결</h2>
+        </div>
+      </div>
+      <div class="section-body">
+        <p class="lead">
+          이 프로젝트는 “KBO 앱을 어떻게 더 자주 쓰게 만들 수 있을까”, “경기 정보와 팬 참여를 어떻게 연결할 수 있을까”,
+          “기획 문서를 실제 구현 가능한 요구사항으로 어떻게 바꿀 수 있을까”에 대한 개인적인 답변입니다.
+          공식 서비스 구조를 분석하고 팬 사용 흐름으로 다시 정리했으며, 개선 아이디어를 화면, API, DB 구조,
+          운영 지표까지 연결했습니다.
+        </p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      KBO Talk / KBO Fan Hub · 비공식 개인 포트폴리오 · Web Demo:
+      <a href="https://jungle-ai-board.vercel.app" target="_blank" rel="noreferrer">jungle-ai-board.vercel.app</a>
+    </footer>
+  </main>
+</body>
+</html>

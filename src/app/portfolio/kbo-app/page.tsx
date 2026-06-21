@@ -2,7 +2,7 @@ import { KboAppImprovementPage } from "@/components/portfolio/kbo-app-improvemen
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
-  title: "KBO 앱 개선안 | KBO Talk",
+  title: "KBO Talk 서비스 소개 | KBO Talk",
 };
 
 export default function PortfolioKboAppPage() {
