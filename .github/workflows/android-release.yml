@@ -13,6 +13,8 @@ jobs:
   build-android-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
+    env:
+      KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL || 'https://jungle-ai-board.vercel.app/mobile-app' }}
 
     steps:
       - name: Checkout
@@ -38,8 +40,6 @@ jobs:
 
       - name: Validate Android web URL
         if: startsWith(github.ref, 'refs/tags/')
-        env:
-          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
         run: |
           test -n "$KBO_WEB_APP_URL" || (echo "Set repository variable KBO_WEB_APP_URL to https://<vercel-domain>/mobile-app" && exit 1)
 
@@ -48,13 +48,9 @@ jobs:
 
       - name: Build debug APK
         run: npm run android:build
-        env:
-          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
 
       - name: Build release APK
         run: npm run android:release
-        env:
-          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

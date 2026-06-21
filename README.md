@@ -418,9 +418,9 @@ npx.cmd prisma migrate status
 최종 포트폴리오에는 아래 링크를 정리합니다.
 
 ```text
-Web Demo: https://<vercel-domain>
-Mobile App: https://<vercel-domain>/mobile-app
-KBO App Improvement Case Study: https://<vercel-domain>/portfolio/kbo-app
+Web Demo: https://jungle-ai-board.vercel.app
+Mobile App: https://jungle-ai-board.vercel.app/mobile-app
+KBO App Improvement Case Study: https://jungle-ai-board.vercel.app/portfolio/kbo-app
 Android APK Release: https://github.com/kominsuk1064/jungle-ai-board/releases/tag/v0.1.0
 ```
 
