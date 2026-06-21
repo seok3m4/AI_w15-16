@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { SimilarPostsPanel } from "@/components/ai/similar-posts-panel";
 import { CommentSection } from "@/components/comments/comment-section";
+import { OpenInAppActions } from "@/components/mobile-app/open-in-app-actions";
 import { PostContentRenderer } from "@/components/posts/post-content-renderer";
 
 type CurrentUser = {
@@ -335,8 +336,10 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
                 </span>
               </div>
 
-              {isOwner ? (
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <OpenInAppActions mobileHref={`/mobile-app/posts/${post.id}`} />
+                {isOwner ? (
+                  <>
                   <Link
                     className="community-button-secondary community-button-compact"
                     href={`/posts/${post.id}/edit`}
@@ -351,8 +354,9 @@ export function PostDetail({ postId, revision = "" }: PostDetailProps) {
                   >
                     {isDeleting ? "삭제 중" : "삭제"}
                   </button>
-                </div>
-              ) : null}
+                  </>
+                ) : null}
+              </div>
             </div>
 
             <div className="p-5 sm:p-6">

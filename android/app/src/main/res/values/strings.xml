@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KBO Fan Hub</string>
+    <string name="shortcut_home_short">앱 홈</string>
+    <string name="shortcut_home_long">KBO Fan Hub 홈 열기</string>
+    <string name="shortcut_write_short">글쓰기</string>
+    <string name="shortcut_write_long">경기 리뷰 글쓰기</string>
+</resources>

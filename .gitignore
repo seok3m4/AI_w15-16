@@ -16,6 +16,8 @@
 # misc
 .DS_Store
 *.pem
+.idea/
+*.iml
 
 # debug
 npm-debug.log*
@@ -32,3 +34,9 @@ pnpm-debug.log*
 
 # typescript
 *.tsbuildinfo
+
+# android
+/android/.gradle
+/android/build
+/android/app/build
+/android/local.properties

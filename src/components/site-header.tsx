@@ -7,8 +7,10 @@ import { AuthStatus } from "@/components/auth/auth-status";
 
 const navLinks = [
   { href: "/", label: "홈", match: "/" },
+  { href: "/mobile-app", label: "모바일앱", match: "/mobile-app" },
   { href: "/records", label: "순위/기록실", match: "/records" },
   { href: "/news", label: "뉴스", match: "/news" },
+  { href: "/portfolio/kbo-app", label: "앱 개선안", match: "/portfolio" },
   { href: "/posts/new", label: "글쓰기", match: "/posts/new" },
 ];
 

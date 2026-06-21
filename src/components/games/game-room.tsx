@@ -9,10 +9,12 @@ import { RelatedPostSummaryPanel } from "@/components/ai/related-post-summary-pa
 import { KboBoxscorePanel } from "@/components/games/kbo-boxscore-panel";
 import { KboLineupPanel } from "@/components/games/kbo-lineup-panel";
 import { LiveGamecastPanel } from "@/components/games/live-gamecast-panel";
+import { OpenInAppActions } from "@/components/mobile-app/open-in-app-actions";
 import {
   type KboGame,
   getGameKey,
   getGameRoomHref,
+  getMobileGameRoomHref,
   getReviewTags,
   getScoreText,
   getStatusLabel,
@@ -470,6 +472,7 @@ export function GameRoom({ gameKey, initialDate }: GameRoomProps) {
               >
                 홈으로
               </Link>
+              <OpenInAppActions mobileHref={getMobileGameRoomHref(game)} />
               <Link
                 className="community-button-primary px-3 text-sm"
                 href={getWriteReviewHref(game)}

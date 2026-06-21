@@ -122,6 +122,14 @@ export function getGameRoomHref(game: KboGame): string {
   return `/games/${encodeURIComponent(getGameKey(game))}?${params.toString()}`;
 }
 
+export function getMobileGameRoomHref(game: KboGame): string {
+  const params = new URLSearchParams({
+    date: game.gameDate,
+  });
+
+  return `/mobile-app/games/${encodeURIComponent(getGameKey(game))}?${params.toString()}`;
+}
+
 export function getReviewTitle(game: KboGame): string {
   return `${game.gameDate} ${game.awayTeam} VS ${game.homeTeam} 리뷰`;
 }
@@ -168,4 +176,14 @@ export function getWriteReviewHref(game: KboGame): string {
   });
 
   return `/posts/new?${params.toString()}`;
+}
+
+export function getMobileWriteReviewHref(game: KboGame): string {
+  const params = new URLSearchParams({
+    title: getReviewTitle(game),
+    tags: getReviewTags(game).join(", "),
+    content: getReviewDraftTemplate(game),
+  });
+
+  return `/mobile-app/write?${params.toString()}`;
 }
