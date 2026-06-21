@@ -1,0 +1,74 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare Gradle wrapper
+        run: chmod +x android/gradlew
+
+      - name: Validate Android web URL
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
+        run: |
+          test -n "$KBO_WEB_APP_URL" || (echo "Set repository variable KBO_WEB_APP_URL to https://<vercel-domain>/mobile-app" && exit 1)
+
+      - name: Verify Android shell
+        run: npm run verify:android
+
+      - name: Build debug APK
+        run: npm run android:build
+        env:
+          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
+
+      - name: Build release APK
+        run: npm run android:release
+        env:
+          KBO_WEB_APP_URL: ${{ vars.KBO_WEB_APP_URL }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kbo-fan-hub-apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/*.apk
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: docs/release-notes-v0.1.0.md
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/*.apk

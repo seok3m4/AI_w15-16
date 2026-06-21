@@ -27,6 +27,7 @@ android {
 
         val webAppUrl =
             providers.gradleProperty("KBO_WEB_APP_URL")
+                .orElse(providers.environmentVariable("KBO_WEB_APP_URL"))
                 .orElse("http://10.0.2.2:3000/mobile-app")
                 .get()
 

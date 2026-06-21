@@ -261,6 +261,24 @@ gh auth login
 gh release create v0.1.0 android/app/build/outputs/apk/release/app-release.apk --target kominsuk --title "KBO Talk Web + Android MVP" --notes-file docs/release-notes-v0.1.0.md
 ```
 
+GitHub Actions로 자동 Release를 만들 수도 있습니다.
+
+1. 개인 저장소 `Settings > Secrets and variables > Actions > Variables`로 이동합니다.
+2. `KBO_WEB_APP_URL` 변수를 추가합니다.
+
+```text
+KBO_WEB_APP_URL=https://<vercel-domain>/mobile-app
+```
+
+3. tag를 만들고 push합니다.
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+그러면 `.github/workflows/android-release.yml`이 Android debug/release APK를 빌드하고 GitHub Release에 첨부합니다.
+
 ## 11. 포트폴리오 제출 링크 구성
 
 최종적으로 아래 4개 링크를 포트폴리오에 정리합니다.
